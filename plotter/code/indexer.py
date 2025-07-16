@@ -37,7 +37,8 @@ def main()->None:
     indexed_files = set(df_indexes['file_path'])
     for file in files_list:
         if str(file) not in indexed_files:
-            files_to_index.append(info_extract(file))
+            if file != index_table_csv:
+                files_to_index.append(info_extract(file))
 
     # add new data to df_indexes
     if files_to_index:
