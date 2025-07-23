@@ -5,7 +5,7 @@ data_dir = Path('../IdVd_data')
 index_table_csv = data_dir/'index_table.csv'
 
 ## FUNCTIONS ##
-def info_extract(file_path:Path)->Exp:
+def info_extract(file_path:Path)->list:
     info = np.array((file_path.stem.split('_'))) #es: IdVd_exponential_Vgf_2_Es_1.72_Em_1.04
     return info[1],float(info[5]),float(info[7]),int(info[3]),file_path # trap_distr:str, e_sigma:float, e_mid:float, v_gf:int, file_path:Path
 
@@ -26,7 +26,8 @@ def main()->None:
                 'e_sigma',
                 'e_mid',
                 'v_gf',
-                'file_path'
+                'file_path',
+                'group_name'
             ]
         )
 
@@ -38,7 +39,8 @@ def main()->None:
     for file in files_list:
         if str(file) not in indexed_files:
             if file != index_table_csv:
-                files_to_index.append(info_extract(file))
+                info = info_extract(file)   # [trap_distr:str, e_sigma:float, e_mid:float, v_gf:int, file_path:Path]
+                files_to_index.append(info.append(f'{info[0]}_{info[1]}_{info[2]}'))
 
     # add new data to df_indexes
     if files_to_index:
