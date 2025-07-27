@@ -5,7 +5,7 @@ from Common import *
 ## PARAMS ##
 index_table_csv = Path('../IdVd_data/index_table.csv')
 df = pd.read_csv(index_table_csv)
-df_exp_dict = df.to_dict('records')
+exp_mode_dict = df.to_dict('records')
 
 ## DERIVED PARAMS ##
 groups_first_only:dict={
@@ -13,13 +13,13 @@ groups_first_only:dict={
     'indexes':[]
 }
 for i in range(len(df)):
-    row = df_exp_dict[i]
+    row = exp_mode_dict[i]
     if row['group'] in groups_first_only['groups']:
         pass
     else:
         groups_first_only['groups'].append(row['group'])
         groups_first_only['indexes'].append(i)
-df_group_dict = df.iloc[groups_first_only['indexes']].to_dict('records')
+group_mode_dict = df.iloc[groups_first_only['indexes']].to_dict('records')
 
 app = Dash(
     __name__,
@@ -49,7 +49,7 @@ app.layout = dbc.Container(
                         # html.Div(id='table')
                         dash_table.DataTable(
                                     id='table',
-                                    data=df_exp_dict,
+                                    data=exp_mode_dict,
                                     columns=[
                                         {'name': 'Trap Distribution', 'id': 'trap_distr'},
                                         {'name': "E_mid", 'id': 'e_mid'},
@@ -135,38 +135,50 @@ app.layout = dbc.Container(
     Output('tabs', 'children'),
     Output('table','selected_rows'),
     Output('tabs', 'value'),
-    Input('plot-button', 'n_clicks'),
-    State('table','derived_virtual_selected_rows'),
-    State('table','derived_virtual_data'),
-    State('tabs','value'),
-    State('tabs','children')
+    Input('plot-button', 'n_clicks'),           #n_clicks (plot button)
+    State('group-mode-toggle', 'value'),        #curr_mode: modo corrente della tabella (Exp/Group)
+    State('table','derived_virtual_selected_rows'), #selected_rows: indici delle righe selezionate (considerati filtri vari colonne)
+    State('table','derived_virtual_data'),      #table_data: dati della tabella (considerati filtri vari colonne)
+    State('tabs','value'),                      #curr_tab: tab attualmente aperto (se nessuno None)
+    State('tabs','children')                    #tabs: lista dei tab disponibili
 )
-def update_tabs(n_clicks, selected_rows, table_data, curr_tab, tabs):
+def update_tabs(n_clicks, curr_mode, selected_rows, table_data, curr_tab, tabs):
     labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}
     tabs = tabs or []
     if not n_clicks or not selected_rows:
         return tabs,[],curr_tab
 
     open_tabs = [tab['props']['value'] for tab in tabs]
-    first_new_tab_value = None
 
-    for i in selected_rows:
-        row = table_data[i]
-        file = row['file_path']
-        if file not in open_tabs:
-            tabs.append(
-                dcc.Tab(
-                    label=f"{labels[row['trap_distr']]}/{row['e_mid']}/{row['e_sigma']}/{row['v_gf']}",
-                    value=file
+    for selected_index in selected_rows:
+        # row = table_data[selected_index]
+        if curr_mode == 'Exp mode':
+            file = table_data[selected_index]['file_path']
+            if file not in open_tabs:
+                tabs.append(
+                    dcc.Tab(
+                        label=f"Exp - {labels[row['trap_distr']]}/{row['e_mid']}/{row['e_sigma']}/{row['v_gf']}",
+                        value=file
+                    )
                 )
-            )
-            if first_new_tab_value is None:
-                first_new_tab_value = file  # salva il primo tab aggiunto
+        else:
+            group = row['group']
+            if group not in open_tabs:
+                tabs.append(
+                    dcc.Tab(
+                        label=f"Group - {labels[row['trap_distr']]}/{row['e_mid']}/{row['e_sigma']}",
+                        value=group
+                    )
+                )
+
 
     if not open_tabs:
-        return tabs,[],first_new_tab_value
+        if curr_mode == 'Exp mode':
+            return tabs,[],table_data[selected_rows[0]]['file_path']    # se non c'è alcun tab già aperto, apro il primo tab
+        else:
+            return tabs,[],table_data[selected_rows[0]]['group']
     else:
-        return tabs,[],curr_tab
+        return tabs,[],curr_tab     # altrimenti lascio aperto il tab già selezionato
 
 # aggiorna il grafico in base al tab e alle curve selezionati da visualizzare
 @callback(
@@ -177,11 +189,18 @@ def update_tabs(n_clicks, selected_rows, table_data, curr_tab, tabs):
 def update_graph_content(tab, checked):
     if not tab:
         return "nulla di selezionato"
-    exp = Exp(Path(tab))
-    exp.fill()
-    plot = ExpPlots(exp)
-    plot.plot(checked)
-    return dcc.Graph(figure=plot.fig)
+    if '.csv' not in tab:
+        df_group = df.loc[df['group']==tab]
+        g = Group()
+        for file in df_group['file_path']:
+            g.add_path(Path(file))
+        return str(vars(g))
+    else:
+        exp = Exp(Path(tab))
+        exp.fill()
+        plot = ExpPlot(exp)
+        plot.plot(checked)
+        return dcc.Graph(figure=plot.fig)
 
 # aggiorna la tabella in base alla modalità selezionata
 @callback(
@@ -191,9 +210,9 @@ def update_graph_content(tab, checked):
 )
 def update_table(mode):
     if mode == 'Exp mode':
-        return df_exp_dict,['file_path', 'group']
+        return exp_mode_dict,['file_path', 'group']
     else:
-        return df_group_dict,['file_path', 'group', 'v_gf']
+        return group_mode_dict,['file_path', 'group', 'v_gf']
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=8050)
