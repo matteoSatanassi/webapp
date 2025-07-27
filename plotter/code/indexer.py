@@ -2,16 +2,13 @@ from Common import *
 
 ## PARAMS ##
 data_dir = Path('../IdVd_data')
-try:
-    Path(data_dir/'index_files').mkdir(parents=True)
-except FileExistsError:
-    pass
-index_table_csv = data_dir/'index_files'/'index_table.csv'
+index_table_csv = data_dir/'index_table.csv'
 
 ## FUNCTIONS ##
 def info_extract(file_path:Path)->list:
     info = np.array((file_path.stem.split('_'))) #es: IdVd_exponential_Vgf_2_Es_1.72_Em_1.04
-    return info[1],float(info[5]),float(info[7]),int(info[3]),file_path # trap_distr:str, e_sigma:float, e_mid:float, v_gf:int, file_path:Path
+    group = f"{info[1]}_{info[7]}_{info[5]}" #file group: TrapDistr_Em_Es
+    return info[1],info[5],info[7],info[3],group,file_path # trap_distr:str, e_sigma:float, e_mid:float, v_gf:int, group:str, file_path:Path
 
 ## MAIN ##
 def main()->None:
@@ -29,6 +26,7 @@ def main()->None:
                 'e_sigma',
                 'e_mid',
                 'v_gf',
+                'group',
                 'file_path'
             ]
         )
@@ -40,11 +38,12 @@ def main()->None:
     indexed_files = set(df_indexes['file_path'])
     for file in files_list:
         if str(file) not in indexed_files:
-            files_to_index.append(info_extract(file))
+            if file is not index_table_csv:
+                files_to_index.append(info_extract(file))
 
     # aggiunge i nuovi dati a df_indexes
     if files_to_index:
-        df_to_add = pd.DataFrame(files_to_index, columns=['trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'file_path'])
+        df_to_add = pd.DataFrame(files_to_index, columns=['trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'group', 'file_path'])
         df_indexes = pd.concat([df_indexes, df_to_add], ignore_index=True)
 
     # salva df_indexes
