@@ -8,18 +8,9 @@ df = pd.read_csv(index_table_csv)
 exp_mode_dict = df.to_dict('records')
 
 ## DERIVED PARAMS ##
-groups_first_only:dict={
-    'groups':[],
-    'indexes':[]
-}
-for i in range(len(df)):
-    row = exp_mode_dict[i]
-    if row['group'] in groups_first_only['groups']:
-        pass
-    else:
-        groups_first_only['groups'].append(row['group'])
-        groups_first_only['indexes'].append(i)
-group_mode_dict = df.iloc[groups_first_only['indexes']].to_dict('records')
+    # restituisce una lista degli indici delle prime occorrenze di ogni gruppo
+group_first_only_indexes = df.drop_duplicates(subset='group', keep='first').index.tolist()
+group_mode_dict = df.iloc[group_first_only_indexes].to_dict('records')
 
 app = Dash(
     __name__,
@@ -151,9 +142,9 @@ def update_tabs(n_clicks, curr_mode, selected_rows, table_data, curr_tab, tabs):
     open_tabs = [tab['props']['value'] for tab in tabs]
 
     for selected_index in selected_rows:
-        # row = table_data[selected_index]
+        row = table_data[selected_index]
         if curr_mode == 'Exp mode':
-            file = table_data[selected_index]['file_path']
+            file = row['file_path']
             if file not in open_tabs:
                 tabs.append(
                     dcc.Tab(
