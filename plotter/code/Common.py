@@ -13,12 +13,38 @@ class Exp:
         self.Em: float = e_mid
         self.Vgf: int = v_gf
         self.path:Path = file_path
-    def fill(self)->None:
+    def fill(self)->'Exp':
         info = np.array((self.path.stem.split('_')))  # es: IdVd_exponential_Vgf_2_Es_1.72_Em_1.04
         self.trap_distr = info[1]
         self.Es = float(info[5])
         self.Em = float(info[7])
         self.Vgf = int(info[3])
+        return self
+
+class Group:
+    def __init__(self) -> None:
+        self.trap_distr: str = None
+        self.Es: float = None
+        self.Em: float = None
+        self.files: dict[int,Path] = {}
+    def __contains__(self, item:Exp) -> bool:
+        if self.trap_distr == item.trap_distr and self.Es == item.Es and self.Em == item.Em:
+            return True
+        else:
+            return False
+    def add(self, exp:Exp)->None:
+        if not self.trap_distr:
+            self.trap_distr = exp.trap_distr
+            self.Es = exp.Es
+            self.Em = exp.Em
+        elif exp not in self:
+            raise Exception(f"Cannot add {exp} to {self}, it doesn't belong to the group")
+        self.files[exp.Vgf] = Path(exp.path)
+        return None
+    def add_path(self, path:Path) -> None:
+        self.add(Exp(path).fill())
+        return None
+    ## possibilità di aggiungere un path e riempire campi classe
 
 # identifica una singola curva di un esperimento
 class Curve:
@@ -73,7 +99,8 @@ class ExpCurves:
             y_maxs.append(y_max)
         return min(y_mins), max(y_maxs)
 
-class ExpPlots:
+# classe per graficare esperimento singolo
+class ExpPlot:
     def __init__(self, exp:Exp):        #possibilità di aggiungere più esperimenti in array
         self.exp_curves = ExpCurves(exp)
         self.fig = go.Figure()
