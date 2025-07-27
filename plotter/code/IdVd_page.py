@@ -1,11 +1,25 @@
 from dash import Dash, html, dcc, Input, Output, callback, dash_table, State
 import dash_bootstrap_components as dbc
-import plotly_express as px
 from Common import *
 
 ## PARAMS ##
 index_table_csv = Path('../IdVd_data/index_table.csv')
 df = pd.read_csv(index_table_csv)
+df_exp_dict = df.to_dict('records')
+
+## DERIVED PARAMS ##
+groups_first_only:dict={
+    'groups':[],
+    'indexes':[]
+}
+for i in range(len(df)):
+    row = df_exp_dict[i]
+    if row['group'] in groups_first_only['groups']:
+        pass
+    else:
+        groups_first_only['groups'].append(row['group'])
+        groups_first_only['indexes'].append(i)
+df_group_dict = df.iloc[groups_first_only['indexes']].to_dict('records')
 
 app = Dash(
     __name__,
@@ -23,52 +37,60 @@ app.layout = dbc.Container(
             style={'height':'12vh'}
         ),  #TITOLO
         dbc.Row(
-            children=[          #ogni colonna ha dimensione 12
+            children=[          #ogni riga ha dimensione 12 orizzontalmente
                 dbc.Col(
-                    # children=html.P('Elenco'),
-                    # style={'textAlign': 'center', 'border': '1px solid white'},
-                    children=dash_table.DataTable(
-                        id='table',
-                        data=df.to_dict('records'),
-                        columns=[
-                            {'name':'Trap Distribution', 'id':'trap_distr'},
-                            {'name':"E_mid", 'id':'e_mid'},
-                            {'name':'E_σ', 'id':'e_sigma'},
-                            {'name':'V_gf', 'id':'v_gf'},
-                            {'name':'file_path', 'id':'file_path'},
-                            {'name':'file_name', 'id':'file_name'},
-                        ],
-                        sort_action='native',
-                        filter_action='native',
-                        filter_options={"placeholder_text": "Filter column..."},
-                        row_selectable='multi',
-                        selected_rows=[],
-                        hidden_columns=['file_path', 'file_name'],
-                        page_size=10,
-                        style_cell={'textAlign': 'right'},
-                        style_cell_conditional=[
-                            {
-                                'if': {'column_id': 'trap_distr'},
-                                'textAlign': 'left'
-                            }
-                        ],
-                        style_data={
-                            'color': 'black',
-                            'backgroundColor': 'white'
-                        },
-                        style_data_conditional=[
-                            {
-                                'if': {'row_index': 'odd'},
-                                'backgroundColor': 'rgb(220, 220, 220)',
-                            }
-                        ],
-                        style_header={
-                            'backgroundColor': 'rgb(210, 210, 210)',
-                            'color': 'black',
-                            'fontWeight': 'bold'
-                        }
-                    ),
-                    width=4     #larghezza colonna
+                    children=[
+                        dcc.RadioItems(
+                            options=['Group mode','Exp mode'],
+                            value='Exp mode',
+                            id='group-mode-toggle',
+                            inline=True,
+                        ),
+                        # html.Div(id='table')
+                        dash_table.DataTable(
+                                    id='table',
+                                    data=df_exp_dict,
+                                    columns=[
+                                        {'name': 'Trap Distribution', 'id': 'trap_distr'},
+                                        {'name': "E_mid", 'id': 'e_mid'},
+                                        {'name': 'E_σ', 'id': 'e_sigma'},
+                                        {'name': 'V_gf', 'id': 'v_gf'},
+                                        {'name': 'file_path', 'id': 'file_path'},
+                                        {'name': 'group', 'id': 'group'},
+                                    ],
+                                    sort_action='native',
+                                    filter_action='native',
+                                    filter_options={"placeholder_text": "Filter column..."},
+                                    row_selectable='multi',
+                                    selected_rows=[],
+                                    hidden_columns=['file_path', 'group'],
+                                    page_size=10,
+                                    style_cell={'textAlign': 'right'},
+                                    style_cell_conditional=[
+                                        {
+                                            'if': {'column_id': 'trap_distr'},
+                                            'textAlign': 'left'
+                                        }
+                                    ],
+                                    style_data={
+                                        'color': 'black',
+                                        'backgroundColor': 'white'
+                                    },
+                                    style_data_conditional=[
+                                        {
+                                            'if': {'row_index': 'odd'},
+                                            'backgroundColor': 'rgb(220, 220, 220)',
+                                        }
+                                    ],
+                                    style_header={
+                                        'backgroundColor': 'rgb(210, 210, 210)',
+                                        'color': 'black',
+                                        'fontWeight': 'bold'
+                                    }
+                                )
+                    ],
+                    width=4,    #larghezza colonna
+                    style={'textAlign': 'center'},
                 ),  #ELENCO FILE
                 dbc.Col(
                     # children=html.P('spazio vuoto'),
@@ -83,6 +105,7 @@ app.layout = dbc.Container(
                     children=[
                         dcc.Tabs(id="tabs", value=None),
                         html.Div(id="tabs-content"),
+                        # checklist curve visualizzate
                         dcc.Checklist(
                             id='curve-checklist',
                             options=[
@@ -145,6 +168,7 @@ def update_tabs(n_clicks, selected_rows, table_data, curr_tab, tabs):
     else:
         return tabs,[],curr_tab
 
+# aggiorna il grafico in base al tab e alle curve selezionati da visualizzare
 @callback(
     Output('tabs-content', 'children'),
     Input('tabs', 'value'),
@@ -158,6 +182,18 @@ def update_graph_content(tab, checked):
     plot = ExpPlots(exp)
     plot.plot(checked)
     return dcc.Graph(figure=plot.fig)
+
+# aggiorna la tabella in base alla modalità selezionata
+@callback(
+    Output('table', 'data'),
+    Output('table', 'hidden_columns'),
+    Input('group-mode-toggle', 'value')
+)
+def update_table(mode):
+    if mode == 'Exp mode':
+        return df_exp_dict,['file_path', 'group']
+    else:
+        return df_group_dict,['file_path', 'group', 'v_gf']
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=8050)
