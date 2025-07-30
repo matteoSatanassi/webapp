@@ -15,7 +15,7 @@ class Exp:
         self.path:Path = file_path
     def fill(self)->'Exp':
         info = np.array((self.path.stem.split('_')))  # es: IdVd_exponential_Vgf_2_Es_1.72_Em_1.04
-        self.trap_distr = info[1]
+        self.trap_distr = str(info[1])
         self.Es = float(info[5])
         self.Em = float(info[7])
         self.Vgf = int(info[3])
@@ -67,12 +67,13 @@ class ExpCurves:
         self.curves:dict[str, Curve] = dict()
         for key, name in CP.names.items():
             self.curves[key] = Curve(name)
-    def sort(self):
+    def sort(self)->None:
         self.curves['v0'].sort()
         self.curves['0'].sort()
         self.curves['15'].sort()
         self.curves['30'].sort()
-    def import_csv(self):
+        return None
+    def import_csv(self)->None:
         if not self.exp.path.exists():
             raise FileNotFoundError(f'file {self.exp.path} non trovato!')
         try:
@@ -99,6 +100,37 @@ class ExpCurves:
             y_maxs.append(y_max)
         return min(y_mins), max(y_maxs)
 
+# classe che raggruppa tutte le curve di un dato gruppo(sotto forma di ExpCurves)
+class GroupCurves:
+    def __init__(self, group:Group):
+        self.group:Group = group
+        self.curves:list[ExpCurves] = []
+        for vgf,file in group.files.items():    # POSSIBILE IMPLEMENTARE METODO __iter__() (chatGPT)
+            exp = Exp(
+                trap_distr=group.trap_distr,
+                e_sigma=group.Es,
+                e_mid=group.Em,
+                v_gf=vgf,
+                file_path=file
+            )
+            self.curves.append(ExpCurves(exp))
+    def sort_all_exp(self)->None:
+        for exp_curves in self.curves:
+            exp_curves.sort()
+        return None
+    def import_all_csv(self)->None:
+        for exp_curves in self.curves:
+            exp_curves.import_csv()
+        return None
+    def y_limits_group(self)->list:
+        y_mins = []
+        y_maxs = []
+        for exp_curves in self.curves:
+            y_min_exp, y_max_exp = exp_curves.y_limits_exp()
+            y_mins.append(y_min_exp)
+            y_maxs.append(y_max_exp)
+        return min(y_mins), max(y_maxs)
+
 # classe per graficare esperimento singolo
 class ExpPlot:
     def __init__(self, exp:Exp):        #possibilità di aggiungere più esperimenti in array
@@ -123,6 +155,34 @@ class ExpPlot:
                 visible=True
             ))
         return None
+
+class GroupPlot:
+    def __init__(self, group:Group):
+        self.group_curves = GroupCurves(group)
+        self.fig = go.Figure()
+    def plot(self, c_to_plot:list[str])->None:
+        self.group_curves.import_all_csv()
+        self.group_curves.sort_all_exp()
+        for exp_curve in self.group_curves.curves:
+            for c in c_to_plot:
+                self.fig.add_trace(go.Scatter(
+                    x=exp_curve.curves[c].X,
+                    y=exp_curve.curves[c].Y,
+                    name=f"{exp_curve.curves[c].name} - Vgf:{exp_curve.exp.Vgf}",
+                    mode='lines+markers',
+                    line=dict(
+                        color=CP.colors[c] if Config.colors else 'black',
+                        dash=None if Config.colors else CP.linestyles[c],
+                        width=0.75
+                    ),
+                    marker=dict(
+                        symbol=GP.markers[exp_curve.exp.Vgf],
+                        size=8 if GP.markers[exp_curve.exp.Vgf]=='*' else None
+                    ),
+                    visible=True
+                ))
+        return None
+
 
 ## PARAMS ##
 class Config:
@@ -153,3 +213,12 @@ class CP:   # curves params
         "15": "dashed",
         "30": "solid"
     }   # to use in case of colorless image configuration
+
+class GP:
+    markers = {
+        -2: "square",
+        -1: "circle",
+        0: "triangle-down",
+        1: "diamond",
+        2: "star"
+    }  # to use in same fig, multiple plots
