@@ -177,7 +177,7 @@ def update_tabs(n_clicks, curr_mode, selected_rows, table_data, curr_tab, tabs):
     Input('tabs', 'value'),
     Input('curve-checklist', 'value')
 )
-def update_graph_content(tab, checked):
+def update_graph_content(tab, checked_curves):
     if not tab:
         return "nulla di selezionato"
     if '.csv' not in tab:
@@ -185,13 +185,15 @@ def update_graph_content(tab, checked):
         g = Group()
         for file in df_group['file_path']:
             g.add_path(Path(file))
-        return str(vars(g))
+        g_plot = GroupPlot(g)
+        g_plot.plot(checked_curves)
+        return dcc.Graph(figure=g_plot.fig)
     else:
         exp = Exp(Path(tab))
         exp.fill()
-        plot = ExpPlot(exp)
-        plot.plot(checked)
-        return dcc.Graph(figure=plot.fig)
+        exp_plot = ExpPlot(exp)
+        exp_plot.plot(checked_curves)
+        return dcc.Graph(figure=exp_plot.fig)
 
 # aggiorna la tabella in base alla modalità selezionata
 @callback(
