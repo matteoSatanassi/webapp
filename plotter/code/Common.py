@@ -1,5 +1,6 @@
 from pathlib import Path
 import plotly.graph_objects as go
+import plotly.io as pio
 import numpy as np
 import pandas as pd
 
@@ -7,12 +8,17 @@ import pandas as pd
 
 # identifica un esperimento, a cui appartengono 4 curve
 class Exp:
-    def __init__(self, file_path:Path, trap_distr:str=None, e_sigma:float=None, e_mid:float=None, v_gf:int=None) -> None:
+    def __init__(self, file_path:Path|str, trap_distr:str=None, e_sigma:float=None, e_mid:float=None, v_gf:int=None) -> None:
         self.trap_distr: str = trap_distr
         self.Es: float = e_sigma
         self.Em: float = e_mid
         self.Vgf: int = v_gf
-        self.path:Path = file_path
+        if Path(file_path).exists():
+            self.path = Path(file_path)
+        else:
+            raise FileNotFoundError(f'file {file_path} non trovato!')
+    def __str__(self):
+        return self.path.stem
     def fill(self)->'Exp':
         info = np.array((self.path.stem.split('_')))  # es: IdVd_exponential_Vgf_2_Es_1.72_Em_1.04
         self.trap_distr = str(info[1])
@@ -32,6 +38,8 @@ class Group:
             return True
         else:
             return False
+    def __str__(self) -> str:
+        return f"IdVd_{self.trap_distr}_Es_{self.Es}_Em_{self.Em}"  #IdVd_exponential_Vgf_-1_Es_0.2_Em_0.2
     def add(self, exp:Exp)->None:
         if not self.trap_distr:
             self.trap_distr = exp.trap_distr
@@ -44,7 +52,12 @@ class Group:
     def add_path(self, path:Path) -> None:
         self.add(Exp(path).fill())
         return None
-    ## possibilità di aggiungere un path e riempire campi classe
+    def add_paths(self, paths:list[Path]) -> 'Group':
+        if type(paths) is not list:
+            paths = [paths]
+        for path in paths:
+            self.add(Exp(path).fill())
+        return self
 
 # identifica una singola curva di un esperimento
 class Curve:
@@ -74,8 +87,6 @@ class ExpCurves:
         self.curves['30'].sort()
         return None
     def import_csv(self)->None:
-        if not self.exp.path.exists():
-            raise FileNotFoundError(f'file {self.exp.path} non trovato!')
         try:
             data = pd.read_csv(self.exp.path)
             data.replace('-','0',inplace=True)
@@ -136,7 +147,7 @@ class ExpPlot:
     def __init__(self, exp:Exp):        #possibilità di aggiungere più esperimenti in array
         self.exp_curves = ExpCurves(exp)
         self.fig = go.Figure()
-    def plot(self, c_to_plot:list[str])->None:
+    def plot(self, c_to_plot:list[str])->'ExpPlot':
         self.exp_curves.import_csv()
         self.exp_curves.sort()
         for c in c_to_plot:
@@ -154,13 +165,14 @@ class ExpPlot:
                 ),
                 visible=True
             ))
-        return None
+        return self
 
+# classe per graficare un gruppo di esperimenti
 class GroupPlot:
     def __init__(self, group:Group):
         self.group_curves = GroupCurves(group)
         self.fig = go.Figure()
-    def plot(self, c_to_plot:list[str])->None:
+    def plot(self, c_to_plot:list[str])->'GroupPlot':
         self.group_curves.import_all_csv()
         self.group_curves.sort_all_exp()
         for exp_curve in self.group_curves.curves:
@@ -181,8 +193,25 @@ class GroupPlot:
                     ),
                     visible=True
                 ))
-        return None
+        return self
 
+## FUNCTIONS ##
+def try_mkdir(path:Path)->Path:
+    try:
+        path.mkdir(parents=True)
+    except FileExistsError:
+        return None
+    except:
+        raise RuntimeError(f"Impossibile creare {path}")
+    return path
+
+def find_export_path()->Path:
+    i=0
+    while True:
+        export_path = try_mkdir(Path("../exported_files/export" if i==0 else f"../exported_files/export-{i}"))
+        if export_path:
+          return export_path
+        i+=1
 
 ## PARAMS ##
 class Config:
