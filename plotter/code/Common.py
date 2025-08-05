@@ -1,6 +1,5 @@
 from pathlib import Path
 import plotly.graph_objects as go
-import plotly.io as pio
 import numpy as np
 import pandas as pd
 
