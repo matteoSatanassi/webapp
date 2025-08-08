@@ -15,47 +15,47 @@ group_mode_dict = df.iloc[group_first_only_indexes].to_dict('records')
 ## PAGE ELEMENTS ##
 def my_table(table_id:str):
     return dash_table.DataTable(
-                            id=table_id,
-                            data=exp_mode_dict,
-                            columns=[
-                                {'name': 'Trap Distribution', 'id': 'trap_distr'},
-                                {'name': "E_mid", 'id': 'e_mid'},
-                                {'name': 'E_σ', 'id': 'e_sigma'},
-                                {'name': 'V_gf', 'id': 'v_gf'},
-                                {'name': 'file_path', 'id': 'file_path'},
-                                {'name': 'group', 'id': 'group'},
-                            ],
-                            sort_action='native',
-                            filter_action='native',
-                            filter_options={"placeholder_text": "Filter column..."},
-                            row_selectable='multi',
-                            selected_rows=[],
-                            hidden_columns=['file_path', 'group'],
-                            page_size=10,
-                            style_cell={'textAlign': 'right'},
-                            style_cell_conditional=[
-                                {
-                                    'if': {'column_id': 'trap_distr'},
-                                    'textAlign': 'left'
-                                }
-                            ],
-                            style_data={
-                                'color': 'black',
-                                'backgroundColor': 'white'
-                            },
-                            style_data_conditional=[
-                                {
-                                    'if': {'row_index': 'odd'},
-                                    'backgroundColor': 'rgb(220, 220, 220)',
-                                }
-                            ],
-                            style_header={
-                                'backgroundColor': 'rgb(210, 210, 210)',
-                                'color': 'black',
-                                'fontWeight': 'bold'
-                            },
-                            css=[{"selector": ".show-hide", "rule": "display: none"}]
-                        )
+        id=table_id,
+        data=exp_mode_dict,
+        columns=[
+            {'name': 'Trap Distribution', 'id': 'trap_distr'},
+            {'name': "E_mid", 'id': 'e_mid'},
+            {'name': 'E_σ', 'id': 'e_sigma'},
+            {'name': 'V_gf', 'id': 'v_gf'},
+            {'name': 'file_path', 'id': 'file_path'},
+            {'name': 'group', 'id': 'group'},
+        ],
+        sort_action='native',
+        filter_action='native',
+        filter_options={"placeholder_text": "Filter column..."},
+        row_selectable='multi',
+        selected_rows=[],
+        hidden_columns=['file_path', 'group'],
+        page_size=10,
+        style_cell={'textAlign': 'right'},
+        style_cell_conditional=[
+            {
+                'if': {'column_id': 'trap_distr'},
+                'textAlign': 'left'
+            }
+        ],
+        style_data={
+            'color': 'black',
+            'backgroundColor': 'white'
+        },
+        style_data_conditional=[
+            {
+                'if': {'row_index': 'odd'},
+                'backgroundColor': 'rgb(220, 220, 220)',
+            }
+        ],
+        style_header={
+            'backgroundColor': 'rgb(210, 210, 210)',
+            'color': 'black',
+            'fontWeight': 'bold'
+        },
+        css=[{"selector": ".show-hide", "rule": "display: none"}]
+    )
 
     ## CALLBACK FUNCTIONS ##
 
@@ -69,40 +69,41 @@ def mode_options(radio_id:str):
 
 def curves_options(checklist_id:str):
     return dcc.Checklist(
-                id=checklist_id,
-                options=[
-                    {'label': '(0,0)', 'value': 'v0'},
-                    {'label': '(-7,0)', 'value': '0'},
-                    {'label': '(-7,15)', 'value': '15'},
-                    {'label': '(-7,30)', 'value': '30'},
-                ],
-                value=['v0','0','15','30'],  # all’inizio tutte selezionate
-                labelStyle={'display': 'inline-block'}
-            )
-
-export_modal = html.Div(
-    dbc.Modal(
-        {
-            dbc.ModalHeader(dbc.ModalTitle("Export")),
-            dbc.ModalBody(
-                [
-                    mode_options('export-mode'),
-                    my_table('export-table'),
-                    curves_options('export-curves')
-                ]
-            ),
-            dbc.ModalFooter(
-                [
-                    dbc.Button("Close", id="close", className="ms-auto", n_clicks=0),
-                    dbc.Button("Export Selected", id="export", className="ms-auto", n_clicks=0)
-                ]
-            ),
-        },
-        id="modal",
-        is_open=False,
+        id=checklist_id,
+        options=[
+            {'label': '(0,0)', 'value': 'v0'},
+            {'label': '(-7,0)', 'value': '0'},
+            {'label': '(-7,15)', 'value': '15'},
+            {'label': '(-7,30)', 'value': '30'},
+        ],
+        value=['v0','0','15','30'],  # all’inizio tutte selezionate
+        labelStyle={'display': 'inline-block'},
     )
-)
 
+export_modal = dbc.Modal(
+    [
+        dbc.ModalHeader(dbc.ModalTitle("Export")),
+        dbc.ModalBody(
+            dbc.Row([
+                dbc.Col(my_table('export-table')),
+                dbc.Col(
+                    [
+                        html.Div(mode_options('export-mode-toggle')),
+                        html.Div(curves_options('export-curves'))
+                    ]
+                )
+            ])
+        ),
+        dbc.ModalFooter(
+            [
+                dbc.Button("Close", id="close-button", className="ms-auto", n_clicks=0),
+                dbc.Button("Export Selected", id="export-button", className="ms-auto", n_clicks=0)
+            ]
+        ),
+    ],
+    id="modal-export",
+    is_open=False,
+)
 
 ## CALLBACKS FUNCTIONS ##
 def update_tabs(n_clicks, curr_mode, selected_rows, table_data, curr_tab, tabs):
@@ -163,7 +164,7 @@ def update_table(mode):
     else:
         return group_mode_dict,['file_path', 'group', 'v_gf'],[]
 
-def export_selected(n_clicks, mode, selected_rows, data_table):     # AGGIUNGERE BOX PER SCELTA DOWNLOAD_PATH, ESTENSIONE, CURVE DA PLOTTARE
+def export_selected(n_clicks, mode, selected_curves, selected_rows, data_table):     # AGGIUNGERE BOX PER SCELTA DOWNLOAD_PATH, ESTENSIONE, CURVE DA PLOTTARE
     if not n_clicks or not selected_rows:
         return selected_rows
     export_path = find_export_path()
@@ -171,17 +172,22 @@ def export_selected(n_clicks, mode, selected_rows, data_table):     # AGGIUNGERE
     match mode:
         case 'Exp mode':
             exps:list[Exp] = [Exp(data_table[row_i]['file_path']).fill() for row_i in selected_rows]        # lista di esperimenti corrispondente alle righe selezionate
-            plots:list[ExpPlot] = [ExpPlot(exp).plot(['v0','0','15','30']) for exp in exps]                 # lista di ExpPlot corrispondente
+            plots:list[ExpPlot] = [ExpPlot(exp).plot(selected_curves) for exp in exps]                 # lista di ExpPlot corrispondente
             figs:list[go.Figure] = [plot.fig for plot in plots]
             exp_file_paths:list[Path] = [export_path/Path(f"{plot.exp_curves.exp}.png") for plot in plots]  #estensioni possibili .png, .svg, .pdf
         case 'Group mode':
             groups_files:list[list[str]] = [df.loc[df.group==data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows]
             groups:list[Group] = [Group().add_paths(group_files) for group_files in groups_files]
-            plots:list[GroupPlot] = [GroupPlot(g).plot(['v0','0','15','30']) for g in groups]
+            plots:list[GroupPlot] = [GroupPlot(g).plot(selected_curves) for g in groups]
             figs:list[go.Figure] = [plot.fig for plot in plots]
             exp_file_paths:list[Path] = [export_path/Path(f"{plot.group_curves.group}.png") for plot in plots]
     pio.write_images(
         fig=figs,
         file=exp_file_paths
     )
-    return []
+    return False
+
+def toggle_modal(n_clicks, is_open):
+    if not n_clicks:
+        return is_open
+    return not is_open
