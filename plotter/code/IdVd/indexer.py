@@ -1,7 +1,7 @@
 from Common import *
 
 ## PARAMS ##
-data_dir = Path('../IdVd_data')
+data_dir = Path('../../IdVd_data')
 index_table_csv = data_dir/'index_table.csv'
 
 ## FUNCTIONS ##

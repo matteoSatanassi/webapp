@@ -4,7 +4,7 @@ import plotly.io as pio
 from Common import *
 
 ## PARAMS ##
-index_table_csv = Path('../IdVd_data/index_table.csv')
+index_table_csv = Path('../../IdVd_data/index_table.csv')
 df = pd.read_csv(index_table_csv)
 exp_mode_dict = df.to_dict('records')
 
