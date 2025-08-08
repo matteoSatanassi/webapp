@@ -3,9 +3,11 @@ import dash_bootstrap_components as dbc
 import plotly.io as pio
 from Common import *
 
+## PRE-BOOT ##
+indexer('../../IdVd_data')
+
 ## PARAMS ##
-index_table_csv = Path('../../IdVd_data/index_table.csv')
-df = pd.read_csv(index_table_csv)
+df = pd.read_csv(Path('../../IdVd_data/index_table.csv'))
 exp_mode_dict = df.to_dict('records')
 
 ## DERIVED PARAMS ##
