@@ -207,7 +207,7 @@ def try_mkdir(path:Path)->Path:
 def find_export_path()->Path:
     i=0
     while True:
-        export_path = try_mkdir(Path("../exported_files/export" if i==0 else f"../exported_files/export-{i}"))
+        export_path = try_mkdir(Path("../../exported_files/export" if i==0 else f"../../exported_files/export-{i}"))
         if export_path:
           return export_path
         i+=1
