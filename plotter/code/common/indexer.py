@@ -99,8 +99,7 @@ def indexer(data_dir: str | Path) -> list[Path]:
     data_dir = Path(data_dir)
     excel_indexes_file = data_dir / "indexes.xlsx"
 
-    files_list = list(data_dir.glob('*.csv'))  # lista di tutti i file .csv nella data_dir
-    files_set = set(f for f in files_list)
+    files_set = set(data_dir.glob('*.csv'))  # set di tutti i file .csv nella data_dir
     files_to_index: dict[str,list[list]] = {'IdVd':[],'TrapData':[]}
     unsupported_files: list[Path] = []
 
