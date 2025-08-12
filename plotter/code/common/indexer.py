@@ -1,8 +1,12 @@
 from pathlib import Path
-from Common import toggle
+from .common import toggle
 import pandas as pd
 import numpy as np
 import re
+
+## PARAMS ##
+IDVD_COLUMNS = ['trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'group', 'file_path']
+TRAPDATA_COLUMNS = ['trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'start_cond', 'file_path']
 
 ## HELPER FUNC ##
 def is_valid_filename(file_path:Path)->bool:
@@ -31,9 +35,56 @@ def info_extract(file_path:Path)->list:
     info = np.array((file_path.stem.split('_'))) #es: IdVd_exponential_Vgf_2_Es_1.72_Em_1.04
     if info[0] == 'IdVd':
         group = f"{info[1]}_{info[7]}_{info[5]}"
-        return info[1],info[5],info[7],info[3],group,file_path
+        return info[1],info[5],info[7],info[3],group,str(file_path)
     else:
-        return info[1],info[5],info[7],info[3],toggle(info[8]),file_path
+        return info[1],info[5],info[7],info[3],toggle(info[8]),str(file_path)
+
+def save_indexes(df_idvd:pd.DataFrame, df_trap:pd.DataFrame, output_file:Path)->None:
+    """
+    Salva i dataframe degli indici nel file excel specificato
+    :param df_idvd: dataframe indici IdVd
+    :param df_trap: dataframe indici TrapData
+    :param output_file: indirizzo del file excel
+    :return: None
+    """
+    with pd.ExcelWriter(output_file) as writer:
+        df_idvd.to_excel(writer, sheet_name='IdVd', index=False)
+        df_trap.to_excel(writer, sheet_name='TrapData', index=False)
+
+def load_or_create_index(file_path: Path, sheet_name: str, columns: list) -> pd.DataFrame:
+    """Carica o crea un dataframe di indice"""
+    try:
+        df = pd.read_excel(file_path, sheet_name=sheet_name)
+        df['file_path'] = df['file_path'].apply(Path)
+        return df
+    except (FileNotFoundError, ValueError):
+        return pd.DataFrame(columns=columns)
+
+def process_new_file(file: Path) -> tuple:
+    """
+    Elabora un singolo file
+    :param file: indirizzo del file
+    :type file: pathlib.Path
+    :return: tuple
+    """
+    # controlla che il nome del file sia supportato
+    if not is_valid_filename(file):
+        return None, None
+
+    data = info_extract(file)
+    return 'IdVd' if 'IdVd' in file.name else 'TrapData', data
+
+def update_dataframe(df:pd.DataFrame, rows_to_add:list, columns:list) -> pd.DataFrame:
+    """
+    Concatena un df con una lista di righe
+    :param df: dataframe a cui concatenare le nuove righe
+    :param rows_to_add: lista di righe da aggiungere
+    :param columns: lista di colonne del df
+    :return: il df con le nuove righe in fondo
+    """
+    df_to_concat = pd.DataFrame(rows_to_add, columns=columns)
+    return pd.concat([df, df_to_concat], ignore_index=True)
+
 
 ## MAIN FUNC ##
 def indexer(data_dir: str | Path) -> list[Path]:
@@ -46,46 +97,47 @@ def indexer(data_dir: str | Path) -> list[Path]:
     """
     # Params
     data_dir = Path(data_dir)
-    indexes_table_csv = data_dir / "index_table.csv"
+    excel_indexes_file = data_dir / "indexes.xlsx"
 
     files_list = list(data_dir.glob('*.csv'))  # lista di tutti i file .csv nella data_dir
-    files_list_str = set(str(f) for f in files_list)
-    files_to_index: list[list] = []
+    files_set = set(f for f in files_list)
+    files_to_index: dict[str,list[list]] = {'IdVd':[],'TrapData':[]}
     unsupported_files: list[Path] = []
 
-    # controlla che il file degli indici esista, altrimenti lo crea
-    if indexes_table_csv.exists():
-        df_indexes = pd.read_csv(indexes_table_csv)
-    elif 'IdVd' in str(data_dir):
-        df_indexes = pd.DataFrame(columns=['trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'group', 'file_path'])
-    elif 'TrapDistr' in str(data_dir):
-        df_indexes = pd.DataFrame(columns=['trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'start_cond', 'file_path'])
+    # controlla che il file degli indici esista, altrimenti crea il DataFrame
+    df_indexes_IdVd = load_or_create_index(excel_indexes_file, 'IdVd', IDVD_COLUMNS)
+    df_indexes_TrapData = load_or_create_index(excel_indexes_file, 'TrapData', TRAPDATA_COLUMNS)
+
+    # rendo i valori nelle colonne file_path dei Path invece che delle stringhe
+    df_indexes_IdVd['file_path'] = df_indexes_IdVd['file_path'].apply(Path)
+    df_indexes_TrapData['file_path'] = df_indexes_TrapData['file_path'].apply(Path)
 
     # rimuove le righe con file non esistenti
-    df_indexes = df_indexes[df_indexes['file_path'].isin(files_list_str)]
+    df_indexes_IdVd = df_indexes_IdVd[df_indexes_IdVd['file_path'].isin(files_set)]
+    df_indexes_TrapData = df_indexes_TrapData[df_indexes_TrapData['file_path'].isin(files_set)]
 
     # add not indexed files to a list
-    indexed_files = set(df_indexes['file_path'])
-    for file in files_list:
-        if str(file) not in indexed_files:
-            if file != indexes_table_csv:
-                if is_valid_filename(file):
-                    files_to_index.append(info_extract(file))
-                else:
-                    unsupported_files.append(file)
+    indexed_files = set(df_indexes_IdVd['file_path']) | set(df_indexes_TrapData['file_path'])
+    for file in files_set:
+        if file not in indexed_files:
+            file_type, file_data = process_new_file(file)
+            if file_data:
+                files_to_index[file_type].append(file_data)
+            else:
+                unsupported_files.append(file)
 
     # aggiunge i nuovi dati a df_indexes
-    if files_to_index:
-        df_to_add = pd.DataFrame(files_to_index,
-                                 columns=['trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'group', 'file_path'])
-        df_indexes = pd.concat([df_indexes, df_to_add], ignore_index=True)
+    if files_to_index['IdVd']:
+        df_indexes_IdVd = update_dataframe(df_indexes_IdVd, files_to_index['IdVd'], IDVD_COLUMNS)
+    if files_to_index['TrapData']:
+        df_indexes_TrapData = update_dataframe(df_indexes_TrapData, files_to_index['TrapData'], TRAPDATA_COLUMNS)
 
     # salva df_indexes
-    df_indexes.to_csv(indexes_table_csv, index=False)
+    save_indexes(df_indexes_IdVd, df_indexes_TrapData, excel_indexes_file)
 
     # stampa un log dei file con nomi non supportati se ce ne sono
     if unsupported_files:
-        print('Files non indicizzati:',*unsupported_files,sep=', ')
+        print("Files non indicizzati:\n" + "\n".join(map(str, unsupported_files)))
 
     return unsupported_files
 
@@ -95,5 +147,5 @@ fileName_pattern = re.compile(
     r"Vgf_-?\d+_"                   # Vgf_ seguito da intero (può essere negativo)
     r"Es_\d+(\.\d+)?_"               # Es_ seguito da numero (con o senza decimali)
     r"Em_\d+(\.\d+)?"                # Em_ seguito da numero (con o senza decimali)
-    r"(_\(\d+,\d+\))?$"              # opzionale _(x,y) per TrapData
+    r"(_\(-?\d+,-?\d+\))?$"              # opzionale _(x,y) per TrapData
 )
