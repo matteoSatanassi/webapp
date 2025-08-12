@@ -32,12 +32,7 @@ class Exp:
     def compile(self)->'Exp':
         """
         Da utilizzare per inizializzare un'istanza di Exp definita dal solo path
-
-        :return: istanza di classe completa di tutti i parametri non nulli
-        :rtype: Exp
-        :raises : se il file ha un nome non supportato
         """
-
         info = np.array((self.path.stem.split('_')))
         if info[0] == 'TrapData':
             self.start_cond = toggle(info[8])   # in modo da avere l'acronimo delle condizioni iniziali e non la label
@@ -46,6 +41,8 @@ class Exp:
         self.Em = float(info[7])
         self.Vgf = int(info[3])
         return self
+    # def compile_from(self,row)->'Exp':
+#         da aggiungere per compilare un'istanza da un dataframe o da un dizionario
 
 class Curve:
     """
