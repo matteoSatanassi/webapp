@@ -1,7 +1,7 @@
 from dash import dcc, dash_table, html
 import dash_bootstrap_components as dbc
 import plotly.io as pio
-from Common import *
+from IdVd_Common import *
 
 ## PRE-BOOT ##
 indexer('../../IdVd_data')
