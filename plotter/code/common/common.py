@@ -45,7 +45,7 @@ class Exp:
     def is_to_compile(self)->bool:
         """Controlla che un'istanza di classe Exp non sia ancora da compilare"""
         attrs = ('exp_type', 'trap_distr', 'Es', 'Em', 'Vgf')
-        return all(getattr(self, attr) is None for attr in attrs)
+        return any(getattr(self, attr) is None for attr in attrs)
     @property
     def group(self)->str:
         """Mostra il gruppo di esperimenti a cui appartiene un'istanza di Exp"""
@@ -88,7 +88,7 @@ class ExpCurves:
         self.curves:list[dict[str,Curve]] = []
         if not self.exp:
             raise ValueError("ExpCurves richiede almeno un esperimento")
-        if len(self.exp)>1 and not same_group(*self.exp):
+        if not same_group(*self.exp):
             raise ValueError("Gli esperimenti caricati nella stessa istanza ExpCurves non fanno parte dello stesso gruppo")
     def sort(self)->None:
         """Riordina tutte le curve appartenenti all'istanza di classe"""
@@ -140,7 +140,7 @@ def toggle(value:str)->str:
     """
     translator = {**dict(zip(CP.IdVd_labels, CP.IdVd_names)), **dict(zip(CP.IdVd_names, CP.IdVd_labels))}
     if value not in translator:
-        return ValueError(f"{value} non è supportato come nome o label per una curva")
+        raise ValueError(f"{value} non è supportato come nome o label per una curva")
     return translator[value]
 
 def check_arg(arg)->Exp:
@@ -190,6 +190,8 @@ def same_group(*args:Exp)->bool:
     """Dice se di esperimenti passati come argomenti fanno parte dello stesso gruppo"""
     if not all(isinstance(arg,Exp) for arg in args):
         raise TypeError('Gli argomenti della funzione devono essere tutti di tipo Exp')
+    if len(args) < 2:
+        return True
     ref = args[0].group
     return all(exp.group == ref for exp in args[1:])
 
