@@ -60,6 +60,7 @@ class Curve:
     :param name: Nome della curva
     :type name: str
     """
+    __slots__ = ('X', 'Y', 'name')
     def __init__(self, name:str):
         self.name:str = name
         self.X: np.ndarray = None
@@ -90,18 +91,46 @@ class ExpCurves:
             raise ValueError("ExpCurves richiede almeno un esperimento")
         if not same_group(*self.exp):
             raise ValueError("Gli esperimenti caricati nella stessa istanza ExpCurves non fanno parte dello stesso gruppo")
+    def __contains__(self, other:Exp) -> bool:
+        if not isinstance(other, Exp):
+            raise TypeError("__contains__() richiede il confronto con un Exp")
+        return same_group(other, *self.exp)
+    def __add__(self, other:Exp) -> 'ExpCurves':
+        if not isinstance(other, Exp):
+            raise TypeError("__add__() richiede di aggiungere un Exp all'istanza")
+        if other in self:
+            self.exp.append(other)
+        return self
     def sort(self)->None:
         """Riordina tutte le curve appartenenti all'istanza di classe"""
         for curves_dict in self.curves:
             for key, curve in curves_dict.items():
                 curve.sort()
         return None
-    def import_curves(self)->None:
+    def import_data(self)->None:
         self.curves = [import_csv(exp) for exp in self.exp]
         self.sort()
         return None
+    @property
+    def contains_imported_data(self)->bool:
+        """Controlla che l'istanza di classe abbia dei valori importati nel campo curve"""
+        if not self.curves:
+            return False
+        if len(self.curves) != len(self.exp):
+            print("Errore: il numero di esperimenti e di raccolte di curve contenute nella classe sono diversi")
+            return False
+        return True
+    @property
+    def contains_group(self)->bool:
+        """Controlla che l'istanza di classe contenga un gruppo o un singolo esperimento"""
+        if len(self.exp) > 1:
+            return True
+        return False
+    def get_vgf(self,curves_dict:dict[str,Curve])->int:
+        """Dato un elemento di self.curves, recupera la Vg_f del rispettivo esperimento"""
+        return self.exp[self.curves.index(curves_dict)].Vgf
 
-## FUNCTIONS ##
+## HELPER FUNCTIONS ##
 def try_mkdir(path:Path)->Path:
     """
     Prova a creare la directory specificata
