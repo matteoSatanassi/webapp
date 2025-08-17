@@ -1,13 +1,13 @@
 from pathlib import Path
-import plotly.graph_objects as go
 import numpy as np
-
+import pandas as pd
 
 ## CLASSES ##
 class Exp:
     """
     Identifica un singolo file esperimento
-    supporta file con nomi del tipo IdVd_exponential_Vgf_2_Es_1.72_Em_1.04.csv o TrapData_exponential_Vgf_0_Es_1.72_Em_0.18_(0,0).csv
+
+    Supporta file con nomi del tipo IdVd_exponential_Vgf_2_Es_1.72_Em_1.04.csv o TrapData_exponential_Vgf_0_Es_1.72_Em_0.18_(0,0).csv
 
     Utilizzabile sia per i file IdVd che quelli di TrapDistr
 
@@ -17,6 +17,7 @@ class Exp:
     :raises FileNotFoundError: se il file non viene trovato all'indirizzo specificato
     """
     def __init__(self, file_path:Path|str) -> None:
+        self.exp_type: str = None
         self.trap_distr: str = None
         self.Es: float = None
         self.Em: float = None
@@ -30,19 +31,27 @@ class Exp:
         return self.path.stem
     @property
     def compile(self)->'Exp':
-        """
-        Da utilizzare per inizializzare un'istanza di Exp definita dal solo path
-        """
-        info = np.array((self.path.stem.split('_')))
-        if info[0] == 'TrapData':
-            self.start_cond = toggle(info[8])   # in modo da avere l'acronimo delle condizioni iniziali e non la label
+        """Da utilizzare per compilare un'istanza di Exp definita dal solo path"""
+        info = self.path.stem.split('_')
+        self.exp_type = info[0]
         self.trap_distr = str(info[1])
         self.Es = float(info[5])
         self.Em = float(info[7])
         self.Vgf = int(info[3])
+        if info[0] == 'TrapData':
+            self.start_cond = toggle(info[8])   # in modo da avere l'acronimo delle condizioni iniziali e non la label
         return self
+    @property
+    def is_to_compile(self)->bool:
+        """Controlla che un'istanza di classe Exp non sia ancora da compilare"""
+        attrs = ('exp_type', 'trap_distr', 'Es', 'Em', 'Vgf')
+        return all(getattr(self, attr) is None for attr in attrs)
+    @property
+    def group(self)->str:
+        """Mostra il gruppo di esperimenti a cui appartiene un'istanza di Exp"""
+        return f"{self.trap_distr}_{self.Em}_{self.Es}"
     # def compile_from(self,row)->'Exp':
-#         da aggiungere per compilare un'istanza da un dataframe o da un dizionario
+    # da aggiungere per compilare un'istanza da un dataframe o da un dizionario
 
 class Curve:
     """
@@ -69,6 +78,28 @@ class Curve:
         return None
     def y_limits(self)->list:
         return self.Y.min(), self.Y.max()
+
+class ExpCurves:
+    """
+    Classe che comprende le informazione di uno o più esperimenti e le rispettive curve
+    """
+    def __init__(self, *args:Exp|Path|str):
+        self.exp = [check_arg(arg) for arg in args]
+        self.curves:list[dict[str,Curve]] = []
+        if not self.exp:
+            raise ValueError("ExpCurves richiede almeno un esperimento")
+        if len(self.exp)>1 and not same_group(*self.exp):
+            raise ValueError("Gli esperimenti caricati nella stessa istanza ExpCurves non fanno parte dello stesso gruppo")
+    def sort(self)->None:
+        """Riordina tutte le curve appartenenti all'istanza di classe"""
+        for curves_dict in self.curves:
+            for key, curve in curves_dict.items():
+                curve.sort()
+        return None
+    def import_curves(self)->None:
+        self.curves = [import_csv(exp) for exp in self.exp]
+        self.sort()
+        return None
 
 ## FUNCTIONS ##
 def try_mkdir(path:Path)->Path:
@@ -101,39 +132,73 @@ def find_export_path()->Path:
           return export_path
         i+=1
 
-def toggle(name:str)->str:
+def toggle(value:str)->str:
     """
     Scambia Nome di una curva con la Label corrispondente o viceversa
-    :param name: nome/label della curva
-    :type name: str
+    :param value: nome/label della curva
     :return: label/nome della curva
-    :rtype: str
     """
-    if name in CP.labels:
-        return CP.labels[name]
-    elif name in CP.names:
-        return CP.names[name]
+    translator = {**dict(zip(CP.IdVd_labels, CP.IdVd_names)), **dict(zip(CP.IdVd_names, CP.IdVd_labels))}
+    if value not in translator:
+        return ValueError(f"{value} non è supportato come nome o label per una curva")
+    return translator[value]
+
+def check_arg(arg)->Exp:
+    """
+    Controlla gli argomenti in ingresso alla classe ExpCurves,
+    facendo in modo che siano sempre istanze di classe Exp compilate
+    """
+    if isinstance(arg, Exp):
+        if arg.is_to_compile:
+            arg = arg.compile
+    elif isinstance(arg, (Path,str)):
+        arg = Exp(arg).compile
     else:
-        raise ValueError(f"{name} non è supportato")
+        raise TypeError(f"Argument {arg} is not a valid type")
+    return arg
+
+def import_csv(exp:Exp)->dict[str,Curve]:
+    curves = create_dict(exp.exp_type)
+    try:
+        data = pd.read_csv(exp.path)
+        data.replace('-', '0', inplace=True)
+
+        for col in data.columns:
+            name, axis = col.split(' ') #[curve_name X/Y]
+            if name not in curves:
+                _,_,_,name = name.split('_')    #['trapped', 'charge', 'density', str_pos]
+            match axis:
+                case 'X':
+                    curves[name].X = data[col].to_numpy(dtype=float)
+                case 'Y':
+                    curves[name].Y = data[col].to_numpy(dtype=float)
+    except Exception as e:
+        print(f"Errore leggendo {exp.path}: {e}")
+        raise
+    return curves
+
+def create_dict(exp_type:str)->dict[str,Curve]:
+    """Crea un dizionario di curve ad hoc in base al tipo di esperimento passato come argomento"""
+    if exp_type == 'TrapData':
+        return {pos:Curve(pos) for pos in CP.TrapData_pos}
+    elif exp_type == 'IdVd':
+        return {name:Curve(toggle(name)) for name in CP.IdVd_names}
+    else:
+        raise ValueError(f"{exp_type} può essere solo IdVd o TrapData")
+
+def same_group(*args:Exp)->bool:
+    """Dice se di esperimenti passati come argomenti fanno parte dello stesso gruppo"""
+    if not all(isinstance(arg,Exp) for arg in args):
+        raise TypeError('Gli argomenti della funzione devono essere tutti di tipo Exp')
+    ref = args[0].group
+    return all(exp.group == ref for exp in args[1:])
 
 ## PARAMS ##
-class CP:   # curves params
-    labels = {
-        "v0": "(0,0)",
-        "0": "(-7,0)",
-        "15": "(-7,15)",
-        "30": "(-7,30)"
-    }
-    names = {
-        "(0,0)": "v0",
-        "(-7,0)": "0",
-        "(-7,15)": "15",
-        "(-7,30)": "30"
-    }
-
-
-
-
+class CP:
+    """Curves parameters"""
+    IdVd_labels = ['v0','0','15','30']
+    IdVd_names = ['(0,0)','(-7,0)','(-7,15)','(-7,30)']
+    TrapData_pos = ['trap_density','0.5000','0.6160','0.7660','0.7830','0.9670','0.9840','1.1840','1.3340','1.8340']
 
 '''
 IdVd_Common -> ExpData(Exp, path)[__str__, fill()]
