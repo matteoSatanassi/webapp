@@ -85,7 +85,6 @@ def update_dataframe(df:pd.DataFrame, rows_to_add:list, columns:list) -> pd.Data
     df_to_concat = pd.DataFrame(rows_to_add, columns=columns)
     return pd.concat([df, df_to_concat], ignore_index=True)
 
-
 ## MAIN FUNC ##
 def indexer(data_dir: str | Path) -> list[Path]:
     """
