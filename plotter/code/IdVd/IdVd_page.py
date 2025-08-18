@@ -1,5 +1,6 @@
 from dash import Dash, Input, Output, callback, State
-from definitions import *
+from page_elements import *
+from callback_functions import *
 
 app = Dash(
     __name__,
