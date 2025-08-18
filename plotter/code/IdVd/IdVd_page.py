@@ -1,6 +1,9 @@
 from dash import Dash, Input, Output, callback, State
 from page_elements import *
 from callback_functions import *
+from parameters import *
+
+indexer(data_dir)
 
 app = Dash(
     __name__,
@@ -23,7 +26,7 @@ app.layout = dbc.Container(
                 dbc.Col(
                     children=[
                         mode_options('mode-toggle'),
-                        my_table('table')
+                        my_table_template('table')
                     ],
                     width=4,    #larghezza colonna
                     style={'textAlign': 'center'},

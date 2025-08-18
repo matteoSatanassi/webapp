@@ -186,7 +186,7 @@ def create_dict(exp_type:str)->dict[str,Curve]:
     if exp_type == 'TrapData':
         return {pos:Curve(pos) for pos in CP.TrapData_pos}
     elif exp_type == 'IdVd':
-        return {name:Curve(toggle(name)) for name in CP.IdVd_names}
+        return {name:Curve(toggle(name)) for name in CP.IdVd_labels}
     else:
         raise ValueError(f"{exp_type} può essere solo IdVd o TrapData")
 
