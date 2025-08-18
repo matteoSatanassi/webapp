@@ -49,7 +49,7 @@ class Exp:
     @property
     def group(self)->str:
         """Mostra il gruppo di esperimenti a cui appartiene un'istanza di Exp"""
-        return f"{self.trap_distr}_{self.Em}_{self.Es}"
+        return f"{self.trap_distr}_Em_{self.Em}_Es_{self.Es}"
     # def compile_from(self,row)->'Exp':
     # da aggiungere per compilare un'istanza da un dataframe o da un dizionario
 
@@ -101,6 +101,11 @@ class ExpCurves:
         if other in self:
             self.exp.append(other)
         return self
+    def __str__(self):
+        if len(self.exp)<2:
+            return self.exp[0].path.stem
+        else:
+            return self.exp[0].group
     def sort(self)->None:
         """Riordina tutte le curve appartenenti all'istanza di classe"""
         for curves_dict in self.curves:

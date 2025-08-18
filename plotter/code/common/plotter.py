@@ -1,10 +1,10 @@
 from AppData.IdVd_plotter.Common import markers
-from .common import ExpCurves, CP
+from .common import ExpCurves
 import plotly.graph_objects as go
 
 ## MAIN FUNC ##
 def plot(curves:ExpCurves, c_to_plot:list[str])->go.Figure:
-    """Plotta le curve contenute volute da un'istanza di ExpCurves contenente uno o più Exp"""
+    """Plotta le curve interessate, contenute da un'istanza di ExpCurves, contenente a sua volta uno o più Exp"""
     if not curves.contains_imported_data:
         curves.import_data()
     fig = go.Figure()

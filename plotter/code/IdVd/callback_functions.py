@@ -1,7 +1,8 @@
-from plotter.code.common import *
-from dash import dcc
-from parameters import df, exp_mode_dict, group_mode_dict
 from pathlib import Path
+import plotly.io as pio
+from dash import dcc
+from plotter.code.common import *
+from parameters import df, exp_mode_dict, group_mode_dict
 
 ## CALLBACKS FUNCTIONS ##
 def update_tabs(n_clicks, curr_mode, selected_rows, table_data, curr_tab, tabs):
@@ -46,10 +47,10 @@ def update_graph_content(tab, checked_curves):
         return "nulla di selezionato"
     if '.csv' not in tab:
         df_group = df.loc[df['group']==tab]
-        g = common.ExpCurves(*df_group['file_path']).import_data()
+        g = ExpCurves(*df_group['file_path']).import_data()
         return dcc.Graph(figure=plot(g,checked_curves))
     else:
-        e = common.ExpCurves(tab).import_data()
+        e = ExpCurves(tab).import_data()
         return dcc.Graph(figure=plot(e,checked_curves))
 
 def update_table(mode):
@@ -65,16 +66,14 @@ def export_selected(n_clicks, mode, selected_curves, selected_rows, data_table):
     figs,exp_file_paths = [],[]
     match mode:
         case 'Exp mode':
-            exps:list[Exp] = [Exp(data_table[row_i]['file_path']).fill() for row_i in selected_rows]        # lista di esperimenti corrispondente alle righe selezionate
-            plots:list[ExpPlot] = [ExpPlot(exp).plot(selected_curves) for exp in exps]                 # lista di ExpPlot corrispondente
-            figs:list[go.Figure] = [plot.fig for plot in plots]
-            exp_file_paths:list[Path] = [export_path/Path(f"{plot.exp_curves.exp}.png") for plot in plots]  #estensioni possibili .png, .svg, .pdf
+            exps:list[ExpCurves] = [ExpCurves(data_table[row_i]['file_path']).import_data() for row_i in selected_rows]   # lista di esperimenti corrispondente alle righe selezionate
+            figs:list[go.Figure] = [plot(exp,selected_curves) for exp in exps]
+            exp_file_paths:list[Path] = [export_path/Path(f"{exp}.png") for exp in exps]  #estensioni possibili .png, .svg, .pdf
         case 'Group mode':
-            groups_files:list[list[str]] = [df.loc[df.group==data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows]
-            groups:list[Group] = [Group().add_paths(group_files) for group_files in groups_files]
-            plots:list[GroupPlot] = [GroupPlot(g).plot(selected_curves) for g in groups]
-            figs:list[go.Figure] = [plot.fig for plot in plots]
-            exp_file_paths:list[Path] = [export_path/Path(f"{plot.group_curves.group}.png") for plot in plots]
+            groups_files:list[list[str]] = [df.loc[df.group==data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows]  # lista contenente liste di indirizzi di file appartenenti ai gruppi selezionati
+            groups_curves:list[ExpCurves] = [ExpCurves(*group_files).import_data() for group_files in groups_files]
+            figs:list[go.Figure] = [plot(group_curves,selected_curves) for group_curves in groups_curves]
+            exp_file_paths:list[Path] = [export_path/Path(f"{group_curves}.png") for group_curves in groups_curves]
     pio.write_images(
         fig=figs,
         file=exp_file_paths
