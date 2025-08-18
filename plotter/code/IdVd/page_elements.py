@@ -1,6 +1,6 @@
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
-from parameters import exp_mode_dict
+from .parameters import exp_mode_dict
 
 ## PAGE ELEMENTS ##
 def my_table_template(table_id:str)->dash_table.DataTable:

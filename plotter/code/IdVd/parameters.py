@@ -2,7 +2,7 @@ from pathlib import Path
 import pandas as pd
 
 ## PARAMS ##
-data_dir = Path('../../data')
+data_dir = Path(__file__).parent.parent.parent/'data'
 df = pd.read_excel(data_dir / 'indexes.xlsx', sheet_name='IdVd')
 exp_mode_dict = df.to_dict('records')
 

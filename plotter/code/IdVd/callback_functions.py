@@ -2,7 +2,7 @@ from pathlib import Path
 import plotly.io as pio
 from dash import dcc
 from plotter.code.common import *
-from parameters import df, exp_mode_dict, group_mode_dict
+from .parameters import df, exp_mode_dict, group_mode_dict
 
 ## CALLBACKS FUNCTIONS ##
 def update_tabs(n_clicks, curr_mode, selected_rows, table_data, curr_tab, tabs):
