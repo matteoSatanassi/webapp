@@ -2,7 +2,7 @@ from pathlib import Path
 import plotly.io as pio
 from dash import dcc
 from plotter.code.common import *
-from .parameters import df, exp_mode_dict, group_mode_dict
+from .parameters import IdVd_df, IdVd_table_exp_mode, IdVd_table_group_mode
 
 ## CALLBACKS FUNCTIONS ##
 def update_tabs(n_clicks, curr_mode, selected_rows, table_data, curr_tab, tabs):
@@ -46,7 +46,7 @@ def update_graph_content(tab, checked_curves):
     if not tab:
         return "nulla di selezionato"
     if '.csv' not in tab:
-        df_group = df.loc[df['group']==tab]
+        df_group = IdVd_df.loc[IdVd_df['group'] == tab]
         g = ExpCurves(*df_group['file_path']).import_data()
         return dcc.Graph(figure=plot(g,checked_curves))
     else:
@@ -55,9 +55,9 @@ def update_graph_content(tab, checked_curves):
 
 def update_table(mode):
     if mode == 'Exp mode':
-        return exp_mode_dict,['file_path', 'group'],[]
+        return IdVd_table_exp_mode,['file_path', 'group'],[]
     else:
-        return group_mode_dict,['file_path', 'group', 'v_gf'],[]
+        return IdVd_table_group_mode,['file_path', 'group', 'v_gf'],[]
 
 def export_selected(n_clicks, mode, selected_curves, selected_rows, data_table):     # AGGIUNGERE BOX PER SCELTA DOWNLOAD_PATH, ESTENSIONE, CURVE DA PLOTTARE
     if not n_clicks or not selected_rows:
@@ -70,7 +70,7 @@ def export_selected(n_clicks, mode, selected_curves, selected_rows, data_table):
             figs:list[go.Figure] = [plot(exp,selected_curves) for exp in exps]
             exp_file_paths:list[Path] = [export_path/Path(f"{exp}.png") for exp in exps]  #estensioni possibili .png, .svg, .pdf
         case 'Group mode':
-            groups_files:list[list[str]] = [df.loc[df.group==data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows]  # lista contenente liste di indirizzi di file appartenenti ai gruppi selezionati
+            groups_files:list[list[str]] = [IdVd_df.loc[IdVd_df.group == data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows]  # lista contenente liste di indirizzi di file appartenenti ai gruppi selezionati
             groups_curves:list[ExpCurves] = [ExpCurves(*group_files).import_data() for group_files in groups_files]
             figs:list[go.Figure] = [plot(group_curves,selected_curves) for group_curves in groups_curves]
             exp_file_paths:list[Path] = [export_path/Path(f"{group_curves}.png") for group_curves in groups_curves]

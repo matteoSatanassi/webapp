@@ -20,7 +20,7 @@ layout = dbc.Container(
                 dbc.Col(
                     children=[
                         mode_options('mode-toggle'),
-                        my_table_template('table')
+                        my_table_template('table','IdVd')
                     ],
                     width=4,    #larghezza colonna
                     style={'textAlign': 'center'},
@@ -30,7 +30,7 @@ layout = dbc.Container(
                         children=[
                             dbc.Button("Plot ->", id="plot-button", className="me-15", color="primary"),
                             dbc.Button("Export!", id='modal-button', className="me-15", color="primary"),
-                            export_modal
+                            export_modal('modal-export','IdVd')
                         ],
                         style={"textAlign": "center"}
                     ),
@@ -41,7 +41,7 @@ layout = dbc.Container(
                     children=[
                         dcc.Tabs(id="tabs", value=None),
                         html.Div(id="tabs-content"),
-                        curves_options('curve-checklist')   # checklist curve visualizzate
+                        curves_checklist('curve-checklist', 'IdVd')   # checklist curve visualizzate
                     ],
                     style={'textAlign': 'center'},
                     width=7     #larghezza colonna
@@ -121,7 +121,7 @@ callback(
     Input('export-button', 'n_clicks'),                 #n_clicks
     [
         State('export-mode-toggle', 'value'),           #mode (Exp mode-Group mode)
-        State('export-curves', 'value'),
+        State('export-curves-checklist', 'value'),
         State('export-table', 'derived_virtual_selected_rows'), #selected_rows virtuali, considerando i filtri ecc...
         State('export-table', 'derived_virtual_data')
      ],

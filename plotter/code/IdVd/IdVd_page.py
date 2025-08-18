@@ -47,7 +47,7 @@ app.layout = dbc.Container(
                     children=[
                         dcc.Tabs(id="tabs", value=None),
                         html.Div(id="tabs-content"),
-                        curves_options('curve-checklist')   # checklist curve visualizzate
+                        curves_checklist('curve-checklist')   # checklist curve visualizzate
                     ],
                     style={'textAlign': 'center'},
                     width=7     #larghezza colonna

@@ -1,5 +1,4 @@
 from pathlib import Path
-from .common import toggle
 import pandas as pd
 import numpy as np
 import re
@@ -37,7 +36,7 @@ def info_extract(file_path:Path)->list:
         group = f"{info[1]}_{info[7]}_{info[5]}"
         return info[1],info[5],info[7],info[3],group,str(file_path)
     else:
-        return info[1],info[5],info[7],info[3],toggle(info[8]),str(file_path)
+        return info[1],info[5],info[7],info[3],info[8],str(file_path)
 
 def save_indexes(df_idvd:pd.DataFrame, df_trap:pd.DataFrame, output_file:Path)->None:
     """

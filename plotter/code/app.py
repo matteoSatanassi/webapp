@@ -1,4 +1,4 @@
-from dash import Dash, Input, Output, callback, State, html, dcc
+from dash import Dash, html
 import dash
 from pathlib import Path
 import dash_bootstrap_components as dbc
@@ -17,11 +17,19 @@ app = Dash(
 app.layout = dbc.Container(
     children=[
         html.H1('Multi-page app with Dash Pages'),
-        html.Div([
-            html.Div(
-                dcc.Link(f"{page['name']} - {page['path']}", href=page["relative_path"])
-            ) for page in dash.page_registry.values()
-        ]),
+        dbc.NavbarSimple(
+            children=[
+                dbc.DropdownMenu(
+                    children=[
+                    dbc.DropdownMenuItem(f'{page['name']}', href=page['relative_path']) for page in dash.page_registry.values()
+                    ],
+                    nav=True,
+                    in_navbar=True
+                ),
+            ],
+            brand='IdVd',
+            brand_href='/IdVd-plotter',
+        ),
         dash.page_container
     ]
 )
