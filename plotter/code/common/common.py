@@ -107,10 +107,10 @@ class ExpCurves:
             for key, curve in curves_dict.items():
                 curve.sort()
         return None
-    def import_data(self)->None:
+    def import_data(self)->'ExpCurves':
         self.curves = [import_csv(exp) for exp in self.exp]
         self.sort()
-        return None
+        return self
     @property
     def contains_imported_data(self)->bool:
         """Controlla che l'istanza di classe abbia dei valori importati nel campo curve"""
@@ -131,36 +131,6 @@ class ExpCurves:
         return self.exp[self.curves.index(curves_dict)].Vgf
 
 ## HELPER FUNCTIONS ##
-def try_mkdir(path:Path)->Path:
-    """
-    Prova a creare la directory specificata
-    :param path: indirizzo della directory da creare
-    :type path: pathlib.Path
-    :return: l'indirizzo della directory creata o None nel caso esistesse già
-    :rtype: pathlib.Path or None
-    :raises RuntimeError: Nel caso fosse impossibile creare la directory specificata
-    """
-    try:
-        path.mkdir(parents=True)
-    except FileExistsError:
-        return None
-    except:
-        raise RuntimeError(f"Impossibile creare {path}")
-    return path
-
-def find_export_path()->Path:
-    """
-    Crea un indirizzo di esportazione valido
-    :return: Indirizzo di esportazione creato
-    :rtype: pathlib.Path
-    """
-    i=0
-    while True:
-        export_path = try_mkdir(Path("../../exported_files/export" if i==0 else f"../../exported_files/export-{i}"))
-        if export_path:
-          return export_path
-        i+=1
-
 def toggle(value:str)->str:
     """
     Scambia Nome di una curva con la Label corrispondente o viceversa

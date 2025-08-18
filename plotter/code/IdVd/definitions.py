@@ -4,10 +4,10 @@ import plotly.io as pio
 from IdVd_Common import *
 
 ## PRE-BOOT ##
-indexer('../../IdVd_data')
+indexer('../../data')
 
 ## PARAMS ##
-df = pd.read_csv(Path('../../IdVd_data/index_table.csv'))
+df = pd.read_csv(Path('../../data/index_table.csv'))
 exp_mode_dict = df.to_dict('records')
 
 ## DERIVED PARAMS ##
