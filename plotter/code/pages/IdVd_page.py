@@ -29,8 +29,8 @@ layout = dbc.Container(
                     html.Div(
                         children=[
                             dbc.Button("Plot ->", id="plot-button", className="me-15", color="primary"),
-                            dbc.Button("Export!", id='modal-button', className="me-15", color="primary"),
-                            export_modal('modal-export','IdVd')
+                            dbc.Button("Export!", id='open-modal-button', className="me-15", color="primary"),
+                            export_modal('modal','IdVd')
                         ],
                         style={"textAlign": "center"}
                     ),
@@ -97,21 +97,21 @@ callback(
 )(update_table)
 
 callback(
-    Output('modal-export', 'is_open'),
+    Output('modal', 'is_open'),
     Input('modal-button', 'n_clicks'),
-    State('modal-export', 'is_open'),
+    State('modal', 'is_open'),
 )(toggle_modal)
 
  #chiude il pop-up al cliccare di close
 callback(
-    Output('modal-export', 'is_open', allow_duplicate=True),
+    Output('modal', 'is_open', allow_duplicate=True),
     Input('close-button', 'n_clicks'),
-    State('modal-export', 'is_open'),
+    State('modal', 'is_open'),
     prevent_initial_call=True,
 )(toggle_modal)
 
 callback(
-    Output('modal-export', 'is_open', allow_duplicate=True),
+    Output('modal', 'is_open', allow_duplicate=True),
     Input('export-button', 'n_clicks'),                 #n_clicks
     [
         State('export-mode-toggle', 'value'),           #mode (Exp mode-Group mode)

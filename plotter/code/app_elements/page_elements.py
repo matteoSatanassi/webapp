@@ -126,19 +126,19 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
             dbc.ModalBody(
                 dbc.Row(
                     children=[
-                        dbc.Col(my_table_template('export-table', page)),
+                        dbc.Col(my_table_template(f'{page}-modal-table', page)),
                         dbc.Col(
                             children=[
-                                mode_options('export-mode-toggle') if page=='IdVd' else None,
-                                curves_checklist('export-curves-checklist', page)
+                                mode_options('modal-mode-toggle') if page=='IdVd' else None,
+                                curves_checklist(f'{page}-modal-curves-checklist', page)
                             ]
                         )]
                 )
             ),
             dbc.ModalFooter(
                 children=[
-                    dbc.Button("Close", id="close-button", className="ms-auto", n_clicks=0),
-                    dbc.Button("Export Selected", id="export-button", className="ms-auto", n_clicks=0)
+                    dbc.Button("Close", id=f"{page}-modal-close-button", className="ms-auto", n_clicks=0),
+                    dbc.Button("Export Selected", id=f"{page}-modal-export-button", className="ms-auto", n_clicks=0)
                 ]
             )
         ],
