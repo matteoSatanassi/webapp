@@ -1,9 +1,9 @@
 import dash
 from dash import Input, Output, callback, State, dcc, html
 import dash_bootstrap_components as dbc
-from plotter.code.IdVd import *
+from plotter.code.app_elements import *
 
-dash.register_page(__name__, path='/IdVd-plotter')
+dash.register_page('IdVd Plotter', path='/IdVd-plotter')
 
 ## LAYOUT ##
 layout = dbc.Container(
@@ -56,7 +56,6 @@ layout = dbc.Container(
 )
 
 ## CALLBACKS ##
- #aggiorna la lista dei tab al click del bottone, in base agli esperimenti selezionati nella tabella
 callback(
     [
         Output('tabs', 'children'),
@@ -73,16 +72,14 @@ callback(
         State('tabs','value'),                      #curr_tab: tab attualmente aperto (se nessuno None)
         State('tabs','children'),                   #tabs: lista dei tab disponibili
      ]  #states
-)(update_tabs)
+)(update_tabs_idvd)
 
- #aggiorna il grafico in base al tab e alle curve selezionati da visualizzare
 callback(
     Output('tabs-content', 'children'),
     Input('tabs', 'value'),
     Input('curve-checklist', 'value')
 )(update_graph_content)
 
- #aggiorna la tabella in base alla modalità selezionata
 callback(
     Output('table', 'data'),
     Output('table', 'hidden_columns'),
@@ -91,7 +88,6 @@ callback(
     prevent_initial_call=True
 )(update_table)
 
-#aggiorna la tabella dell'export pop-up in base alla modalità selezionata
 callback(
     Output('export-table', 'data'),
     Output('export-table', 'hidden_columns'),
@@ -100,7 +96,6 @@ callback(
     prevent_initial_call=True
 )(update_table)
 
- #mostra il pop-up per l'esportazione
 callback(
     Output('modal-export', 'is_open'),
     Input('modal-button', 'n_clicks'),
@@ -115,7 +110,6 @@ callback(
     prevent_initial_call=True,
 )(toggle_modal)
 
- #esporta righe selezionate in tabella nel pop-up
 callback(
     Output('modal-export', 'is_open', allow_duplicate=True),
     Input('export-button', 'n_clicks'),                 #n_clicks
