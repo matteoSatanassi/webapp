@@ -85,6 +85,11 @@ def my_table_template(table_id:str,page:str)->dash_table.DataTable:
     )
 
 def mode_options(radio_id:str)->dcc.RadioItems:
+    """
+    Crea una lista in cui scegliere l'opzione di visualizzazione delle tabelle nella pagina IdVd
+
+    Le opzioni sono Exp mode e Group mode
+    """
     return dcc.RadioItems(
         options=['Group mode','Exp mode'],
         value='Exp mode',
@@ -119,7 +124,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
         :param page: 'IdVd'/'TrapData', in base alla lista di curve da visualizzare
         """
     if page!='IdVd' and page!='TrapData':
-        raise ValueError('Non supportati modi diversi da IdVd o TrapData')
+        raise ValueError('Non supportati pagine diverse da IdVd o TrapData')
     return dbc.Modal(
         children=[
             dbc.ModalHeader(dbc.ModalTitle("Export")),
@@ -129,7 +134,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                         dbc.Col(my_table_template(f'{page}-modal-table', page)),
                         dbc.Col(
                             children=[
-                                mode_options('modal-mode-toggle') if page=='IdVd' else None,
+                                mode_options(f'{page}-modal-mode-toggle') if page=='IdVd' else None,
                                 curves_checklist(f'{page}-modal-curves-checklist', page)
                             ]
                         )]

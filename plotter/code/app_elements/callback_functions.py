@@ -23,15 +23,15 @@ def _create_tabs_callback(page:str):
             State(f'{page}-tabs', 'children'),                          # tabs: lista dei tab disponibili
         ]
         if page == 'IdVd':
-            args.append(State(f'mode-toggle', 'value'))        # curr_mode: modo corrente della tabella (Exp/Group)
+            args.append(State(f'{page}-mode-toggle', 'value'))        # curr_mode: modo corrente della tabella (Exp/Group)
         return args
     @callback(
         Output(f'{page}-tabs', 'children'),
         Output(f'{page}-table', 'selected_rows'),
         Output(f'{page}-tabs', 'value'),
-        callback_args()
+        *callback_args()
     )
-    def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab:str, tabs:list[dcc.Tab], curr_mode='Exp_mode')->list[dcc.Tab]|list|str:
+    def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab:str, tabs:list[dcc.Tab], curr_mode='Exp mode')->list[dcc.Tab]|list|str:
         """
         Aggiorna la lista dei tab al click del bottone, in base agli esperimenti selezionati nella tabella
         :return: la lista dei tab aggiornata, azzera la lista delle righe selezionate e imposta il tab da visualizzare dopo la callback
@@ -102,7 +102,7 @@ def _create_graph_callback(page:str):
     return update_graph_content
 
 def _create_tables_callbacks(page:str):
-    """Crea la callback che aggiorna la tabella nella pagina IdVd Plotter"""
+    """Crea le callbacks che aggiornano le tabelle(la principale e quella nel pop-up) nella pagina IdVd Plotter"""
     if page != 'IdVd':
         raise ValueError(f"{page} non è una pagina valida")
     def callback_args(is_modal_callback:bool=False)->list[Output|Input]:
@@ -122,14 +122,14 @@ def _create_tables_callbacks(page:str):
         else:
             return IdVd_table_group_mode, ['file_path', 'group', 'v_gf'], []
     @callback(
-        callback_args(),
+        *callback_args(),
         prevent_initial_call=True
     )
     def update_table_callback(mode:str):
         """Aggiorna la tabella nel caso venga cambiata la modalità di visualizzazione esperimenti"""
         return update_table(mode)
     @callback(
-        callback_args(is_modal_callback=True),
+        *callback_args(is_modal_callback=True),
         prevent_initial_call=True
     )
     def update_table_modal_callback(mode:str):
@@ -139,6 +139,7 @@ def _create_tables_callbacks(page:str):
     return update_table_callback, update_table_modal_callback
 
 def _create_modal_callbacks(page:str):
+    """Crea le due callbacks sel pop-up i esportazione: quella di apertura e quella di chiusura"""
     if page not in PAGES:
         raise ValueError(f'{page} non è una pagina valida')
     def toggle_modal(n_clicks:int, is_open:bool)->bool:
@@ -146,8 +147,6 @@ def _create_modal_callbacks(page:str):
         if not n_clicks:
             return is_open
         return not is_open
-    if page not in PAGES:
-        raise ValueError(f'{page} non è una pagina valida')
     @callback(
         Output(f'{page}-modal', 'is_open'),
         Input(f'{page}-open-modal-button', 'n_clicks'),
@@ -156,7 +155,6 @@ def _create_modal_callbacks(page:str):
     def open_modal_callback(n_clicks:int, is_open:bool):
         """Apre il pop-up di esportazione nel caso venga premuto il bottone di export"""
         return toggle_modal(n_clicks, is_open)
-
     @callback(
         Output(f'{page}-modal', 'is_open', allow_duplicate=True),
         Input(f'{page}-modal-close-button', 'n_clicks'),
@@ -166,10 +164,10 @@ def _create_modal_callbacks(page:str):
     def close_modal_callback(n_clicks:int, is_open:bool):
         """Chiude il pop-up di esportazione nel caso venga premuto il bottone di chiusura"""
         return toggle_modal(n_clicks, is_open)
-
     return open_modal_callback, close_modal_callback
 
 def _create_export_callback(page:str):
+    """Crea la callback di esportazione dei grafici selezionati del pop-up"""
     if page not in PAGES:
         raise ValueError(f"{page} non è una pagina valida")
     def callback_args()->list[Output|Input|State]:
@@ -181,10 +179,10 @@ def _create_export_callback(page:str):
             State(f'{page}-modal-table', 'derived_virtual_data'),  # lista dei dati della tabella, considerando i filtri ecc...
         ]
         if page == 'IdVd':
-            args.append(State('modal-mode-toggle', 'value'))  # mode: Exp mode/Group mode
+            args.append(State(f'{page}-modal-mode-toggle', 'value'))  # mode: Exp mode/Group mode
         return args
     @callback(
-        callback_args(),
+        *callback_args(),
         prevent_initial_call=True
     )
     def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[int],data_table:list[dict], mode:str='Exp mode')->bool:  # AGGIUNGERE BOX PER SCELTA DOWNLOAD_PATH, ESTENSIONE, CURVE DA PLOTTARE

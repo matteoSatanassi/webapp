@@ -1,16 +1,17 @@
 from dash import Dash, html
 import dash
-from pathlib import Path
 import dash_bootstrap_components as dbc
 from common import indexer
+from app_elements import *
 
-indexer(Path('../data'))
+indexer(data_dir)
 
 app = Dash(
     __name__,
     assets_folder='assets',
     external_stylesheets=[dbc.themes.SUPERHERO],
-    use_pages=True
+    use_pages=True,
+    # suppress_callback_exceptions=True,
 )
 
 ## LAYOUT ##
