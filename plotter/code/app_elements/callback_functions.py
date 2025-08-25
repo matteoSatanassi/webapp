@@ -2,7 +2,7 @@ from pathlib import Path
 import plotly.io as pio
 from dash import dcc, Input, Output, State, callback
 from plotter.code.common import *
-from .parameters import IdVd_df, IdVd_table_exp_mode, IdVd_table_group_mode
+from .parameters import IdVd_df, IdVd_table_exp_mode, IdVd_table_group_mode, export_dir
 
 ## PARAMS ##
 labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}
@@ -164,7 +164,17 @@ def _create_modal_callbacks(page:str):
     def close_modal_callback(n_clicks:int, is_open:bool):
         """Chiude il pop-up di esportazione nel caso venga premuto il bottone di chiusura"""
         return toggle_modal(n_clicks, is_open)
-    return open_modal_callback, close_modal_callback
+    @callback(
+        Output(f'{page}-modal-table', 'selected_rows', allow_duplicate=True),
+        Input(f'{page}-modal', 'is_open'),
+        State(f'{page}-modal-table', 'selected_rows'),
+        prevent_initial_call=True
+    )
+    def unselect_rows_modal_callback(is_open:bool, selected_rows:list[int]):
+        if not is_open:
+            return selected_rows
+        return []
+    return open_modal_callback, close_modal_callback, unselect_rows_modal_callback
 
 def _create_export_callback(page:str):
     """Crea la callback di esportazione dei grafici selezionati del pop-up"""
@@ -232,7 +242,7 @@ def find_export_path()->Path:
     """
     i=0
     while True:
-        export_path = try_mkdir(Path("../../exported_files/export" if i==0 else f"../../exported_files/export-{i}"))
+        export_path = try_mkdir(export_dir/'export' if i==0 else export_dir/f'export-{i}')
         if export_path:
           return export_path
         i+=1

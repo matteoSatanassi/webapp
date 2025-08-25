@@ -1,4 +1,3 @@
-from AppData.IdVd_plotter.Common import markers
 from .common import ExpCurves
 import plotly.graph_objects as go
 
@@ -9,22 +8,23 @@ def plot(curves:ExpCurves, c_to_plot:list[str])->go.Figure:
         curves.import_data()
     fig = go.Figure()
     for curves_dict in curves.curves:
-        for c in c_to_plot:
-            fig.add_trace(go.Scatter(
-                x=curves_dict[c].X,
-                y=curves_dict[c].Y,
-                name=curves_dict[c].name,
-                mode='lines+markers',
-                line=dict(
-                    color= colors[c] if Config.colors else 'black',
-                    dash=None if Config.colors else linestyles[c],
-                    width=0.75 if curves.contains_group else None,
-                ),
-                marker=dict(
-                    symbol= markers[curves.get_vgf(curves_dict)] if curves.contains_group else 'square'
-                ),
-                visible=True
-            ))
+        for key in curves_dict.keys():
+            if key in c_to_plot:
+                fig.add_trace(go.Scatter(
+                    x=curves_dict[key].X,
+                    y=curves_dict[key].Y,
+                    name=curves_dict[key].name,
+                    mode='lines+markers',
+                    line=dict(
+                        color= colors[key] if Config.colors else 'black',
+                        dash=None if Config.colors else linestyles[key],
+                        width=0.75 if curves.contains_group else None,
+                    ),
+                    marker=dict(
+                        symbol= markers[curves.get_vgf(curves_dict)] if curves.contains_group else 'square'
+                    ),
+                    visible=True
+                ))
     return fig
 
 ## PARAMS ##
@@ -47,6 +47,7 @@ colors = {
     '0.6160': '#ff7f0e',    # arancione
     '0.7660': '#2ca02c',    # verde
     '0.7830': '#d62728',    # rosso
+    '0.9500': '#17e3bc',    # verde acqua
     '0.9670': '#9467bd',    # viola
     '0.9840': '#8c564b',    # marrone
     '1.1840': '#e377c2',    # rosa

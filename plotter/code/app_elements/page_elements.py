@@ -15,13 +15,13 @@ CURVE_CHECKLIST_TRAPDATA = [
     {'label': '0.6160', 'value': '0.6160'},
     {'label': '0.7660', 'value': '0.7660'},
     {'label': '0.7830', 'value': '0.7830'},
+    {'label': '0.9500', 'value': '0.9500'},
     {'label': '0.9670', 'value': '0.9670'},
     {'label': '0.9840', 'value': '0.9840'},
     {'label': '1.1840', 'value': '1.1840'},
     {'label': '1.3340', 'value': '1.3340'},
     {'label': '1.8340', 'value': '1.8340'}
 ]
-
 TABLE_COLUMNS_IDVD = [
     {'name': 'Trap Distribution', 'id': 'trap_distr'},
     {'name': 'E_mid', 'id': 'e_mid'},
@@ -79,7 +79,10 @@ def my_table_template(table_id:str,page:str)->dash_table.DataTable:
         style_header={
             'backgroundColor': 'rgb(210, 210, 210)',
             'color': 'black',
-            'fontWeight': 'bold'
+            'fontWeight': 'bold',
+            'whiteSpace': 'normal',
+            'height': 'auto',
+            'textAlign': 'center'
         },
         css=[{"selector": ".show-hide", "rule": "display: none"}]
     )

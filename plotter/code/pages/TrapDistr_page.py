@@ -6,7 +6,7 @@ from plotter.code.app_elements import *
 dash.register_page(__name__, path='/TrapData-plotter')
 
 ## PARAMS ##
-PAGE_PREFIX = 'TrapData'+'-'
+PAGE_PREFIX = 'TrapData'
 
 ## LAYOUT ##
 layout = dbc.Container(
@@ -15,7 +15,7 @@ layout = dbc.Container(
             children=[          #ogni riga ha dimensione 12 orizzontalmente
                 dbc.Col(
                     children=[
-                        my_table_template(f'{PAGE_PREFIX}table','TrapData')
+                        my_table_template(f'{PAGE_PREFIX}-table','TrapData')
                     ],
                     width=4,    #larghezza colonna
                     style={'textAlign': 'center'},
@@ -23,9 +23,9 @@ layout = dbc.Container(
                 dbc.Col(
                     html.Div(
                         children=[
-                            dbc.Button("Plot ->", id=f'{PAGE_PREFIX}plot-button', className="me-15", color="primary"),
-                            dbc.Button("Export!", id=f'{PAGE_PREFIX}modal-button', className="me-15", color="primary"),
-                            export_modal(f'{PAGE_PREFIX}export-modal','TrapData')
+                            dbc.Button("Plot ->", id=f'{PAGE_PREFIX}-plot-button', className="me-15", color="primary"),
+                            dbc.Button("Export!", id=f'{PAGE_PREFIX}-open-modal-button', className="me-15", color="primary"),
+                            export_modal(f'{PAGE_PREFIX}-modal','TrapData')
                         ],
                         style={"textAlign": "center"}
                     ),
@@ -34,9 +34,9 @@ layout = dbc.Container(
                 ),  #BOTTONI
                 dbc.Col(
                     children=[
-                        dcc.Tabs(id=f"{PAGE_PREFIX}tabs", value=None),
-                        html.Div(id=f"{PAGE_PREFIX}tabs-content"),
-                        curves_checklist(f'{PAGE_PREFIX}curve-checklist', 'TrapData')   # checklist curve visualizzate
+                        dcc.Tabs(id=f"{PAGE_PREFIX}-tabs", value=None),
+                        html.Div(id=f"{PAGE_PREFIX}-tabs-content"),
+                        curves_checklist(f'{PAGE_PREFIX}-curve-checklist', 'TrapData')   # checklist curve visualizzate
                     ],
                     style={'textAlign': 'center'},
                     width=7     #larghezza colonna

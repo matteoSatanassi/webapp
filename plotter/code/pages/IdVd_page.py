@@ -6,7 +6,7 @@ from plotter.code.app_elements import *
 dash.register_page(__name__, path='/IdVd-plotter')
 
 ## PARAMS ##
-PAGE_PREFIX = 'IdVd'+'-'
+PAGE_PREFIX = 'IdVd'
 
 ## LAYOUT ##
 layout = dbc.Container(
@@ -22,8 +22,8 @@ layout = dbc.Container(
             children=[          #ogni riga ha dimensione 12 orizzontalmente
                 dbc.Col(
                     children=[
-                        mode_options(f'{PAGE_PREFIX}mode-toggle'),
-                        my_table_template(f'{PAGE_PREFIX}table','IdVd')
+                        mode_options(f'{PAGE_PREFIX}-mode-toggle'),
+                        my_table_template(f'{PAGE_PREFIX}-table','IdVd')
                     ],
                     width=4,    #larghezza colonna
                     style={'textAlign': 'center'},
@@ -31,9 +31,9 @@ layout = dbc.Container(
                 dbc.Col(
                     html.Div(
                         children=[
-                            dbc.Button("Plot ->", id=f'{PAGE_PREFIX}plot-button', className="me-15", color="primary"),
-                            dbc.Button("Export!", id=f'{PAGE_PREFIX}open-modal-button', className="me-15", color="primary"),
-                            export_modal(f'{PAGE_PREFIX}modal','IdVd')
+                            dbc.Button("Plot ->", id=f'{PAGE_PREFIX}-plot-button', className="me-15", color="primary"),
+                            dbc.Button("Export!", id=f'{PAGE_PREFIX}-open-modal-button', className="me-15", color="primary"),
+                            export_modal(f'{PAGE_PREFIX}-modal','IdVd')
                         ],
                         style={"textAlign": "center"}
                     ),
@@ -42,9 +42,9 @@ layout = dbc.Container(
                 ),  #BOTTONI
                 dbc.Col(
                     children=[
-                        dcc.Tabs(id=f"{PAGE_PREFIX}tabs", value=None),
-                        html.Div(id=f"{PAGE_PREFIX}tabs-content"),
-                        curves_checklist(f'{PAGE_PREFIX}curve-checklist', 'IdVd')   # checklist curve visualizzate
+                        dcc.Tabs(id=f"{PAGE_PREFIX}-tabs", value=None),
+                        html.Div(id=f"{PAGE_PREFIX}-tabs-content"),
+                        curves_checklist(f'{PAGE_PREFIX}-curve-checklist', 'IdVd')   # checklist curve visualizzate
                     ],
                     style={'textAlign': 'center'},
                     width=7     #larghezza colonna

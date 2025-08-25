@@ -171,6 +171,8 @@ def import_csv(exp:Exp)->dict[str,Curve]:
             name, axis = col.split(' ') #[curve_name X/Y]
             if name not in curves:
                 _,_,_,name = name.split('_')    #['trapped', 'charge', 'density', str_pos]
+            if name not in curves:
+                curves[name] = Curve(name)
             match axis:
                 case 'X':
                     curves[name].X = data[col].to_numpy(dtype=float)
@@ -204,7 +206,7 @@ class CP:
     """Curves parameters"""
     IdVd_labels = ['v0','0','15','30']
     IdVd_names = ['(0,0)','(-7,0)','(-7,15)','(-7,30)']
-    TrapData_pos = ['trap_density','0.5000','0.6160','0.7660','0.7830','0.9670','0.9840','1.1840','1.3340','1.8340']
+    TrapData_pos = ['trap_density']
 
 '''
 IdVd_Common -> ExpData(Exp, path)[__str__, fill()]
