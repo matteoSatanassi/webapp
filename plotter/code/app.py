@@ -9,7 +9,7 @@ indexer(data_dir)
 app = Dash(
     __name__,
     assets_folder='assets',
-    external_stylesheets=[dbc.themes.SUPERHERO],
+    external_stylesheets=[dbc.themes.COSMO],
     use_pages=True,
     # suppress_callback_exceptions=True
 )
@@ -32,7 +32,8 @@ app.layout = dbc.Container(
             brand_href='/IdVd-plotter',
         ),
         dash.page_container
-    ]
+    ],
+    fluid=True,
 )
 
 if __name__ == '__main__':

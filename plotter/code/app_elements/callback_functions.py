@@ -1,6 +1,6 @@
 from pathlib import Path
 import plotly.io as pio
-from dash import dcc, Input, Output, State, callback
+from dash import dcc, Input, Output, State, callback, html
 from plotter.code.common import *
 from .parameters import IdVd_df, IdVd_table_exp_mode, IdVd_table_group_mode, export_dir
 
@@ -25,6 +25,20 @@ def _create_tabs_callback(page:str):
         if page == 'IdVd':
             args.append(State(f'{page}-mode-toggle', 'value'))        # curr_mode: modo corrente della tabella (Exp/Group)
         return args
+    def create_tab(row: dict, tab_type: str) -> dcc.Tab:
+        """Crea la label di ogni tab in base al tipo richiesto"""
+        if tab_type not in ['Exp', 'Group', 'Trap']:
+            raise ValueError(f'{tab_type} non è un tipo valido per un tab')
+        if tab_type in ['Exp', 'Group']:
+            label = 'EXP' if tab_type == 'Exp' else 'GROUP'
+            label += f' - {labels[row['trap_distr']]}, Em:{row['e_mid']}, Es:{row['e_sigma']}, Vgf:{row['v_gf']}'
+        else:
+            label = f'{labels[row['trap_distr']]}, Em:{row['e_mid']}, Es:{row['e_sigma']}, Vgf:{row['v_gf']},  {row['start_cond']}'
+        return dcc.Tab(
+            label=label,
+            value=row['file_path'] if tab_type in ('Exp', 'Trap') else row['group'],
+            style={'fontSize': 10, 'left-margin': '2px'},
+        )
     @callback(
         Output(f'{page}-tabs', 'children'),
         Output(f'{page}-table', 'selected_rows'),
@@ -44,33 +58,16 @@ def _create_tabs_callback(page:str):
 
         for selected_index in selected_rows:
             row = table_data[selected_index]
-            if page=='IdVd':
-                if curr_mode == 'Exp mode':
-                    file = row['file_path']
-                    if file not in open_tabs:
-                        tabs.append(
-                            dcc.Tab(
-                                label=f"Exp - {labels[row['trap_distr']]}/{row['e_mid']}/{row['e_sigma']}/{row['v_gf']}",
-                                value=file
-                            )
-                        )
-                else:
-                    group = row['group']
-                    if group not in open_tabs:
-                        tabs.append(
-                            dcc.Tab(
-                                label=f"Group - {labels[row['trap_distr']]}/{row['e_mid']}/{row['e_sigma']}",
-                                value=group
-                            )
-                        )
-            else:
-                file = row['file_path']
-                if file not in open_tabs:
+            if page == 'IdVd':
+                if ((row['file_path'] not in open_tabs and curr_mode == 'Exp mode')
+                        or (row['group'] not in open_tabs and curr_mode == 'Group mode')):
                     tabs.append(
-                        dcc.Tab(
-                            label=f"Exp - {labels[row['trap_distr']]}/{row['e_mid']}/{row['e_sigma']}/{row['start_cond']}/{row['v_gf']}",
-                            value=file
-                        )
+                        create_tab(row, tab_type='Exp' if curr_mode == 'Exp mode' else 'Group')
+                    )
+            else:
+                if row['file_path'] not in open_tabs:
+                    tabs.append(
+                        create_tab(row, tab_type='Trap')
                     )
 
         if not open_tabs:

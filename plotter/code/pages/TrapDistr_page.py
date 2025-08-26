@@ -38,7 +38,7 @@ layout = dbc.Container(
                         html.Div(id=f"{PAGE_PREFIX}-tabs-content"),
                         curves_checklist(f'{PAGE_PREFIX}-curve-checklist', 'TrapData')   # checklist curve visualizzate
                     ],
-                    style={'textAlign': 'center'},
+                    style={'textAlign': 'center', 'margin-top':'5vh'},
                     width=7     #larghezza colonna
                 ),  #GRAFICI e checklist
             ],

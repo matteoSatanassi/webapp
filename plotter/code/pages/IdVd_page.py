@@ -12,13 +12,6 @@ PAGE_PREFIX = 'IdVd'
 layout = dbc.Container(
     children=[
         dbc.Row(
-            dbc.Col(
-                children=html.H1('IdVd Plotter'),
-                style={'textAlign': 'center'}
-            ),
-            style={'height':'12vh'}
-        ),  #TITOLO
-        dbc.Row(
             children=[          #ogni riga ha dimensione 12 orizzontalmente
                 dbc.Col(
                     children=[
@@ -51,7 +44,7 @@ layout = dbc.Container(
                 ),  #GRAFICI e checklist
             ],
             align="center",
-            style={'height':'60vh'}
+            style={'height':'60vh', 'margin-top':'5vh'}
         ),  #GRAFICO+TABELLA
     ],
     fluid=True,
