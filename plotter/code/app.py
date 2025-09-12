@@ -11,7 +11,7 @@ app = Dash(
     assets_folder='assets',
     external_stylesheets=[dbc.themes.COSMO],
     use_pages=True,
-    # suppress_callback_exceptions=True
+    suppress_callback_exceptions=True
 )
 
 ## LAYOUT ##

@@ -1,8 +1,8 @@
 from .callback_functions import _create_tabs_callback, _create_export_callback, _create_graph_callback, _create_modal_callbacks, _create_tables_callbacks
 from .page_elements import my_table_template, mode_options, curves_checklist, export_modal
-from .parameters import data_dir
+from .parameters import data_dir, load_configs, config_path
 
-__all__ = ['my_table_template', 'mode_options', 'curves_checklist', 'export_modal', 'data_dir', '_register_all_callbacks']
+__all__ = ['my_table_template', 'mode_options', 'curves_checklist', 'export_modal', 'data_dir', '_register_all_callbacks', 'load_configs']
 
 def _register_all_callbacks(page:str):
     """

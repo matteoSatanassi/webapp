@@ -94,10 +94,22 @@ def mode_options(radio_id:str)->dcc.RadioItems:
     Le opzioni sono Exp mode e Group mode
     """
     return dcc.RadioItems(
-        options=['Group mode','Exp mode'],
-        value='Exp mode',
+        [
+            {
+                'label': html.Span("Exp mode",
+                                   style={'font-size': '15px', 'right-padding': '5px'}),
+                'value': 'ExpMode',
+            },
+            {
+                'label': html.Span("Group mode",
+                                   style={'font-size': '15px', 'right-padding': '5px'}),
+                'value': 'GroupMode',
+            },
+         ],
+        value='ExpMode',
         id=radio_id,
         inline=True,
+        labelStyle={'margin-right': '20px'},
     )
 
 def curves_checklist(checklist_id:str, page:str)->dcc.Checklist:

@@ -16,6 +16,7 @@ layout = dbc.Container(
                 dbc.Col(
                     children=[
                         mode_options(f'{PAGE_PREFIX}-mode-toggle'),
+                        html.Div(),
                         my_table_template(f'{PAGE_PREFIX}-table','IdVd')
                     ],
                     width=4,    #larghezza colonna
