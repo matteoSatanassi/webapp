@@ -9,7 +9,7 @@ indexer(data_dir)
 app = Dash(
     __name__,
     assets_folder='assets',
-    external_stylesheets=[dbc.themes.COSMO],
+    external_stylesheets=[getattr(dbc.themes,load_configs()['theme'])],
     use_pages=True,
     suppress_callback_exceptions=True
 )
