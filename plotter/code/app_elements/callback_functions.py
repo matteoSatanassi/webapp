@@ -45,7 +45,7 @@ def _create_tabs_callback(page:str):
         Output(f'{page}-tabs', 'value'),
         *callback_args()
     )
-    def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab:str, tabs:list[dcc.Tab], curr_mode='Exp mode')->list[dcc.Tab]|list|str:
+    def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab:str, tabs:list[dcc.Tab], curr_mode='ExpMode')->list[dcc.Tab]|list|str:
         """
         Aggiorna la lista dei tab al click del bottone, in base agli esperimenti selezionati nella tabella
         :return: la lista dei tab aggiornata, azzera la lista delle righe selezionate e imposta il tab da visualizzare dopo la callback
@@ -59,10 +59,10 @@ def _create_tabs_callback(page:str):
         for selected_index in selected_rows:
             row = table_data[selected_index]
             if page == 'IdVd':
-                if ((row['file_path'] not in open_tabs and curr_mode == 'Exp mode')
-                        or (row['group'] not in open_tabs and curr_mode == 'Group mode')):
+                if ((row['file_path'] not in open_tabs and curr_mode == 'ExpMode')
+                        or (row['group'] not in open_tabs and curr_mode == 'GroupMode')):
                     tabs.append(
-                        create_tab(row, tab_type='Exp' if curr_mode == 'Exp mode' else 'Group')
+                        create_tab(row, tab_type='Exp' if curr_mode == 'ExpMode' else 'Group')
                     )
             else:
                 if row['file_path'] not in open_tabs:
@@ -71,7 +71,7 @@ def _create_tabs_callback(page:str):
                     )
 
         if not open_tabs:
-            return tabs, [], table_data[selected_rows[0]]['file_path' if curr_mode == 'Exp mode' else 'group']  # se non c'è alcun tab già aperto, apro il primo tab
+            return tabs, [], table_data[selected_rows[0]]['file_path' if curr_mode == 'ExpMode' else 'group']  # se non c'è alcun tab già aperto, apro il primo tab
         else:
             return tabs, [], curr_tab  # altrimenti lascio aperto il tab già selezionato
     return update_tabs
@@ -114,7 +114,7 @@ def _create_tables_callbacks(page:str):
         return args
     def update_table(mode:str)->list[dict]|list[str]|list:
         """aggiorna la tabella in base alla modalità selezionata"""
-        if mode == 'Exp mode':
+        if mode == 'ExpMode':
             return IdVd_table_exp_mode, ['file_path', 'group'], []
         else:
             return IdVd_table_group_mode, ['file_path', 'group', 'v_gf'], []
@@ -186,24 +186,24 @@ def _create_export_callback(page:str):
             State(f'{page}-modal-table', 'derived_virtual_data'),  # lista dei dati della tabella, considerando i filtri ecc...
         ]
         if page == 'IdVd':
-            args.append(State(f'{page}-modal-mode-toggle', 'value'))  # mode: Exp mode/Group mode
+            args.append(State(f'{page}-modal-mode-toggle', 'value'))  # mode: ExpMode/GroupMode
         return args
     @callback(
         *callback_args(),
         prevent_initial_call=True
     )
-    def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[int],data_table:list[dict], mode:str='Exp mode')->bool:  # AGGIUNGERE BOX PER SCELTA DOWNLOAD_PATH, ESTENSIONE, CURVE DA PLOTTARE
+    def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[int],data_table:list[dict], mode:str='ExpMode')->bool:  # AGGIUNGERE BOX PER SCELTA DOWNLOAD_PATH, ESTENSIONE, CURVE DA PLOTTARE
         """Esporta le righe selezionate nella tabella del pop-up, premuto il bottone di export, e a fino processo chiude il pop-up"""
         if not n_clicks or not selected_rows:
             return selected_rows
         export_path = find_export_path()
         figs, exp_file_paths = [], []
         match mode:
-            case 'Exp mode':
+            case 'ExpMode':
                 exps: list[ExpCurves] = [ExpCurves(data_table[row_i]['file_path']).import_data() for row_i in selected_rows]  # lista di esperimenti corrispondente alle righe selezionate
                 figs: list[go.Figure] = [plot(exp, selected_curves) for exp in exps]
                 exp_file_paths: list[Path] = [export_path / Path(f"{exp}.png") for exp in exps]  # estensioni possibili .png, .svg, .pdf
-            case 'Group mode':
+            case 'GroupMode':
                 groups_files: list[list[str]] = [
                     IdVd_df.loc[IdVd_df.group == data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows]  # lista contenente liste di indirizzi di file appartenenti ai gruppi selezionati
                 groups_curves: list[ExpCurves] = [ExpCurves(*group_files).import_data() for group_files in groups_files]

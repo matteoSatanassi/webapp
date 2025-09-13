@@ -33,7 +33,6 @@ class Config:
     bk_color = 'white'
     sec_color = 'black'
     out_ext = 'png' #png, pdf, svg
-    same_fig = True
     legend = True
     colors = True
 

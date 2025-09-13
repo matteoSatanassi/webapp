@@ -45,7 +45,7 @@ layout = dbc.Container(
                 ),  #GRAFICI e checklist
             ],
             align="center",
-            style={'height':'60vh', 'margin-top':'5vh'}
+            style={'height':'60vh', 'margin':'5vh'}
         ),  #GRAFICO+TABELLA
     ],
     fluid=True,
