@@ -1,11 +1,10 @@
-import dash
-from dash import dcc, html, Input, Output, State, callback
+from dash import dcc, html, Input, Output, State, callback, register_page
 from pathlib import Path
 import dash_bootstrap_components as dbc
 import json
 from plotter.code.app_elements import load_configs, config_path
 
-dash.register_page(__name__, path='/configs', title='configs')
+register_page(__name__, path='/configs', title='configs')
 
 ## PARAMS ##
 config = load_configs()
@@ -32,11 +31,6 @@ layout = dbc.Container([
                             value=config["export_directory"],
                             type="text"
                         ),
-                        dbc.Button(
-                            "Sfoglia",
-                            id="browse-button",
-                            color="secondary"
-                        )
                     ]),
                     dbc.FormText("Cartella dove salvare i file esportati")
                 ], width=6),
@@ -110,7 +104,7 @@ def save(n_clicks, export_path, export_format, theme):
         path = Path(export_path)
     except (OSError, ValueError):
         return "L'indirizzo di esportazione fornito non è valido", load_configs()["export_directory"]
-    global config
+    global config, app
     config = {
         "export_directory": export_path,
         "export_format": export_format,
@@ -131,7 +125,7 @@ def save(n_clicks, export_path, export_format, theme):
     prevent_initial_call=True
 )
 def reset(n_clicks, export_path, export_format, theme):
-    global config
+    global config, app
     if not n_clicks:
         return "", export_path, export_format, theme
     try:
