@@ -1,5 +1,6 @@
 import dash
 from dash import dcc, html, Input, Output, State, callback
+from pathlib import Path
 import dash_bootstrap_components as dbc
 import json
 from plotter.code.app_elements import load_configs, config_path
@@ -7,7 +8,7 @@ from plotter.code.app_elements import load_configs, config_path
 dash.register_page(__name__, path='/configs', title='configs')
 
 ## PARAMS ##
-config_dict = load_configs()
+config = load_configs()
 
 ## FUNC ##
 def save_config(config):
@@ -28,7 +29,7 @@ layout = dbc.Container([
                     dbc.InputGroup([
                         dbc.Input(
                             id="config-export-path",
-                            value=config_dict["export_directory"],
+                            value=config["export_directory"],
                             type="text"
                         ),
                         dbc.Button(
@@ -50,8 +51,7 @@ layout = dbc.Container([
                             {'label': 'PDF', 'value': 'pdf'},
                             {'label': 'JPEG', 'value': 'jpeg'}
                         ],
-                        value=config_dict
-                        ["export_format"],
+                        value=config["export_format"],
                         clearable=False
                     )
                 ], width=6)
@@ -70,9 +70,9 @@ layout = dbc.Container([
                         options=[
                             {'label': 'Superhero', 'value': 'SUPERHERO'},
                             {'label': 'Bootstrap', 'value': 'BOOTSTRAP'},
-                            {'label': 'Material', 'value': 'MATERIAL'}
+                            {'label': 'Materia', 'value': 'MATERIA'}
                         ],
-                        value=config_dict["theme"],
+                        value=config["theme"],
                         clearable=False
                     )
                 ], width=6)
@@ -92,3 +92,51 @@ layout = dbc.Container([
 
     html.Div(id="config-status-message", className="mt-3")
 ])
+
+@callback(
+    Output("config-status-message", "children"),
+    Output("config-export-path", "value"),
+    Output("config-export-format", "value"),
+    Output("config-theme", "value"),
+    Input("save-config-button", "n_clicks"),
+    State("config-export-path", "value"),
+    State("config-export-format", "value"),
+    State("config-theme", "value"),
+)
+def save(n_clicks, export_path, export_format, theme):
+    if not n_clicks:
+        return "", export_path, export_format, theme
+    try:
+        path = Path(export_path)
+    except (OSError, ValueError):
+        return "L'indirizzo di esportazione fornito non è valido", load_configs()["export_directory"]
+    global config
+    config = {
+        "export_directory": export_path,
+        "export_format": export_format,
+        "theme": theme
+    }
+    save_config(config)
+    return "Impostazioni salvate!", config["export_directory"], config["export_format"], config["theme"]
+
+@callback(
+    Output("config-status-message", "children", allow_duplicate=True),
+    Output("config-export-path", "value", allow_duplicate=True),
+    Output("config-export-format", "value", allow_duplicate=True),
+    Output("config-theme", "value", allow_duplicate=True),
+    Input("reset-config-button", "n_clicks"),
+    State("config-export-path", "value"),
+    State("config-export-format", "value"),
+    State("config-theme", "value"),
+    prevent_initial_call=True
+)
+def reset(n_clicks, export_path, export_format, theme):
+    global config
+    if not n_clicks:
+        return "", export_path, export_format, theme
+    try:
+        config_path.unlink(missing_ok=True)
+    except Exception as e:
+        return f"Errore reset config_file: {e}", config["export_directory"], config["export_format"], config["theme"]
+    config = load_configs()
+    return f"Impostazioni resettate!", config["export_directory"], config["export_format"], config["theme"]

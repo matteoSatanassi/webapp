@@ -134,6 +134,17 @@ class ExpCurves:
     def get_vgf(self,curves_dict:dict[str,Curve])->int:
         """Dato un elemento di self.curves, recupera la Vg_f del rispettivo esperimento"""
         return self.exp[self.curves.index(curves_dict)].Vgf
+    def names_update(self)->None:
+        """Se l'istanza di ExpCurves corrente contiene un gruppo di esperimenti, aggiunge la rispettiva vgf ai nomi
+        delle varie curve"""
+        if not self.contains_group:
+            return None
+        for curves_dict in self.curves:
+            vgf = self.get_vgf(curves_dict)
+            for key, curve in curves_dict.items():
+                curve.name += f", Vgf={vgf}"
+        return None
+        
 
 ## HELPER FUNCTIONS ##
 def toggle(value:str)->str:
@@ -142,7 +153,7 @@ def toggle(value:str)->str:
     :param value: nome/label della curva
     :return: label/nome della curva
     """
-    translator = {**dict(zip(CP.IdVd_labels, CP.IdVd_names)), **dict(zip(CP.IdVd_names, CP.IdVd_labels))}
+    translator = {**dict(zip(CP.IdVd_names, CP.IdVd_labels)), **dict(zip(CP.IdVd_labels, CP.IdVd_names))}
     if value not in translator:
         raise ValueError(f"{value} non è supportato come nome o label per una curva")
     return translator[value]
@@ -162,6 +173,7 @@ def check_arg(arg)->Exp:
     return arg
 
 def import_csv(exp:Exp)->dict[str,Curve]:
+    """Dato un oggetto Exp importa i dati contenuti nel .csv indicato e crea un dizionario di curve"""
     curves = create_dict(exp.exp_type)
     try:
         data = pd.read_csv(exp.path)
@@ -188,7 +200,7 @@ def create_dict(exp_type:str)->dict[str,Curve]:
     if exp_type == 'TrapData':
         return {pos:Curve(pos) for pos in CP.TrapData_pos}
     elif exp_type == 'IdVd':
-        return {name:Curve(toggle(name)) for name in CP.IdVd_labels}
+        return {name:Curve(toggle(name)) for name in CP.IdVd_names}
     else:
         raise ValueError(f"{exp_type} può essere solo IdVd o TrapData")
 
@@ -204,8 +216,8 @@ def same_group(*args:Exp)->bool:
 ## PARAMS ##
 class CP:
     """Curves parameters"""
-    IdVd_labels = ['v0','0','15','30']
-    IdVd_names = ['(0,0)','(-7,0)','(-7,15)','(-7,30)']
+    IdVd_names = ['v0','0','15','30']
+    IdVd_labels = ['(0,0)','(-7,0)','(-7,15)','(-7,30)']
     TrapData_pos = ['trap_density']
 
 '''

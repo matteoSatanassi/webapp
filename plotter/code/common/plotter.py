@@ -6,6 +6,7 @@ def plot(curves:ExpCurves, c_to_plot:list[str])->go.Figure:
     """Plotta le curve interessate, contenute da un'istanza di ExpCurves, contenente a sua volta uno o più Exp"""
     if not curves.contains_imported_data:
         curves.import_data()
+    curves.names_update()
     fig = go.Figure()
     for curves_dict in curves.curves:
         for key in curves_dict.keys():
