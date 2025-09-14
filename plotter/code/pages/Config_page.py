@@ -10,10 +10,10 @@ register_page(__name__, path='/configs', title='configs')
 config = load_configs()
 
 ## FUNC ##
-def save_config(config):
+def save_config(conf):
     """Salva la configurazione aggiornata"""
     with open(config_path, 'w') as f:
-        json.dump(config, f, indent=4)
+        json.dump(conf, f, indent=4)
 
 ## LAYOUT ##
 layout = dbc.Container([

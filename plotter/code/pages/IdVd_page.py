@@ -9,45 +9,54 @@ dash.register_page(__name__, path='/IdVd-plotter')
 PAGE_PREFIX = 'IdVd'
 
 ## LAYOUT ##
-layout = dbc.Container(
-    children=[
-        dbc.Row(
-            children=[          #ogni riga ha dimensione 12 orizzontalmente
-                dbc.Col(
-                    children=[
-                        mode_options(f'{PAGE_PREFIX}-mode-toggle'),
-                        html.Div(),
-                        my_table_template(f'{PAGE_PREFIX}-table','IdVd')
-                    ],
-                    width=4,    #larghezza colonna
-                    style={'textAlign': 'center'},
-                ),  #ELENCO FILE
-                dbc.Col(
-                    html.Div(
-                        children=[
-                            dbc.Button("Plot ->", id=f'{PAGE_PREFIX}-plot-button', className="me-15", color="primary"),
-                            dbc.Button("Export!", id=f'{PAGE_PREFIX}-open-modal-button', className="me-15", color="primary"),
-                            export_modal(f'{PAGE_PREFIX}-modal','IdVd')
-                        ],
-                        style={"textAlign": "center"}
-                    ),
-                    className="d-flex justify-content-center",
-                    width=1     #larghezza colonna
-                ),  #BOTTONI
-                dbc.Col(
-                    children=[
-                        dcc.Tabs(id=f"{PAGE_PREFIX}-tabs", value=None),
-                        html.Div(id=f"{PAGE_PREFIX}-tabs-content"),
-                        curves_checklist(f'{PAGE_PREFIX}-curve-checklist', 'IdVd')   # checklist curve visualizzate
-                    ],
-                    style={'textAlign': 'center'},
-                    width=7     #larghezza colonna
-                ),  #GRAFICI e checklist
+layout = dbc.Container([
+    dbc.Row([
+        dbc.Col(
+            children=[
+                mode_options(f'{PAGE_PREFIX}-mode-toggle'),
+                html.Div(),
+                my_table_template(f'{PAGE_PREFIX}-table','IdVd')
             ],
+            width=4,    #larghezza colonna
+            style={'textAlign': 'center'},
+        ),  #ELENCO FILE
+
+        dbc.Col(
+            html.Div([
+                dbc.Button(
+                    "Plot ->",
+                    id=f'{PAGE_PREFIX}-plot-button',
+                    className="me-2",
+                    color="primary"
+                ),
+
+                dbc.Button(
+                    "Export!",
+                    id=f'{PAGE_PREFIX}-open-modal-button',
+                    className="me-2",
+                    color="primary"
+                ),
+
+                export_modal(f'{PAGE_PREFIX}-modal','IdVd'),
+            ]),
+            style={'textAlign': 'center'},
+            class_name="d-flex justify-content-center",
+            width=1
+        ),  #BOTTONI
+
+        dbc.Col([
+                dcc.Tabs(id=f"{PAGE_PREFIX}-tabs", value=None),
+                html.Div(id=f"{PAGE_PREFIX}-tabs-content"),
+                curves_checklist(f'{PAGE_PREFIX}-curve-checklist', 'IdVd')   # checklist curve visualizzate
+        ],
+            style={'textAlign': 'center'},
+            width=7     #larghezza colonna
+        ),  #TABS GRAFICI E CHECKLIST CURVE
+        ],
             align="center",
             style={'height':'60vh', 'margin':'5vh'}
         ),  #GRAFICO+TABELLA
-    ],
+],
     fluid=True,
     className='IdVd_dashboard'
 )
