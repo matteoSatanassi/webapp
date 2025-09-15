@@ -168,6 +168,7 @@ def _create_modal_callbacks(page:str):
         prevent_initial_call=True
     )
     def unselect_rows_modal_callback(is_open:bool, selected_rows:list[int]):
+        """Deseleziona le righe quando viene chiuso il pop-up"""
         if not is_open:
             return selected_rows
         return []

@@ -84,7 +84,8 @@ def my_table_template(table_id:str,page:str)->dash_table.DataTable:
             'height': 'auto',
             'textAlign': 'center'
         },
-        css=[{"selector": ".show-hide", "rule": "display: none"}]
+        css=[{"selector": ".show-hide", "rule": "display: none"}],
+        fixed_rows={'headers': True},
     )
 
 def mode_options(radio_id:str)->dcc.RadioItems:
@@ -95,21 +96,14 @@ def mode_options(radio_id:str)->dcc.RadioItems:
     """
     return dcc.RadioItems(
         [
-            {
-                'label': html.Span("Exp mode",
-                                   style={'font-size': '15px', 'right-padding': '5px'}),
-                'value': 'ExpMode',
-            },
-            {
-                'label': html.Span("Group mode",
-                                   style={'font-size': '15px', 'right-padding': '5px'}),
-                'value': 'GroupMode',
-            },
+            {"label": "📊 Modalità Esperimento", "value": "ExpMode"},
+            {"label": "👥 Modalità Gruppo", "value": "GroupMode"}
          ],
         value='ExpMode',
         id=radio_id,
         inline=True,
-        labelStyle={'margin-right': '20px'},
+        className='spaced-radio-items',
+        labelStyle={'margin-bottom': '15px'},
     )
 
 def curves_checklist(checklist_id:str, page:str)->dcc.Checklist:
@@ -140,28 +134,183 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
         """
     if page!='IdVd' and page!='TrapData':
         raise ValueError('Non supportati pagine diverse da IdVd o TrapData')
-    return dbc.Modal(
-        children=[
-            dbc.ModalHeader(dbc.ModalTitle("Export")),
-            dbc.ModalBody(
-                dbc.Row(
-                    children=[
-                        dbc.Col(my_table_template(f'{page}-modal-table', page)),
-                        dbc.Col(
-                            children=[
-                                mode_options(f'{page}-modal-mode-toggle') if page=='IdVd' else None,
-                                curves_checklist(f'{page}-modal-curves-checklist', page)
-                            ]
-                        )]
+    return dbc.Modal([
+        dbc.ModalHeader(dbc.ModalTitle("🖨️ Esportazione Grafici")),
+        dbc.ModalBody(
+            dbc.Container([
+                # Riga 1: Tabella e selezione impostazioni esportazione
+                dbc.Row([
+                    dbc.Col([
+                        mode_options(f"{page}-modal-mode-toggle"),
+                        html.Div(
+                            my_table_template(f"{page}-modal-table",page),
+                            style={"height": "300px", "overflow-y": "auto"}
+                        )
+                    ],
+                        width=7
+                    ),
+
+                    # Colonna opzioni di esportazione
+                    dbc.Col([
+                        # Checklist curve
+                        dbc.Card([
+                            dbc.CardHeader("📈 Curve da Esportare"),
+                            dbc.CardBody(
+                                dbc.Checklist(
+                                    id=f"{page}-modal-curve-checklist",
+                                    options=[
+                                        {"label": "Curva (0,0)", "value": "v0"},
+                                        {"label": "Curva (-7,0)", "value": "0"},
+                                        {"label": "Curva (-7,15)", "value": "15"},
+                                        {"label": "Curva (-7,30)", "value": "30"}
+                                    ],
+                                    value=["v0", "0", "15", "30"],
+                                    inline=False,
+                                    switch=True,
+                                    style={"margin-bottom": "15px"}
+                                )
+                            )
+                        ],
+                            style={"margin-bottom": "15px"},
+                        ),
+
+                        # Opzioni avanzate
+                        dbc.Card([
+                            dbc.CardHeader("⚙️ Opzioni Avanzate"),
+                            dbc.CardBody([
+                                # Legenda
+                                dbc.Checklist(
+                                    id=f"{page}-modal-legend-toggle",
+                                    options=[
+                                        {"label": "Mostra Legenda", "value": "show_legend"}
+                                    ],
+                                    value=["show_legend"],
+                                    switch=True,
+                                    style={"margin-bottom": "10px"}
+                                ),
+
+                                # Colori
+                                dbc.Checklist(
+                                    id=f"{page}-modal-color-toggle",
+                                    options=[
+                                        {"label": "Grafico a Colori", "value": "color"}
+                                    ],
+                                    value=["color"],
+                                    switch=True,
+                                    style={"margin-bottom": "15px"}
+                                ),
+
+                                # DPI
+                                dbc.Row([
+                                    dbc.Col(
+                                        dbc.Label("DPI Immagine:"),
+                                        width=6
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id=f"{page}-modal-dpi-selector",
+                                            options=[
+                                                {"label": "72 DPI (Bassa)", "value": 72},
+                                                {"label": "150 DPI (Media)", "value": 150},
+                                                {"label": "300 DPI (Alta)", "value": 300},
+                                                {"label": "600 DPI (Altissima)","value": 600}
+                                            ],
+                                            value=150,
+                                            clearable=False,
+                                            style={"width": "100%"}
+                                        ),
+                                        width=6
+                                    )
+                                ],
+                                    style={"margin-bottom": "15px"},
+                                ),
+
+                                # Formato file
+                                dbc.Row([
+                                    dbc.Col(
+                                        dbc.Label("Formato File:"),
+                                        width=6
+                                    ),
+                                    dbc.Col(
+                                        dcc.Dropdown(
+                                            id=f"{page}-modal-format-selector",
+                                            options=[
+                                                {"label": "PNG", "value": "png"},
+                                                {"label": "SVG", "value": "svg"},
+                                                {"label": "PDF", "value": "pdf"},
+                                                {"label": "JPEG", "value": "jpeg"},
+                                                {"label": "WEBP", "value": "webp"}
+                                            ],
+                                            value="png",
+                                            clearable=False,
+                                            style={"width": "100%"}
+                                        ),
+                                        width=6
+                                    )
+                                ])
+                            ])
+                        ])
+                    ],
+                        width=5
+                    )
+                ]),
+
+                # Riga 2: Anteprima e Statistiche
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Card([
+                            dbc.CardHeader("📊 Riepilogo Esportazione"),
+                            dbc.CardBody([
+                                html.Div(
+                                    id=f"{page}-modal-export-summary",
+                                    children="Seleziona gli esperimenti per vedere il riepilogo",
+                                    style={
+                                        "font-size": "14px",
+                                        "padding": "10px",
+                                        "background-color": "#f8f9fa",
+                                        "border-radius": "5px"
+                                    }
+                                )
+                            ])
+                        ])
+                    ],
+                        width=12
+                    )
+                ],
+                    style={"margin-top": "15px"},
                 )
-            ),
-            dbc.ModalFooter(
-                children=[
-                    dbc.Button("Close", id=f"{page}-modal-close-button", className="ms-auto", n_clicks=0),
-                    dbc.Button("Export Selected", id=f"{page}-modal-export-button", className="ms-auto", n_clicks=0)
-                ]
+            ],
+                fluid=True,
             )
-        ],
+        ),
+
+        dbc.ModalFooter([
+            dbc.Button(
+                "❌ Annulla", id=f"{page}-modal-close-button", color="secondary", class_name="me-auto", n_clicks=0
+            ),
+            dbc.Button(
+                "💾 Esporta Selezionati", id=f"{page}-modal-export-button", color="primary", disabled=True, n_clicks=0
+            )
+
+        ])
+    ],
         id = modal_id,
         is_open = False,
+        size='xl',
+        scrollable=True,
+        backdrop='static'   # Previene la chiusura cliccando fuori
     )
+
+# dbc.ModalBody(
+#             dbc.Row([
+#                 dbc.Col(my_table_template(f'{page}-modal-table', page)),
+#                 dbc.Col([
+#                         mode_options(f'{page}-modal-mode-toggle') if page=='IdVd' else None,
+#                         curves_checklist(f'{page}-modal-curves-checklist', page)
+#                 ])
+#             ])
+#         ),
+#         dbc.ModalFooter([
+#                 dbc.Button("Close", id=f"{page}-modal-close-button", className="ms-auto", n_clicks=0),
+#                 dbc.Button("Export Selected", id=f"{page}-modal-export-button", className="ms-auto", n_clicks=0)
+#         ])
