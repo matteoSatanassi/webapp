@@ -62,9 +62,18 @@ layout = dbc.Container([
                     dcc.Dropdown(
                         id="config-theme",
                         options=[
+                            {'label': 'Cerulean', 'value': 'CERULEAN'},
+                            {'label': 'Cosmo', 'value': 'COSMO'},
+                            {'label': 'Cyborg', 'value': 'CYBORG'},
+                            {'label': 'Journal', 'value': 'JOURNAL'},
+                            {'label': 'Lux', 'value': 'LUX'},
+                            {'label': 'Materia', 'value': 'MATERIA'},
+                            {'label': 'Minty', 'value': 'MINTY'},
+                            {'label': 'Pulse', 'value': 'PULSE'},
+                            {'label': 'Quartz', 'value': 'QUARTZ'},
+                            {'label': 'Simplex', 'value': 'SIMPLEX'},
                             {'label': 'Superhero', 'value': 'SUPERHERO'},
-                            {'label': 'Bootstrap', 'value': 'BOOTSTRAP'},
-                            {'label': 'Materia', 'value': 'MATERIA'}
+                            {'label': 'Zephyr', 'value': 'ZEPHYR'},
                         ],
                         value=config["theme"],
                         clearable=False
