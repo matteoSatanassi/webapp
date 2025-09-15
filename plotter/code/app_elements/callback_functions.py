@@ -144,6 +144,7 @@ def _create_modal_callbacks(page:str):
         if not n_clicks:
             return is_open
         return not is_open
+
     @callback(
         Output(f'{page}-modal', 'is_open'),
         Input(f'{page}-open-modal-button', 'n_clicks'),
@@ -152,6 +153,7 @@ def _create_modal_callbacks(page:str):
     def open_modal_callback(n_clicks:int, is_open:bool):
         """Apre il pop-up di esportazione nel caso venga premuto il bottone di export"""
         return toggle_modal(n_clicks, is_open)
+
     @callback(
         Output(f'{page}-modal', 'is_open', allow_duplicate=True),
         Input(f'{page}-modal-close-button', 'n_clicks'),
@@ -161,6 +163,7 @@ def _create_modal_callbacks(page:str):
     def close_modal_callback(n_clicks:int, is_open:bool):
         """Chiude il pop-up di esportazione nel caso venga premuto il bottone di chiusura"""
         return toggle_modal(n_clicks, is_open)
+
     @callback(
         Output(f'{page}-modal-table', 'selected_rows', allow_duplicate=True),
         Input(f'{page}-modal', 'is_open'),
@@ -172,6 +175,18 @@ def _create_modal_callbacks(page:str):
         if not is_open:
             return selected_rows
         return []
+
+    @callback(
+        Output(f"{page}-modal-export-button", "disabled"),
+        Input(f"{page}-modal-table", "derived_virtual_selected_rows"),
+        prevent_initial_call=True
+    )
+    def enable_export_button(selected_rows:list[int]):
+        """Attiva il pulsante di esportazione alla selezione di almeno un esperimento/gruppo"""
+        if not selected_rows:
+            return True
+        return False
+
     return open_modal_callback, close_modal_callback, unselect_rows_modal_callback
 
 def _create_export_callback(page:str):

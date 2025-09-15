@@ -1,6 +1,6 @@
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
-from .parameters import IdVd_table_exp_mode,TrapData_table
+from .parameters import IdVd_table_exp_mode,TrapData_table, load_configs
 
 ## PARAMS ##
 CURVE_CHECKLIST_IDVD = [
@@ -140,6 +140,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
             dbc.Container([
                 # Riga 1: Tabella e selezione impostazioni esportazione
                 dbc.Row([
+                    # Colonna con tabella, mode selector
                     dbc.Col([
                         mode_options(f"{page}-modal-mode-toggle"),
                         html.Div(
@@ -157,7 +158,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                             dbc.CardHeader("📈 Curve da Esportare"),
                             dbc.CardBody(
                                 dbc.Checklist(
-                                    id=f"{page}-modal-curve-checklist",
+                                    id=f"{page}-modal-curves-checklist",
                                     options=[
                                         {"label": "Curva (0,0)", "value": "v0"},
                                         {"label": "Curva (-7,0)", "value": "0"},
@@ -241,7 +242,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                                                 {"label": "JPEG", "value": "jpeg"},
                                                 {"label": "WEBP", "value": "webp"}
                                             ],
-                                            value="png",
+                                            value=load_configs()["export_format"],
                                             clearable=False,
                                             style={"width": "100%"}
                                         ),
@@ -256,29 +257,29 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                 ]),
 
                 # Riga 2: Anteprima e Statistiche
-                dbc.Row([
-                    dbc.Col([
-                        dbc.Card([
-                            dbc.CardHeader("📊 Riepilogo Esportazione"),
-                            dbc.CardBody([
-                                html.Div(
-                                    id=f"{page}-modal-export-summary",
-                                    children="Seleziona gli esperimenti per vedere il riepilogo",
-                                    style={
-                                        "font-size": "14px",
-                                        "padding": "10px",
-                                        "background-color": "#f8f9fa",
-                                        "border-radius": "5px"
-                                    }
-                                )
-                            ])
-                        ])
-                    ],
-                        width=12
-                    )
-                ],
-                    style={"margin-top": "15px"},
-                )
+                # dbc.Row([
+                #     dbc.Col([
+                #         dbc.Card([
+                #             dbc.CardHeader("📊 Riepilogo Esportazione"),
+                #             dbc.CardBody([
+                #                 html.Div(
+                #                     id=f"{page}-modal-export-summary",
+                #                     children="Seleziona gli esperimenti per vedere il riepilogo",
+                #                     style={
+                #                         "font-size": "14px",
+                #                         "padding": "10px",
+                #                         "background-color": "#f8f9fa",
+                #                         "border-radius": "5px"
+                #                     }
+                #                 )
+                #             ])
+                #         ])
+                #     ],
+                #         width=12
+                #     )
+                # ],
+                #     style={"margin-top": "15px"},
+                # )
             ],
                 fluid=True,
             )
