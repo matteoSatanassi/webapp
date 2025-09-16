@@ -25,8 +25,6 @@ TrapData_table = TrapData_df.to_dict('records')
 
 config_path = Path(__file__).resolve().parent.parent / 'assets' / 'config.json'
 
-export_dir = load_configs()['export_directory']
-
 ## DERIVED PARAMS ##
 group_first_only_indexes = IdVd_df.drop_duplicates(subset='group', keep='first').index.tolist()  # restituisce una lista degli indici delle prime occorrenze di ogni gruppo
 IdVd_table_group_mode = IdVd_df.iloc[group_first_only_indexes].to_dict('records')

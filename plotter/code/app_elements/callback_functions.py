@@ -2,7 +2,7 @@ from pathlib import Path
 import plotly.io as pio
 from dash import dcc, Input, Output, State, callback, html
 from plotter.code.common import *
-from .parameters import IdVd_df, IdVd_table_exp_mode, IdVd_table_group_mode, export_dir
+from .parameters import IdVd_df, IdVd_table_exp_mode, IdVd_table_group_mode, load_configs
 
 ## PARAMS ##
 labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}
@@ -200,6 +200,10 @@ def _create_export_callback(page:str):
             State(f'{page}-modal-curves-checklist', 'value'),  # checklist delle curve da esportare
             State(f'{page}-modal-table', 'derived_virtual_selected_rows'), # lista di indici delle righe selezionate, considerando i filtri ecc...
             State(f'{page}-modal-table', 'derived_virtual_data'),  # lista dei dati della tabella, considerando i filtri ecc...
+            State(f'{page}-modal-legend-toggle', 'switch'), # mostrare legenda (True/False)
+            State(f'{page}-modal-color-toggle', 'switch'),  # figure esportate a colori o no
+            State(f'{page}-modal-dpi-selector', 'value'),   # dpi figura esportata
+            State(f'{page}-modal-format-selector', 'value'),    # formato file esportato
         ]
         if page == 'IdVd':
             args.append(State(f'{page}-modal-mode-toggle', 'value'))  # mode: ExpMode/GroupMode
@@ -208,7 +212,8 @@ def _create_export_callback(page:str):
         *callback_args(),
         prevent_initial_call=True
     )
-    def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[int],data_table:list[dict], mode:str='ExpMode')->bool:  # AGGIUNGERE BOX PER SCELTA DOWNLOAD_PATH, ESTENSIONE, CURVE DA PLOTTARE
+    def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[int],data_table:list[dict],
+                        legend:bool, colored_img:bool, dpi_img:int, file_format:str, mode:str='ExpMode')->bool:
         """Esporta le righe selezionate nella tabella del pop-up, premuto il bottone di export, e a fino processo chiude il pop-up"""
         if not n_clicks or not selected_rows:
             return selected_rows
@@ -217,15 +222,18 @@ def _create_export_callback(page:str):
         match mode:
             case 'ExpMode':
                 exps: list[ExpCurves] = [ExpCurves(data_table[row_i]['file_path']).import_data() for row_i in selected_rows]  # lista di esperimenti corrispondente alle righe selezionate
-                figs: list[go.Figure] = [plot(exp, selected_curves) for exp in exps]
-                exp_file_paths: list[Path] = [export_path / Path(f"{exp}.png") for exp in exps]  # estensioni possibili .png, .svg, .pdf
+                figs: list[go.Figure] = [
+                    plot(curves=exp, c_to_plot=selected_curves, to_export=True, legend=legend, colored=colored_img) for exp in exps]
+                exp_file_paths: list[Path] = [export_path / Path(f"{exp}.{file_format}") for exp in exps]  # estensioni possibili .png, .svg, .pdf
             case 'GroupMode':
                 groups_files: list[list[str]] = [
-                    IdVd_df.loc[IdVd_df.group == data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows]  # lista contenente liste di indirizzi di file appartenenti ai gruppi selezionati
+                    IdVd_df.loc[IdVd_df.group == data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows
+                ]  # lista contenente liste di indirizzi di file appartenenti ai gruppi selezionati
                 groups_curves: list[ExpCurves] = [ExpCurves(*group_files).import_data() for group_files in groups_files]
-                figs: list[go.Figure] = [plot(group_curves, selected_curves) for group_curves in groups_curves]
-                exp_file_paths: list[Path] = [export_path / Path(f"{group_curves}.png") for group_curves in groups_curves]
-        pio.write_images(fig=figs, file=exp_file_paths)
+                figs: list[go.Figure] = [
+                    plot(curves=group_curves, c_to_plot=selected_curves, to_export=True, legend=legend, colored=colored_img) for group_curves in groups_curves]
+                exp_file_paths: list[Path] = [export_path / Path(f"{group_curves}.{file_format}") for group_curves in groups_curves]
+        pio.write_images(fig=figs, file=exp_file_paths, format=file_format, scale=dpi_img/72)
         return False
     return export_selected
 
@@ -253,6 +261,7 @@ def find_export_path()->Path:
     :return: Indirizzo di esportazione creato
     :rtype: pathlib.Path
     """
+    export_dir = Path(load_configs()['export_directory'])
     i=0
     while True:
         export_path = try_mkdir(export_dir/'export' if i==0 else export_dir/f'export-{i}')

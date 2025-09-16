@@ -49,7 +49,7 @@ class Exp:
     @property
     def group(self)->str:
         """Mostra il gruppo di esperimenti a cui appartiene un'istanza di Exp"""
-        return f"{self.trap_distr}_Em_{self.Em}_Es_{self.Es}"
+        return f"{self.exp_type}_{self.trap_distr}_Em_{self.Em}_Es_{self.Es}"
     # def compile_from(self,row)->'Exp':
     # da aggiungere per compilare un'istanza da un dataframe o da un dizionario
 
