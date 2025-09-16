@@ -1,8 +1,106 @@
-from .common import ExpCurves
+from .common import ExpCurves, toggle
 import plotly.graph_objects as go
+import numpy as np
+
+## FUNC ##
+def add_summary_legend(figure:go.Figure, colored:bool) -> go.Figure:
+    """Aggiunge una legenda riassuntiva ad una figura contenete un gruppo di esperimenti"""
+    # Aggiunge indicatori Vgf
+    for vgf,marker in markers.items():
+        figure.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode='markers',
+            marker=dict(symbol=marker, size=12, color='black'),
+            name=f"Vgf = {vgf}V",
+            showlegend=True,
+            legendgroup="vgf"
+        ))
+
+    # Aggiunge indicatori curve
+    curves = ('v0', '0', '15', '30')
+    for curve in curves:
+        figure.add_trace(go.Scatter(
+            x=[None], y=[None],
+            mode = 'lines',
+            line = dict(
+                color=colors[curve] if colored else 'black',
+                dash=None if colored else linestyles[curve],
+                width=3,
+            ),
+            name=toggle(curve),
+            showlegend=True,
+            legendgroup="curves"
+        ))
+
+    return figure
+
+def graphics_idvd(figure:go.Figure) -> go.Figure:
+    """Implementa la parte grafica della figura nel caso di grafico IdVd"""
+    tick_x_pos = np.arange(-25, 25, 0.5)
+    figure.update_layout(
+        xaxis=dict(
+            title="V<sub>D</sub> [V]",
+            showline=True,
+            linewidth=2,
+            linecolor='black',
+            mirror=False,
+            tickmode='array',
+            tickvals=tick_x_pos,
+            ticktext=[f'{tick:.1f}' if tick % 1 == 0 else '' for tick in tick_x_pos],
+            ticklen=8,
+            tickwidth=2,
+            tickcolor='black',
+            ticks='outside',
+            minor=dict(
+                tickmode='linear',
+                dtick=0.1,
+                ticklen=4,
+                tickwidth=1,
+                tickcolor='black',
+                ticks='outside',
+            ),
+            gridcolor='lightgray',
+            gridwidth=1,
+            griddash='dashdot',
+            showgrid=True,
+            zeroline=False,
+        ),
+        yaxis=dict(
+            title="I<sub>D</sub> [A/mm]",
+            showline=True,
+            linewidth=2,
+            linecolor='black',
+            mirror=False,
+            tickmode='linear',
+            dtick=0.1,
+            ticklen=8,
+            tickwidth=2,
+            tickcolor='black',
+            ticks='outside',
+            minor=dict(
+                tickmode='linear',
+                dtick=0.02,
+                ticklen=4,
+                tickwidth=1,
+                tickcolor='black',
+                ticks='outside',
+            ),
+            gridcolor='lightgray',
+            gridwidth=1,
+            griddash='dashdot',
+            showgrid=True,
+            zeroline=False,
+        ),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(size=14),
+        # width=800,
+        # height=600,
+    )
+    return figure
 
 ## MAIN FUNC ##
-def plot(curves:ExpCurves, c_to_plot:list[str])->go.Figure:
+def plot(curves:ExpCurves, c_to_plot:list[str], to_export:bool=False, legend:bool=True, colored:bool=True)->go.Figure:
     """Plotta le curve interessate, contenute da un'istanza di ExpCurves, contenente a sua volta uno o più Exp"""
     if not curves.contains_imported_data:
         curves.import_data()
@@ -17,15 +115,23 @@ def plot(curves:ExpCurves, c_to_plot:list[str])->go.Figure:
                     name=curves_dict[key].name,
                     mode='lines+markers',
                     line=dict(
-                        color= colors[key] if Config.colors else 'black',
-                        dash=None if Config.colors else linestyles[key],
+                        color= colors[key] if colored else 'black',
+                        dash=None if colored else linestyles[key],
                         width=0.75 if curves.contains_group else None,
                     ),
                     marker=dict(
                         symbol= markers[curves.get_vgf(curves_dict)] if curves.contains_group else 'square'
                     ),
-                    visible=True
+                    visible=True,
+                    showlegend=True if (not to_export or legend and not curves.contains_group) else False,
                 ))
+    if to_export and legend and curves.contains_group:
+        fig = add_summary_legend(fig, colored=colored)
+
+    if curves.exp[0].exp_type=='IdVd':
+        fig = graphics_idvd(fig)
+    elif curves.exp[0].exp_type=='TrapData':
+        pass
     return fig
 
 ## PARAMS ##
