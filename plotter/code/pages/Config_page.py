@@ -88,17 +88,36 @@ layout = dbc.Container([
         ])
     ], className="mb-4"),
 
-    dbc.Button("Salva Configurazione",
-               id="save-config-button",
-               color="primary",
-               className="me-2"),
+    dbc.Row([
+        dbc.Col([
+            dbc.Button("Salva Configurazione",
+                       id="save-config-button",
+                       color="primary",
+                       className="me-2"),
+        ], width="auto"),  # Larghezza automatica per il bottone
 
-    dbc.Button("Ripristina Predefiniti",
-               id="reset-config-button",
-               color="warning",
-               className="me-2"),
+        dbc.Col([
+            dbc.Button("Ripristina Predefiniti",
+                       id="reset-config-button",
+                       color="warning",
+                       className="me-2"),
+        ], width="auto"),  # Larghezza automatica per il bottone
 
-    html.Div(id="config-status-message", className="mt-3")
+        # ✅ Messaggio affiancato
+        dbc.Col([
+            html.Div(id="config-status-message",
+                     style={
+                         'marginLeft': '15px',
+                         'padding': '10px',
+                         'minHeight': '38px',
+                         'display': 'flex',
+                         'alignItems': 'center',
+                         'fontWeight': 'bold'
+                     })
+        ], width=True)  # Occupa lo spazio rimanente
+    ], align="center", className="mt-4"),  # Allineamento verticale centrale
+
+    html.Div(className="mt-3")
 ])
 
 
