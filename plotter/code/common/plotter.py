@@ -34,7 +34,7 @@ def add_summary_legend(figure:go.Figure, colored:bool) -> go.Figure:
 
     return figure
 
-def graphics_idvd(figure:go.Figure) -> go.Figure:
+def graphics_idvd(figure:go.Figure, group:bool=False) -> go.Figure:
     """Implementa la parte grafica della figura nel caso di grafico IdVd"""
     tick_x_pos = np.arange(-25, 25, 0.5)
     figure.update_layout(
@@ -95,7 +95,7 @@ def graphics_idvd(figure:go.Figure) -> go.Figure:
         paper_bgcolor='white',
         font=dict(size=14),
         # width=800,
-        # height=600,
+        height=600 if group else None,
     )
     return figure
 
@@ -180,7 +180,7 @@ def graphics_trapdata(figure:go.Figure) -> go.Figure:
     return figure
 
 ## MAIN FUNC ##
-def plot(curves:ExpCurves, c_to_plot:list[str], to_export:bool=False, legend:bool=True, colored:bool=True)->go.Figure:
+def plot(curves:ExpCurves, c_to_plot:list[str]=(), all_c:bool=False, to_export:bool=False, legend:bool=True, colored:bool=True)->go.Figure:
     """Plotta le curve interessate, contenute da un'istanza di ExpCurves, contenente a sua volta uno o più Exp"""
     if not curves.contains_imported_data:
         curves.import_data()
@@ -191,7 +191,7 @@ def plot(curves:ExpCurves, c_to_plot:list[str], to_export:bool=False, legend:boo
 
     for curves_dict in curves.curves:
         for key in curves_dict.keys():
-            if key in c_to_plot:
+            if key in c_to_plot or all_c:
                 fig.add_trace(go.Scatter(
                     x=curves_dict[key].X,
                     y=curves_dict[key].Y/1e13 if exp_type=='TrapData' else curves_dict[key].Y,
@@ -212,7 +212,7 @@ def plot(curves:ExpCurves, c_to_plot:list[str], to_export:bool=False, legend:boo
         fig = add_summary_legend(fig, colored=colored)
 
     if exp_type=='IdVd':
-        fig = graphics_idvd(fig)
+        fig = graphics_idvd(fig, curves.contains_group)
     elif exp_type=='TrapData':
         fig = graphics_trapdata(fig)
     return fig

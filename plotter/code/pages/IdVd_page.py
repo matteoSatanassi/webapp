@@ -11,10 +11,8 @@ PAGE_PREFIX = 'IdVd'
 ## LAYOUT ##
 layout = dbc.Container([
     dbc.Row([
-        dbc.Col(
-            children=[
+        dbc.Col([
                 mode_options(f'{PAGE_PREFIX}-mode-toggle'),
-                html.Div(),
                 my_table_template(f'{PAGE_PREFIX}-table','IdVd')
             ],
             width=4,    #larghezza colonna
@@ -46,8 +44,7 @@ layout = dbc.Container([
 
         dbc.Col([
                 dcc.Tabs(id=f"{PAGE_PREFIX}-tabs", value=None),
-                html.Div(id=f"{PAGE_PREFIX}-tabs-content"),
-                curves_checklist(f'{PAGE_PREFIX}-curve-checklist', 'IdVd')   # checklist curve visualizzate
+                html.Div(id=f"{PAGE_PREFIX}-tabs-content")
         ],
             style={'textAlign': 'center'},
             width=7     #larghezza colonna

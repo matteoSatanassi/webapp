@@ -82,20 +82,19 @@ def _create_graph_callback(page:str):
         raise ValueError(f"{page} non è una pagina valida")
     @callback(
         Output(f'{page}-tabs-content', 'children'),
-        Input(f'{page}-tabs', 'value'),
-        Input(f'{page}-curve-checklist', 'value')
+        Input(f'{page}-tabs', 'value')
     )
-    def update_graph_content(tab: str, checked_curves: list[str]) -> dcc.Graph:
+    def update_graph_content(tab: str) -> dcc.Graph:
         """Aggiorna il grafico in base al tab aperto e alle curve selezionate nella checklist"""
         if not tab:
             return "nulla di selezionato"
         if '.csv' not in tab:
             df_group = IdVd_df.loc[IdVd_df['group'] == tab]
             g = ExpCurves(*df_group['file_path']).import_data()
-            return dcc.Graph(figure=plot(g, checked_curves))
+            return dcc.Graph(figure=plot(g, all_c=True))
         else:
             e = ExpCurves(tab).import_data()
-            return dcc.Graph(figure=plot(e, checked_curves))
+            return dcc.Graph(figure=plot(e, all_c=True))
     return update_graph_content
 
 def _create_tables_callbacks(page:str):

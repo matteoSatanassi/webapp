@@ -106,26 +106,6 @@ def mode_options(radio_id:str)->dcc.RadioItems:
         labelStyle={'margin-bottom': '15px'},
     )
 
-def curves_checklist(checklist_id:str, page:str)->dcc.Checklist:
-    """
-    Crea una checklist in cui selezionare la curve da visualizzare
-    :param checklist_id: id dell'oggetto dcc.Checklist che verrà utilizzato
-    :param page: 'IdVd'/'TrapData', in base alla lista di curve da visualizzare
-    """
-    if page == 'IdVd':
-        options = CURVE_CHECKLIST_IDVD
-    elif page == 'TrapData':
-        options = CURVE_CHECKLIST_TRAPDATA
-    else:
-        raise ValueError('Non supportati modi diversi da IdVd o TrapData')
-    start_value = [element['value'] for element in options]
-    return dcc.Checklist(
-        id=checklist_id,
-        options=options,
-        value=start_value,  # all’inizio tutte selezionate
-        labelStyle={'display': 'inline-block'},
-    )
-
 def export_modal(modal_id:str, page:str)->dbc.Modal:
     """
         Crea una finestra pop-up in cui selezionare la curve da visualizzare
@@ -134,6 +114,9 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
         """
     if page!='IdVd' and page!='TrapData':
         raise ValueError('Non supportati pagine diverse da IdVd o TrapData')
+
+    curves_checklist_opt = CURVE_CHECKLIST_IDVD if page=='IdVd' else CURVE_CHECKLIST_TRAPDATA
+
     return dbc.Modal([
         dbc.ModalHeader(dbc.ModalTitle("🖨️ Esportazione Grafici")),
         dbc.ModalBody(
@@ -159,8 +142,8 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                             dbc.CardBody(
                                 dbc.Checklist(
                                     id=f"{page}-modal-curves-checklist",
-                                    options=CURVE_CHECKLIST_IDVD if page=='IdVd' else CURVE_CHECKLIST_TRAPDATA,
-                                    value=["v0", "0", "15", "30"],
+                                    options=curves_checklist_opt,
+                                    value=[curve['value'] for curve in curves_checklist_opt],
                                     inline=False,
                                     switch=True,
                                     style={"margin-bottom": "15px"}
