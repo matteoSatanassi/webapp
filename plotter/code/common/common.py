@@ -135,9 +135,18 @@ class ExpCurves:
         """Dato un elemento di self.curves, recupera la Vg_f del rispettivo esperimento"""
         return self.exp[self.curves.index(curves_dict)].Vgf
     def names_update(self)->None:
-        """Se l'istanza di ExpCurves corrente contiene un gruppo di esperimenti, aggiunge la rispettiva vgf ai nomi
-        delle varie curve"""
+        """
+        Se l'istanza di ExpCurves corrente contiene un gruppo di esperimenti, aggiunge
+        la rispettiva vgf ai nomi delle varie curve.
+
+        Nel caso l'istanza contenga un esperimento di tipo trapData aggiunge 'x=...µm' ai nomi
+        delle curve
+        """
         if not self.contains_group:
+            if self.exp[0].exp_type=='TrapData':
+                for curves_dict in self.curves:
+                    for key, curve in curves_dict.items():
+                        curve.name = f"x={float(curve.name)}µm" if curve.name!='trap_density' else "Trap Density"
             return None
         for curves_dict in self.curves:
             vgf = self.get_vgf(curves_dict)
@@ -219,8 +228,3 @@ class CP:
     IdVd_names = ['v0','0','15','30']
     IdVd_labels = ['(0,0)','(-7,0)','(-7,15)','(-7,30)']
     TrapData_pos = ['trap_density']
-
-'''
-IdVd_Common -> ExpData(Exp, path)[__str__, fill()]
-TrapDistrCommon -> ExpData(Exp, path)[__str__, fill()]
-'''

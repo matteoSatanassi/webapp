@@ -4,23 +4,23 @@ from .parameters import IdVd_table_exp_mode,TrapData_table, load_configs
 
 ## PARAMS ##
 CURVE_CHECKLIST_IDVD = [
-    {'label': '(0,0)', 'value': 'v0'},
-    {'label': '(-7,0)', 'value': '0'},
-    {'label': '(-7,15)', 'value': '15'},
-    {'label': '(-7,30)', 'value': '30'},
+    {'label': 'Curva (0,0)', 'value': 'v0'},
+    {'label': 'Curva (-7,0)', 'value': '0'},
+    {'label': 'Curva (-7,15)', 'value': '15'},
+    {'label': 'Curva (-7,30)', 'value': '30'},
 ]
 CURVE_CHECKLIST_TRAPDATA = [
     {'label': 'trap_density', 'value': 'trap_density'},
-    {'label': '0.5000', 'value': '0.5000'},
-    {'label': '0.6160', 'value': '0.6160'},
-    {'label': '0.7660', 'value': '0.7660'},
-    {'label': '0.7830', 'value': '0.7830'},
-    {'label': '0.9500', 'value': '0.9500'},
-    {'label': '0.9670', 'value': '0.9670'},
-    {'label': '0.9840', 'value': '0.9840'},
-    {'label': '1.1840', 'value': '1.1840'},
-    {'label': '1.3340', 'value': '1.3340'},
-    {'label': '1.8340', 'value': '1.8340'}
+    {'label': 'x=0.5µm', 'value': '0.5000'},
+    {'label': 'x=0.616µm', 'value': '0.6160'},
+    {'label': 'x=0.766µm', 'value': '0.7660'},
+    {'label': 'x=0.783µm', 'value': '0.7830'},
+    {'label': 'x=0.95µm', 'value': '0.9500'},
+    {'label': 'x=0.967µm', 'value': '0.9670'},
+    {'label': 'x=0.984µm', 'value': '0.9840'},
+    {'label': 'x=1.184µm', 'value': '1.1840'},
+    {'label': 'x=1.334µm', 'value': '1.3340'},
+    {'label': 'x=1.834µm', 'value': '1.8340'}
 ]
 TABLE_COLUMNS_IDVD = [
     {'name': 'Trap Distribution', 'id': 'trap_distr'},
@@ -159,12 +159,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                             dbc.CardBody(
                                 dbc.Checklist(
                                     id=f"{page}-modal-curves-checklist",
-                                    options=[
-                                        {"label": "Curva (0,0)", "value": "v0"},
-                                        {"label": "Curva (-7,0)", "value": "0"},
-                                        {"label": "Curva (-7,15)", "value": "15"},
-                                        {"label": "Curva (-7,30)", "value": "30"}
-                                    ],
+                                    options=CURVE_CHECKLIST_IDVD if page=='IdVd' else CURVE_CHECKLIST_TRAPDATA,
                                     value=["v0", "0", "15", "30"],
                                     inline=False,
                                     switch=True,
@@ -301,17 +296,3 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
         scrollable=True,
         backdrop='static'   # Previene la chiusura cliccando fuori
     )
-
-# dbc.ModalBody(
-#             dbc.Row([
-#                 dbc.Col(my_table_template(f'{page}-modal-table', page)),
-#                 dbc.Col([
-#                         mode_options(f'{page}-modal-mode-toggle') if page=='IdVd' else None,
-#                         curves_checklist(f'{page}-modal-curves-checklist', page)
-#                 ])
-#             ])
-#         ),
-#         dbc.ModalFooter([
-#                 dbc.Button("Close", id=f"{page}-modal-close-button", className="ms-auto", n_clicks=0),
-#                 dbc.Button("Export Selected", id=f"{page}-modal-export-button", className="ms-auto", n_clicks=0)
-#         ])

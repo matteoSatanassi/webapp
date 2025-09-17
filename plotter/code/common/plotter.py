@@ -99,19 +99,102 @@ def graphics_idvd(figure:go.Figure) -> go.Figure:
     )
     return figure
 
+def graphics_trapdata(figure:go.Figure) -> go.Figure:
+    """Implementa la parte grafica della figura nel caso di grafico TrapData"""
+    figure.update_layout(
+        xaxis=dict(
+            title="E [eV]",
+            showline=True,
+            linewidth=2,
+            linecolor='black',
+            mirror=True,
+            tickmode='linear',
+            dtick=0.5,
+            ticklen=8,
+            tickwidth=2,
+            tickcolor='black',
+            ticks='outside',
+            minor=dict(
+                tickmode='linear',
+                dtick=0.1,
+                ticklen=4,
+                tickwidth=1,
+                tickcolor='black',
+                ticks='outside',
+                gridcolor='lightgray',
+                griddash='dot',
+                gridwidth=0.5,
+            ),
+            gridcolor='gray',
+            gridwidth=1,
+            griddash='dash',
+            showgrid=True,
+            zeroline=False,
+        ),
+        yaxis=dict(
+            title="Charged Traps density [1/<sub>cm<sup>3</sup>·eV</sub>]",
+            showline=True,
+            linewidth=2,
+            linecolor='black',
+            mirror=True,
+            tickmode='linear',
+            dtick=0.5,
+            ticklen=8,
+            tickwidth=2,
+            tickcolor='black',
+            ticks='outside',
+            minor=dict(
+                tickmode='linear',
+                dtick=0.1,
+                ticklen=4,
+                tickwidth=1,
+                tickcolor='black',
+                ticks='outside',
+                gridcolor='lightgray',
+                griddash='dot',
+                gridwidth=0.5,
+            ),
+            gridcolor='gray',
+            gridwidth=1,
+            griddash='dash',
+            showgrid=True,
+            zeroline=False,
+        ),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(size=14),
+        # width=800,
+        height=600,
+    )
+    figure.add_annotation(
+        x=0,
+        y=1.02,
+        xref="paper",
+        yref="paper",
+        text="<b>1e13</b>",
+        showarrow=False,
+        font=dict(size=14, ),
+        xanchor="right",
+        yanchor="bottom"
+    )
+    return figure
+
 ## MAIN FUNC ##
 def plot(curves:ExpCurves, c_to_plot:list[str], to_export:bool=False, legend:bool=True, colored:bool=True)->go.Figure:
     """Plotta le curve interessate, contenute da un'istanza di ExpCurves, contenente a sua volta uno o più Exp"""
     if not curves.contains_imported_data:
         curves.import_data()
+
+    exp_type = curves.exp[0].exp_type
     curves.names_update()
     fig = go.Figure()
+
     for curves_dict in curves.curves:
         for key in curves_dict.keys():
             if key in c_to_plot:
                 fig.add_trace(go.Scatter(
                     x=curves_dict[key].X,
-                    y=curves_dict[key].Y,
+                    y=curves_dict[key].Y/1e13 if exp_type=='TrapData' else curves_dict[key].Y,
                     name=curves_dict[key].name,
                     mode='lines+markers',
                     line=dict(
@@ -128,10 +211,10 @@ def plot(curves:ExpCurves, c_to_plot:list[str], to_export:bool=False, legend:boo
     if to_export and legend and curves.contains_group:
         fig = add_summary_legend(fig, colored=colored)
 
-    if curves.exp[0].exp_type=='IdVd':
+    if exp_type=='IdVd':
         fig = graphics_idvd(fig)
-    elif curves.exp[0].exp_type=='TrapData':
-        pass
+    elif exp_type=='TrapData':
+        fig = graphics_trapdata(fig)
     return fig
 
 ## PARAMS ##
