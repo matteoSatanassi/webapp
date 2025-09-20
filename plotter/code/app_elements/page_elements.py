@@ -40,7 +40,7 @@ TABLE_COLUMNS_TRAPDATA = [
 ]
 
 ## PAGE ELEMENTS ##
-def my_table_template(table_id:str,page:str)->dash_table.DataTable:
+def my_table_template(table_id:str, page:str) -> dash_table.DataTable:
     if page=='IdVd':
         columns = TABLE_COLUMNS_IDVD
     elif page=='TrapData':
@@ -59,33 +59,66 @@ def my_table_template(table_id:str,page:str)->dash_table.DataTable:
         selected_rows=[],
         hidden_columns=['file_path', 'group' if page == 'IdVd' else None],
         page_size=10,
-        style_cell={'textAlign': 'right'},
+        # ✅ MIGLIORATO: Stili per migliore leggibilità
+        style_cell={
+            'textAlign': 'right',
+            'padding': '8px 12px',  # ✅ Più padding
+            'fontFamily': 'Arial, sans-serif',
+            'fontSize': '13px',     # ✅ Dimensione font leggermente aumentata
+            'minWidth': '80px',     # ✅ Larghezza minima garantita
+            'maxWidth': '150px',    # ✅ Larghezza massima
+            'whiteSpace': 'normal'  # ✅ Testo che va a capo
+        },
         style_cell_conditional=[
             {
                 'if': {'column_id': 'trap_distr'},
-                'textAlign': 'left'
+                'textAlign': 'left',
+                'minWidth': '120px',  # ✅ Più spazio per i nomi
+                'fontWeight': '500'
+            },
+            {
+                'if': {'column_id': 'e_mid'},
+                'minWidth': '90px'
+            },
+            {
+                'if': {'column_id': 'e_sigma'},
+                'minWidth': '90px'
+            },
+            {
+                'if': {'column_id': 'v_gf'},
+                'minWidth': '80px'
             }
         ],
         style_data={
             'color': 'black',
-            'backgroundColor': 'white'
+            'backgroundColor': 'white',
+            'border': '1px solid #f0f0f0'  # ✅ Bordi più sottili
         },
         style_data_conditional=[
             {
                 'if': {'row_index': 'odd'},
-                'backgroundColor': 'rgb(220, 220, 220)',
+                'backgroundColor': 'rgb(240, 240, 240)',  # ✅ Contrasto migliore
             }
         ],
         style_header={
-            'backgroundColor': 'rgb(210, 210, 210)',
-            'color': 'black',
+            'backgroundColor': 'rgb(100, 100, 100)',  # ✅ Header più scuro
+            'color': 'white',
             'fontWeight': 'bold',
+            'fontSize': '14px',      # ✅ Font header più grande
+            'padding': '12px 15px',  # ✅ Più padding per header
+            'textAlign': 'center',
             'whiteSpace': 'normal',
-            'height': 'auto',
-            'textAlign': 'center'
+            'height': 'auto'
         },
         css=[{"selector": ".show-hide", "rule": "display: none"}],
         fixed_rows={'headers': True},
+        # ✅ Nuove proprietà per migliore esperienza
+        tooltip_data=[],
+        tooltip_duration=None,
+        style_table={
+            'minWidth': '100%',     # ✅ Occupa tutto lo spazio disponibile
+            'overflowX': 'auto'     # ✅ Scroll orizzontale se necessario
+        }
     )
 
 def mode_options(radio_id:str)->dcc.RadioItems:
@@ -125,10 +158,10 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                 dbc.Row([
                     # Colonna con tabella, mode selector
                     dbc.Col([
-                        mode_options(f"{page}-modal-mode-toggle"),
+                        mode_options(f"{page}-modal-mode-toggle") if page=="IdVd" else None,
                         html.Div(
                             my_table_template(f"{page}-modal-table",page),
-                            style={"height": "300px", "overflow-y": "auto"}
+                            style={"overflow-y": "auto"}
                         )
                     ],
                         width=7

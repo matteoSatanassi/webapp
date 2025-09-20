@@ -1,6 +1,7 @@
 from pathlib import Path
 import plotly.io as pio
-from dash import dcc, Input, Output, State, callback, html
+import dash_bootstrap_components as dbc
+from dash import dcc, Input, Output, State, callback
 from plotter.code.common import *
 from .parameters import IdVd_df, IdVd_table_exp_mode, IdVd_table_group_mode, load_configs
 
@@ -45,7 +46,8 @@ def _create_tabs_callback(page:str):
         Output(f'{page}-tabs', 'value'),
         *callback_args()
     )
-    def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab:str, tabs:list[dcc.Tab], curr_mode='ExpMode')->list[dcc.Tab]|list|str:
+    def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab:str,
+                    tabs:list[dcc.Tab], curr_mode='ExpMode')->list[dcc.Tab]|list|str:
         """
         Aggiorna la lista dei tab al click del bottone, in base agli esperimenti selezionati nella tabella
         :return: la lista dei tab aggiornata, azzera la lista delle righe selezionate e imposta il tab da visualizzare dopo la callback
@@ -74,7 +76,23 @@ def _create_tabs_callback(page:str):
             return tabs, [], table_data[selected_rows[0]]['file_path' if curr_mode == 'ExpMode' else 'group']  # se non c'è alcun tab già aperto, apro il primo tab
         else:
             return tabs, [], curr_tab  # altrimenti lascio aperto il tab già selezionato
-    return update_tabs
+    @callback(
+        Output(f'{page}-close-current-tab-button', 'style'),
+        Output(f'{page}-tab-management-menu', 'style'),
+        Output(f'{page}-tab-management-menu', 'children'),
+        Input(f'{page}-tabs', 'children')
+    )
+    def tab_manager_backend(tabs:list[dcc.Tab]):
+        if not tabs:
+            return {'display': 'none'}, {'display': 'none'}, None
+        if len(tabs) == 1:
+            return {'display': 'block'}, {'display': 'none'}, None
+        else:
+            dropdown_elems = [dbc.DropdownMenuItem(
+                f"❌ {tab['props']['label']}", id=f"close-{tab['props']['value']}"
+            ) for tab in tabs]
+            return {'display': 'block'}, {'display': 'block'}, dropdown_elems
+    return update_tabs, tab_manager_backend
 
 def _create_graph_callback(page:str):
     """Crea la callback che aggiorna il grafico all'apertura di un nuovo tab"""

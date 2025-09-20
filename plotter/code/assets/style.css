@@ -1,0 +1,133 @@
+/* Stile personalizzato per i tabs */
+.custom-tabs {
+    margin-bottom: 15px;
+}
+
+.custom-tab {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-bottom: none;
+    padding: 10px 20px;
+    margin-right: 5px;
+    border-radius: 5px 5px 0 0;
+    color: #495057;
+    font-weight: 500;
+}
+
+.custom-tab--selected {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+/* Card improvements */
+.shadow-sm {
+    transition: box-shadow 0.2s ease;
+}
+
+.shadow-sm:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Bottone migliorato */
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Tabella migliorata */
+.dash-table-container .dash-spreadsheet-container {
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+}
+
+/* Header della card */
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 992px) {
+    .IdVd_dashboard .row {
+        flex-direction: column;
+    }
+
+    .IdVd_dashboard .col {
+        width: 100% !important;
+        margin-bottom: 20px;
+    }
+}
+
+/* assets/style.css - Aggiungi queste regole */
+
+/* Miglioramenti specifici per la tabella */
+.dash-table-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dash-table-container .dash-spreadsheet-container {
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Header della tabella più leggibile */
+.dash-table-container .dash-header {
+    background: linear-gradient(135deg, #495057 0%, #6c757d 100%) !important;
+    font-weight: 600;
+}
+
+/* Hover sulle righe */
+.dash-table-container .dash-row:hover {
+    background-color: #e9ecef !important;
+    transition: background-color 0.2s ease;
+}
+
+/* Scrollbar personalizzata */
+.dash-table-container ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.dash-table-container ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.dash-table-container ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.dash-table-container ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Responsive per tabelle */
+@media (max-width: 1200px) {
+    .IdVd_dashboard .col-md-4 {
+        width: 40% !important;
+    }
+
+    .IdVd_dashboard .col-md-8 {
+        width: 60% !important;
+    }
+}
+
+@media (max-width: 992px) {
+    .IdVd_dashboard .row {
+        flex-direction: column;
+    }
+
+    .IdVd_dashboard .col {
+        width: 100% !important;
+        margin-bottom: 20px;
+    }
+
+    .dash-table-container {
+        font-size: 12px;
+    }
+}
