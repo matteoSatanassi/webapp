@@ -40,7 +40,12 @@ TABLE_COLUMNS_TRAPDATA = [
 ]
 
 ## PAGE ELEMENTS ##
-def my_table_template(table_id:str, page:str) -> dash_table.DataTable:
+def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
+    try:
+        page = table_id['page']
+    except KeyError:
+        raise KeyError('valore di pagina non trovato')
+
     if page=='IdVd':
         columns = TABLE_COLUMNS_IDVD
     elif page=='TrapData':
@@ -121,12 +126,16 @@ def my_table_template(table_id:str, page:str) -> dash_table.DataTable:
         }
     )
 
-def mode_options(radio_id:str)->dcc.RadioItems:
+def mode_options(radio_id:dict[str,str])->dcc.RadioItems:
     """
     Crea una lista in cui scegliere l'opzione di visualizzazione delle tabelle nella pagina IdVd
 
     Le opzioni sono Exp mode e Group mode
     """
+    try:
+        page = radio_id['page']
+    except KeyError:
+        raise KeyError('valore di pagina non trovato')
     return dcc.RadioItems(
         [
             {"label": "📊 Modalità Esperimento", "value": "ExpMode"},
@@ -137,15 +146,17 @@ def mode_options(radio_id:str)->dcc.RadioItems:
         inline=True,
         className='spaced-radio-items',
         labelStyle={'margin-bottom': '15px'},
+        style={'display': 'none' if page!='IdVd' else 'block'},
     )
 
-def export_modal(modal_id:str, page:str)->dbc.Modal:
-    """
-        Crea una finestra pop-up in cui selezionare la curve da visualizzare
-        :param modal_id: id dell'oggetto dbc.Modal che verrà utilizzato
-        :param page: 'IdVd'/'TrapData', in base alla lista di curve da visualizzare
-        """
-    if page!='IdVd' and page!='TrapData':
+def export_modal(modal_id:dict[str,str])->dbc.Modal:
+    """Crea una finestra pop-up in cui selezionare la curve da esportare"""
+    try:
+        page = modal_id['page']
+    except KeyError:
+        raise KeyError('valore di pagina non trovato')
+
+    if page not in ('IdVd', 'TrapData'):
         raise ValueError('Non supportati pagine diverse da IdVd o TrapData')
 
     curves_checklist_opt = CURVE_CHECKLIST_IDVD if page=='IdVd' else CURVE_CHECKLIST_TRAPDATA
@@ -158,9 +169,9 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                 dbc.Row([
                     # Colonna con tabella, mode selector
                     dbc.Col([
-                        mode_options(f"{page}-modal-mode-toggle") if page=="IdVd" else None,
+                        mode_options({'page':page, 'item':'radio-mode-toggle', 'location':'modal'}),
                         html.Div(
-                            my_table_template(f"{page}-modal-table",page),
+                            my_table_template({'page':page, 'item':'table', 'location':'modal'}),
                             style={"overflow-y": "auto"}
                         )
                     ],
@@ -174,7 +185,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                             dbc.CardHeader("📈 Curve da Esportare"),
                             dbc.CardBody(
                                 dbc.Checklist(
-                                    id=f"{page}-modal-curves-checklist",
+                                    id={'page':page, 'item':'checklist-curves', 'location':'modal'},
                                     options=curves_checklist_opt,
                                     value=[curve['value'] for curve in curves_checklist_opt],
                                     inline=False,
@@ -192,7 +203,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                             dbc.CardBody([
                                 # Legenda
                                 dbc.Checklist(
-                                    id=f"{page}-modal-legend-toggle",
+                                    id={'page':page, 'item':'check-legend', 'location':'modal'},
                                     options=[
                                         {"label": "Mostra Legenda", "value": "show_legend"}
                                     ],
@@ -203,7 +214,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
 
                                 # Colori
                                 dbc.Checklist(
-                                    id=f"{page}-modal-color-toggle",
+                                    id={'page':page, 'item':'check-colors', 'location':'modal'},
                                     options=[
                                         {"label": "Grafico a Colori", "value": "color"}
                                     ],
@@ -220,7 +231,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                                     ),
                                     dbc.Col(
                                         dcc.Dropdown(
-                                            id=f"{page}-modal-dpi-selector",
+                                            id={'page':page, 'item':'selector-dpi', 'location':'modal'},
                                             options=[
                                                 {"label": "72 DPI (Bassa)", "value": 72},
                                                 {"label": "150 DPI (Media)", "value": 150},
@@ -245,7 +256,7 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
                                     ),
                                     dbc.Col(
                                         dcc.Dropdown(
-                                            id=f"{page}-modal-format-selector",
+                                            id={'page':page, 'item':'selector-format', 'location':'modal'},
                                             options=[
                                                 {"label": "PNG", "value": "png"},
                                                 {"label": "SVG", "value": "svg"},
@@ -298,10 +309,10 @@ def export_modal(modal_id:str, page:str)->dbc.Modal:
 
         dbc.ModalFooter([
             dbc.Button(
-                "❌ Annulla", id=f"{page}-modal-close-button", color="secondary", class_name="me-auto", n_clicks=0
+                "❌ Annulla", id={'page':page, 'item':'button-close-modal'}, color="secondary", class_name="me-auto", n_clicks=0
             ),
             dbc.Button(
-                "💾 Esporta Selezionati", id=f"{page}-modal-export-button", color="primary", disabled=True, n_clicks=0
+                "💾 Esporta Selezionati", id={'page':page, 'item':'button-export'}, color="primary", disabled=True, n_clicks=0
             )
 
         ])

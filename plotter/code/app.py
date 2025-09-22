@@ -1,7 +1,6 @@
-from dash import Dash, html, page_registry, page_container, callback, Input, Output, State, dcc
-import dash_bootstrap_components as dbc
-from common import indexer
+from dash import Dash, html, page_registry, page_container
 from app_elements import *
+from plotter.code.app_elements.callback_functions import *
 
 indexer(data_dir)
 app = Dash(

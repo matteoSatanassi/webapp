@@ -10,7 +10,7 @@ def load_configs():
             return json.load(f)
     else:
         return {
-            "export_directory": str(Path.home() / 'exported_files'),
+            "export_directory": str(Path.home() / 'Desktop' / 'exported_files'),
             "export_format": "png",
             "theme": "SUPERHERO"
         }
