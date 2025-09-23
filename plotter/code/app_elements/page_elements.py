@@ -240,7 +240,8 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                                             ],
                                             value=150,
                                             clearable=False,
-                                            style={"width": "100%"}
+                                            style={"width": "100%"},
+                                            className="custom-dropdown"
                                         ),
                                         width=6
                                     )

@@ -131,3 +131,17 @@
         font-size: 12px;
     }
 }
+
+.custom-dropdown .VirtualizedSelectOption {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    line-height: 1.4 !important;
+    padding: 12px 15px !important;
+    margin-bottom: 4px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.custom-dropdown .VirtualizedSelectOption:last-child {
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
+}
