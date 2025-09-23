@@ -46,9 +46,42 @@ layout = dbc.Container([
                             {'label': 'PDF', 'value': 'pdf'},
                             {'label': 'JPEG', 'value': 'jpeg'}
                         ],
-                        value=None,
-                        clearable=False
-                    )
+                        value='png',
+                        clearable=False,
+                        style={"width": "100%"},
+                    ),
+                    dbc.FormText("Formato dei file esportati")
+                ], width=6)
+            ], className="mb-3"),
+
+            dbc.Row([
+                dbc.Col([
+                    dbc.Checklist(
+                        id='config-legend-colors-checklist',
+                        options=[
+                            {"label": "Mostra Legenda", "value": "show_legend"},
+                            {"label": "Grafico a Colori", "value": "colors"}
+                        ],
+                        value=["show_legend", "colors"],
+                        switch=True
+                    ),
+                ], width=6, className="vertical-center"),
+                dbc.Col([
+                    dbc.Label("Risoluzione (DPI)"),
+                    dcc.Dropdown(
+                        id="config-DPI-selector",
+                        options=[
+                            {"label": "72 DPI (Bassa)", "value": 72},
+                            {"label": "150 DPI (Media)", "value": 150},
+                            {"label": "300 DPI (Alta)", "value": 300},
+                            {"label": "600 DPI (Altissima)", "value": 600}
+                        ],
+                        value=150,
+                        clearable=False,
+                        style={"width": "100%"},
+                        className="custom-dropdown",
+                    ),
+                    dbc.FormText("Qualità dell'immagine esportata")
                 ], width=6)
             ])
         ])
@@ -127,6 +160,10 @@ layout = dbc.Container([
     Output("config-theme", "value"),
     Output("current-theme", "data"),
     Output(ThemeChangerAIO.ids.radio("theme"), "value"),
+
+    Output("config-legend-colors-checklist", "value"),
+    Output("config-DPI-selector", "value"),
+
     Output("initial-config-loaded", "data"),
     Input("initial-config-loaded", "data"),
 )
@@ -136,11 +173,20 @@ def initialize_config_values(is_loaded):
         return no_update, no_update, no_update, no_update, no_update, no_update
 
     config = load_configs()
+
+    checklist_values = []
+    if bool(config['legend']):
+        checklist_values.append('show_legend')
+    if bool(config['colors']):
+        checklist_values.append('colors')
+
     return (
         config["export_directory"],
         config["export_format"],
         config["theme"],
         config["theme"],
+        checklist_values,
+        int(config['DPI']),
         getattr(dbc.themes, config["theme"]),
         True  # Marca come caricato
     )

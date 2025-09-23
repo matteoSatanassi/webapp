@@ -11,32 +11,6 @@ labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}
 ## DYNAMIC CALLBACKS ##
 
 @callback(
-    Output({'page':MATCH, 'item':'tabs'}, 'children', allow_duplicate=True),
-    Input({'page':MATCH, 'item':'dd-button', 'tab-index':ALL}, 'n_clicks'),
-    State({'page':MATCH, 'item':'tabs'}, 'children'),
-    prevent_initial_call=True
-)
-def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab]):
-    """Callback che gestisce la chiusura di un tab da parte di un pulsante del dropdown menu"""
-    ctx = callback_context
-    if not ctx.triggered or not tabs:
-        return tabs
-
-    if not any(n_clicks_list):
-        return tabs
-
-    triggered_id = ctx.triggered_id  # Trova l'id del pulsante appena cliccato
-    if triggered_id != '.': # controlla che un componente abbia effettivamente chiamato la callback
-        try:
-            tab_index = triggered_id['tab-index']
-            if 0 <= tab_index < len(tabs):
-                tabs.pop(tab_index)
-                return tabs
-        except (KeyError, IndexError):
-            pass
-    return tabs
-
-@callback(
     Output({'page':MATCH, 'item':'button-close-current-tab'}, 'style'),
     Output({'page':MATCH, 'item':'menu-tab-management'}, 'style'),
     Output({'page':MATCH, 'item':'menu-tab-management'}, 'children'),
@@ -262,7 +236,38 @@ def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab]):
 
     return tabs, next_tab
 
+@callback(
+    Output({'page':MATCH, 'item':'tabs'}, 'children', allow_duplicate=True),
+    Output({'page':MATCH, 'item':'tabs'}, 'value', allow_duplicate=True),
+    Input({'page':MATCH, 'item':'dd-button', 'tab-index':ALL}, 'n_clicks'),
+    State({'page':MATCH, 'item':'tabs'}, 'children'),
+    State({'page':MATCH, 'item':'tabs'}, 'value'),
+    prevent_initial_call=True
+)
+def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
+    """Callback che gestisce la chiusura di un tab da parte di un pulsante del dropdown menu"""
+    ctx = callback_context
+    if not ctx.triggered or not tabs or not open_tab:
+        return tabs
 
+    if not any(n_clicks_list):
+        return tabs, open_tab
+
+    triggered_id = ctx.triggered_id  # Trova l'id del pulsante appena cliccato
+    if triggered_id != '.': # controlla che un componente abbia effettivamente chiamato la callback
+        try:
+            tab_index = triggered_id['tab-index']
+            if len(tabs)>1:
+                try:
+                    open_tab = tabs[tab_index+1]['props']['value']
+                except IndexError:
+                    open_tab = tabs[tab_index-1]['props']['value']
+            if 0 <= tab_index < len(tabs):
+                tabs.pop(tab_index)
+                return tabs, open_tab
+        except (KeyError, IndexError):
+            pass
+    return tabs, open_tab
 
 ## HELPER FUNC ##
 def try_mkdir(path:Path)->Path:

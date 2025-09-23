@@ -145,3 +145,11 @@
     margin-bottom: 0 !important;
     border-bottom: none !important;
 }
+
+.vertical-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    min-height: 80px;
+}

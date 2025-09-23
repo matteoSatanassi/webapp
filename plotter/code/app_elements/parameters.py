@@ -10,9 +10,12 @@ def load_configs():
             return json.load(f)
     else:
         return {
+            "theme": "SUPERHERO",
             "export_directory": str(Path.home() / 'Desktop' / 'exported_files'),
             "export_format": "png",
-            "theme": "SUPERHERO"
+            "legend": True,
+            "colors": True,
+            "DPI": 150,
         }
 
 ## PARAMS ##
