@@ -4,7 +4,7 @@ from pathlib import Path
 from dash_bootstrap_templates import ThemeChangerAIO
 import dash_bootstrap_components as dbc
 import json
-from plotter.code.app_elements import load_configs, config_path
+from plotter.code.app_elements import load_configs, config_path, custom_spinner
 
 register_page(__name__, path='/configs', title='configs')
 
@@ -13,9 +13,6 @@ def save_config(conf):
     """Salva la configurazione aggiornata"""
     with open(config_path, 'w') as f:
         json.dump(conf, f, indent=4)
-
-def custom_spinner(message:str):
-    return html.H1([message, dbc.Spinner(color="primary", size='md', spinner_class_name="ms-3")])
 
 ## LAYOUT ##
 layout = dbc.Container([
@@ -26,6 +23,7 @@ layout = dbc.Container([
         id="main-loading",
         fullscreen=True,
         custom_spinner=custom_spinner("Config Page"),
+        overlay_style={"visibility": "visible", "filter": "blur(2px)"},
         children=[
             html.H1("Configurazione Applicazione", className="mb-4"),
 
@@ -155,7 +153,7 @@ layout = dbc.Container([
                                  'alignItems': 'center',
                                  'fontWeight': 'bold'
                              })
-                ], width=True)
+                ], width="auto")
             ], align="center", className="mt-4"),
 
             html.Div(className="mb-4"),

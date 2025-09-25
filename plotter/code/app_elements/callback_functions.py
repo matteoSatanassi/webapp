@@ -1,7 +1,7 @@
 from pathlib import Path
 import plotly.io as pio
 import dash_bootstrap_components as dbc
-from dash import dcc, Input, Output, State, callback, callback_context, MATCH, ALL, no_update
+from dash import dcc, Input, Output, State, callback, callback_context, MATCH, ALL, no_update, html
 from plotter.code.common import *
 from .parameters import IdVd_df, IdVd_table_exp_mode, IdVd_table_group_mode, load_configs
 
@@ -46,7 +46,16 @@ def update_graph_content(tab: str) -> dcc.Graph:
         return dcc.Graph(figure=plot(g, all_c=True))
     else:
         e = ExpCurves(tab).import_data()
-        return dcc.Graph(figure=plot(e, all_c=True))
+        return dcc.Graph(figure=plot(e, all_c=True), style={'height':'100vh'})
+
+@callback(
+    Output({'page':MATCH, 'item':'graph-controls'}, 'style'),
+    Input({'page':MATCH, 'item':'tabs'}, 'value'),
+)
+def show_graph_button(curr_tab):
+    if not curr_tab:
+        return {'display': 'none'}
+    return {'display': 'block'}
 
 @callback(
     Output({'page':'IdVd', 'item':'table', 'location':MATCH}, 'data'),
@@ -123,6 +132,7 @@ def enable_export_button(selected_rows:list[int]):
 
 @callback(
     Output({'page': MATCH, 'item': 'modal'}, 'is_open', allow_duplicate=True),
+    Output({'page':MATCH, 'item':'store-loading-placeholder', 'location':'modal'}, 'data'),
     Input({'page': MATCH, 'item': 'button-export'}, 'n_clicks'),
     # checklist delle curve da esportare
     State({'page': MATCH, 'item': 'checklist-curves', 'location': 'modal'}, 'value'),
@@ -143,17 +153,18 @@ def enable_export_button(selected_rows:list[int]):
     prevent_initial_call=True
 )
 def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[int],data_table:list[dict],
-                    legend:list, colors:list, dpi_img:int, file_format:str, mode:str='ExpMode')->bool:
+                    legend:list, colors:list, dpi_img:int, file_format:str, mode:str='ExpMode'):
     """Esporta le righe selezionate nella tabella del pop-up, premuto il bottone di export, e a fino processo chiude il pop-up"""
     if not n_clicks or not selected_rows:
-        return selected_rows
+        return no_update, no_update
+
     export_path = find_export_path()
     figs, exp_file_paths = [], []
     match mode:
         case 'ExpMode':
             exps: list[ExpCurves] = [ExpCurves(data_table[row_i]['file_path']).import_data() for row_i in selected_rows]  # lista di esperimenti corrispondente alle righe selezionate
-            figs: list[go.Figure] = [
-                plot(curves=exp, c_to_plot=selected_curves, to_export=True, legend=bool(legend), colored=bool(colors)) for exp in exps]
+            figs: list[go.Figure] = [plot(curves=exp, c_to_plot=selected_curves,
+                                          to_export=True, legend=bool(legend), colored=bool(colors)) for exp in exps]
             exp_file_paths: list[Path] = [export_path / Path(f"{exp}.{file_format}") for exp in exps]  # estensioni possibili .png, .svg, .pdf
         case 'GroupMode':
             groups_files: list[list[str]] = [
@@ -163,8 +174,40 @@ def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[
             figs: list[go.Figure] = [
                 plot(curves=group_curves, c_to_plot=selected_curves, to_export=True, legend=bool(legend), colored=bool(colors)) for group_curves in groups_curves]
             exp_file_paths: list[Path] = [export_path / Path(f"{group_curves}.{file_format}") for group_curves in groups_curves]
-    pio.write_images(fig=figs, file=exp_file_paths, format=file_format, scale=dpi_img/72)
-    return False
+
+    try:
+        pio.write_images(fig=figs, file=exp_file_paths, format=file_format, scale=dpi_img/72)
+        return False, "export finished"
+    except Exception as e:
+        return no_update, f"export failed: {e}"
+
+@callback(
+    Output({'page':MATCH, 'item':'store-loading-placeholder', 'location':'page'}, 'data'),
+    Input({'page': MATCH, 'item': 'button-export-current-graph'}, 'n_clicks'),
+    State({'page':MATCH, 'item':'tabs'}, 'value'),
+    prevent_initial_call=True
+)
+def export_current(n_clicks:int, curr_tab:str):
+    if not n_clicks or not curr_tab:
+        return no_update, no_update
+
+    configs = load_configs()
+    export_dir = find_export_path()
+
+    if ".csv" in curr_tab:
+        curves = ExpCurves(curr_tab)
+    else:
+        df_group = IdVd_df.loc[IdVd_df['group'] == curr_tab]
+        curves = ExpCurves(*df_group['file_path'])
+
+    fig = plot(curves=curves, all_c=True, to_export=True,
+               legend=bool(configs['legend']), colored=bool(configs['colors']))
+    try:
+        fig.write_image(f"{export_dir}/{curves}.{configs['export_format']}")
+        return "export finished"
+    except Exception as e:
+        return f"export failed: {e}"
+
 
 @callback(
     Output({'page':MATCH, 'item':'tabs'}, 'children'),
@@ -218,11 +261,12 @@ def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab
 @callback(
     Output({'page':MATCH, 'item':'main-tabs'}, 'active_tab'),
     Input({'page':MATCH, 'item':'button-plot'}, 'n_clicks'),
+    State({'page': MATCH, 'item': 'table', 'location':'page'}, 'selected_rows'),
     prevent_initial_call=True
 )
-def switch_to_graphs_tab(n_clicks):
+def switch_to_graphs_tab(n_clicks, selected_rows):
     """Passa alla tab dei grafici quando si clicca su 'Genera Grafico'"""
-    if n_clicks:
+    if n_clicks and selected_rows:
         return "tab-graphs"
     return "tab-table"
 

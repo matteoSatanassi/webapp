@@ -149,6 +149,11 @@ def mode_options(radio_id:dict[str,str])->dcc.RadioItems:
         style={'display': 'none' if page!='IdVd' else 'block'},
     )
 
+def custom_spinner(message:str=""):
+    if not message:
+        return dbc.Spinner(color="primary", size='md', spinner_class_name="ms-3")
+    return html.H1([message, dbc.Spinner(color="primary", size='md', spinner_class_name="ms-3")])
+
 def export_modal(modal_id:dict[str,str])->dbc.Modal:
     """Crea una finestra pop-up in cui selezionare la curve da esportare"""
     try:
@@ -162,149 +167,161 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
     curves_checklist_opt = CURVE_CHECKLIST_IDVD if page=='IdVd' else CURVE_CHECKLIST_TRAPDATA
 
     return dbc.Modal([
+
         dbc.ModalHeader(dbc.ModalTitle("🖨️ Esportazione Grafici")),
+
         dbc.ModalBody(
-            dbc.Container([
-                # Riga 1: Tabella e selezione impostazioni esportazione
-                dbc.Row([
-                    # Colonna con tabella, mode selector
-                    dbc.Col([
-                        mode_options({'page':page, 'item':'radio-mode-toggle', 'location':'modal'}),
-                        html.Div(
-                            my_table_template({'page':page, 'item':'table', 'location':'modal'}),
-                            style={"overflow-y": "auto"}
-                        )
-                    ],
-                        width=7
-                    ),
+            dcc.Loading(
+                id={'page': page, 'item': 'modal-loading'},
+                custom_spinner=custom_spinner("Esportando!"),
+                overlay_style={"visibility": "visible", "filter": "blur(2px)"},
+                delay_show=500,
+                style={"height": "100%", "overflow": "auto"},
+                children=[
+                    dbc.Container([
+                        dcc.Store(id={'page': page, 'item': 'store-loading-placeholder', 'location': 'modal'},
+                                  data=None),
 
-                    # Colonna opzioni di esportazione
-                    dbc.Col([
-                        # Checklist curve
-                        dbc.Card([
-                            dbc.CardHeader("📈 Curve da Esportare"),
-                            dbc.CardBody(
-                                dbc.Checklist(
-                                    id={'page':page, 'item':'checklist-curves', 'location':'modal'},
-                                    options=curves_checklist_opt,
-                                    value=[curve['value'] for curve in curves_checklist_opt],
-                                    inline=False,
-                                    switch=True,
-                                    style={"margin-bottom": "15px"}
+                        # Riga 1: Tabella e selezione impostazioni esportazione
+                        dbc.Row([
+                            # Colonna con tabella, mode selector
+                            dbc.Col([
+                                mode_options({'page':page, 'item':'radio-mode-toggle', 'location':'modal'}),
+                                html.Div(
+                                    my_table_template({'page':page, 'item':'table', 'location':'modal'}),
+                                    style={"overflow-y": "auto"}
                                 )
-                            )
-                        ],
-                            style={"margin-bottom": "15px"},
-                        ),
+                            ],
+                                width=7
+                            ),
 
-                        # Opzioni avanzate
-                        dbc.Card([
-                            dbc.CardHeader("⚙️ Opzioni Avanzate"),
-                            dbc.CardBody([
-                                # Legenda
-                                dbc.Checklist(
-                                    id={'page':page, 'item':'check-legend', 'location':'modal'},
-                                    options=[
-                                        {"label": "Mostra Legenda", "value": "show_legend"}
-                                    ],
-                                    value=["show_legend"],
-                                    switch=True,
-                                    style={"margin-bottom": "10px"}
-                                ),
-
-                                # Colori
-                                dbc.Checklist(
-                                    id={'page':page, 'item':'check-colors', 'location':'modal'},
-                                    options=[
-                                        {"label": "Grafico a Colori", "value": "colors"}
-                                    ],
-                                    value=["colors"],
-                                    switch=True,
-                                    style={"margin-bottom": "15px"}
-                                ),
-
-                                # DPI
-                                dbc.Row([
-                                    dbc.Col(
-                                        dbc.Label("DPI Immagine:"),
-                                        width=6
-                                    ),
-                                    dbc.Col(
-                                        dcc.Dropdown(
-                                            id={'page':page, 'item':'selector-dpi', 'location':'modal'},
-                                            options=[
-                                                {"label": "72 DPI (Bassa)", "value": 72},
-                                                {"label": "150 DPI (Media)", "value": 150},
-                                                {"label": "300 DPI (Alta)", "value": 300},
-                                                {"label": "600 DPI (Altissima)","value": 600}
-                                            ],
-                                            value=150,
-                                            clearable=False,
-                                            style={"width": "100%"},
-                                            className="custom-dropdown"
-                                        ),
-                                        width=6
+                            # Colonna opzioni di esportazione
+                            dbc.Col([
+                                # Checklist curve
+                                dbc.Card([
+                                    dbc.CardHeader("📈 Curve da Esportare"),
+                                    dbc.CardBody(
+                                        dbc.Checklist(
+                                            id={'page':page, 'item':'checklist-curves', 'location':'modal'},
+                                            options=curves_checklist_opt,
+                                            value=[curve['value'] for curve in curves_checklist_opt],
+                                            inline=False,
+                                            switch=True,
+                                            style={"margin-bottom": "15px"}
+                                        )
                                     )
                                 ],
                                     style={"margin-bottom": "15px"},
                                 ),
 
-                                # Formato file
-                                dbc.Row([
-                                    dbc.Col(
-                                        dbc.Label("Formato File:"),
-                                        width=6
-                                    ),
-                                    dbc.Col(
-                                        dcc.Dropdown(
-                                            id={'page':page, 'item':'selector-format', 'location':'modal'},
+                                # Opzioni avanzate
+                                dbc.Card([
+                                    dbc.CardHeader("⚙️ Opzioni Avanzate"),
+                                    dbc.CardBody([
+                                        # Legenda
+                                        dbc.Checklist(
+                                            id={'page':page, 'item':'check-legend', 'location':'modal'},
                                             options=[
-                                                {"label": "PNG", "value": "png"},
-                                                {"label": "SVG", "value": "svg"},
-                                                {"label": "PDF", "value": "pdf"},
-                                                {"label": "JPEG", "value": "jpeg"},
-                                                {"label": "WEBP", "value": "webp"}
+                                                {"label": "Mostra Legenda", "value": "show_legend"}
                                             ],
-                                            value='png',
-                                            clearable=False,
-                                            style={"width": "100%"}
+                                            value=["show_legend"],
+                                            switch=True,
+                                            style={"margin-bottom": "10px"}
                                         ),
-                                        width=6
-                                    )
-                                ])
-                            ])
-                        ])
-                    ],
-                        width=5
-                    )
-                ]),
 
-                # Riga 2: Anteprima e Statistiche
-                # dbc.Row([
-                #     dbc.Col([
-                #         dbc.Card([
-                #             dbc.CardHeader("📊 Riepilogo Esportazione"),
-                #             dbc.CardBody([
-                #                 html.Div(
-                #                     id=f"{page}-modal-export-summary",
-                #                     children="Seleziona gli esperimenti per vedere il riepilogo",
-                #                     style={
-                #                         "font-size": "14px",
-                #                         "padding": "10px",
-                #                         "background-color": "#f8f9fa",
-                #                         "border-radius": "5px"
-                #                     }
-                #                 )
-                #             ])
-                #         ])
-                #     ],
-                #         width=12
-                #     )
-                # ],
-                #     style={"margin-top": "15px"},
-                # )
-            ],
-                fluid=True,
+                                        # Colori
+                                        dbc.Checklist(
+                                            id={'page':page, 'item':'check-colors', 'location':'modal'},
+                                            options=[
+                                                {"label": "Grafico a Colori", "value": "colors"}
+                                            ],
+                                            value=["colors"],
+                                            switch=True,
+                                            style={"margin-bottom": "15px"}
+                                        ),
+
+                                        # DPI
+                                        dbc.Row([
+                                            dbc.Col(
+                                                dbc.Label("DPI Immagine:"),
+                                                width=6
+                                            ),
+                                            dbc.Col(
+                                                dcc.Dropdown(
+                                                    id={'page':page, 'item':'selector-dpi', 'location':'modal'},
+                                                    options=[
+                                                        {"label": "72 DPI (Bassa)", "value": 72},
+                                                        {"label": "150 DPI (Media)", "value": 150},
+                                                        {"label": "300 DPI (Alta)", "value": 300},
+                                                        {"label": "600 DPI (Altissima)","value": 600}
+                                                    ],
+                                                    value=150,
+                                                    clearable=False,
+                                                    style={"width": "100%"},
+                                                    className="custom-dropdown"
+                                                ),
+                                                width=6
+                                            )
+                                        ],
+                                            style={"margin-bottom": "15px"},
+                                        ),
+
+                                        # Formato file
+                                        dbc.Row([
+                                            dbc.Col(
+                                                dbc.Label("Formato File:"),
+                                                width=6
+                                            ),
+                                            dbc.Col(
+                                                dcc.Dropdown(
+                                                    id={'page':page, 'item':'selector-format', 'location':'modal'},
+                                                    options=[
+                                                        {"label": "PNG", "value": "png"},
+                                                        {"label": "SVG", "value": "svg"},
+                                                        {"label": "PDF", "value": "pdf"},
+                                                        {"label": "JPEG", "value": "jpeg"},
+                                                        {"label": "WEBP", "value": "webp"}
+                                                    ],
+                                                    value='png',
+                                                    clearable=False,
+                                                    style={"width": "100%"}
+                                                ),
+                                                width=6
+                                            )
+                                        ])
+                                    ])
+                                ])
+                            ],
+                                width=5
+                            )
+                        ]),
+
+                        # Riga 2: Anteprima e Statistiche
+                        # dbc.Row([
+                        #     dbc.Col([
+                        #         dbc.Card([
+                        #             dbc.CardHeader("📊 Riepilogo Esportazione"),
+                        #             dbc.CardBody([
+                        #                 html.Div(
+                        #                     id=f"{page}-modal-export-summary",
+                        #                     children="Seleziona gli esperimenti per vedere il riepilogo",
+                        #                     style={
+                        #                         "font-size": "14px",
+                        #                         "padding": "10px",
+                        #                         "background-color": "#f8f9fa",
+                        #                         "border-radius": "5px"
+                        #                     }
+                        #                 )
+                        #             ])
+                        #         ])
+                        #     ],
+                        #         width=12
+                        #     )
+                        # ],
+                        #     style={"margin-top": "15px"},
+                        # )
+                    ], fluid=True)
+                ]
             )
         ),
 
