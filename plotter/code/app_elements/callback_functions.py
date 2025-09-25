@@ -1,7 +1,7 @@
 from pathlib import Path
 import plotly.io as pio
 import dash_bootstrap_components as dbc
-from dash import dcc, Input, Output, State, callback, callback_context, MATCH, ALL
+from dash import dcc, Input, Output, State, callback, callback_context, MATCH, ALL, no_update
 from plotter.code.common import *
 from .parameters import IdVd_df, IdVd_table_exp_mode, IdVd_table_group_mode, load_configs
 
@@ -84,6 +84,21 @@ def open_close_modal(n_clicks_open: int, n_clicks_close: int, is_open: bool):
     return is_open
 
 @callback(
+    Output({'page':MATCH, 'item':'check-legend', 'location':'modal'}, 'value'),
+    Output({'page':MATCH, 'item':'check-colors', 'location':'modal'}, 'value'),
+    Output({'page':MATCH, 'item':'selector-dpi', 'location':'modal'}, 'value'),
+    Output({'page':MATCH, 'item':'selector-format', 'location':'modal'}, 'value'),
+    Input({'page':MATCH, 'item': 'modal'}, 'is_open'),
+)
+def initialize_values(is_open: bool):
+    if not is_open:
+        return no_update, no_update, no_update, no_update
+    config = load_configs()
+    return (['show_legend'] if bool(config['legend']) else [],
+            ['colors'] if bool(config['colors']) else [],
+            int(config['DPI']), config['export_format'])
+
+@callback(
     Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows', allow_duplicate=True),
     Input({'page':MATCH, 'item':'modal'}, 'is_open'),
     State({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows'),
@@ -116,9 +131,9 @@ def enable_export_button(selected_rows:list[int]):
     # lista dei dati della tabella, considerando i filtri ecc...
     State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'derived_virtual_data'),
     # mostrare legenda (True/False)
-    State({'page': MATCH, 'item': 'check-legend', 'location': 'modal'}, 'switch'),
+    State({'page': MATCH, 'item': 'check-legend', 'location': 'modal'}, 'value'),
     # figure esportate a colori o no
-    State({'page': MATCH, 'item': 'check-colors', 'location': 'modal'}, 'switch'),
+    State({'page': MATCH, 'item': 'check-colors', 'location': 'modal'}, 'value'),
     # dpi figura esportata
     State({'page': MATCH, 'item': 'selector-dpi', 'location': 'modal'}, 'value'),
     # formato file esportato
@@ -128,7 +143,7 @@ def enable_export_button(selected_rows:list[int]):
     prevent_initial_call=True
 )
 def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[int],data_table:list[dict],
-                    legend:bool, colored_img:bool, dpi_img:int, file_format:str, mode:str='ExpMode')->bool:
+                    legend:list, colors:list, dpi_img:int, file_format:str, mode:str='ExpMode')->bool:
     """Esporta le righe selezionate nella tabella del pop-up, premuto il bottone di export, e a fino processo chiude il pop-up"""
     if not n_clicks or not selected_rows:
         return selected_rows
@@ -138,7 +153,7 @@ def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[
         case 'ExpMode':
             exps: list[ExpCurves] = [ExpCurves(data_table[row_i]['file_path']).import_data() for row_i in selected_rows]  # lista di esperimenti corrispondente alle righe selezionate
             figs: list[go.Figure] = [
-                plot(curves=exp, c_to_plot=selected_curves, to_export=True, legend=legend, colored=colored_img) for exp in exps]
+                plot(curves=exp, c_to_plot=selected_curves, to_export=True, legend=bool(legend), colored=bool(colors)) for exp in exps]
             exp_file_paths: list[Path] = [export_path / Path(f"{exp}.{file_format}") for exp in exps]  # estensioni possibili .png, .svg, .pdf
         case 'GroupMode':
             groups_files: list[list[str]] = [
@@ -146,7 +161,7 @@ def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[
             ]  # lista contenente liste di indirizzi di file appartenenti ai gruppi selezionati
             groups_curves: list[ExpCurves] = [ExpCurves(*group_files).import_data() for group_files in groups_files]
             figs: list[go.Figure] = [
-                plot(curves=group_curves, c_to_plot=selected_curves, to_export=True, legend=legend, colored=colored_img) for group_curves in groups_curves]
+                plot(curves=group_curves, c_to_plot=selected_curves, to_export=True, legend=bool(legend), colored=bool(colors)) for group_curves in groups_curves]
             exp_file_paths: list[Path] = [export_path / Path(f"{group_curves}.{file_format}") for group_curves in groups_curves]
     pio.write_images(fig=figs, file=exp_file_paths, format=file_format, scale=dpi_img/72)
     return False

@@ -1,6 +1,6 @@
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
-from .parameters import IdVd_table_exp_mode,TrapData_table, load_configs
+from .parameters import IdVd_table_exp_mode,TrapData_table
 
 ## PARAMS ##
 CURVE_CHECKLIST_IDVD = [
@@ -216,9 +216,9 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                                 dbc.Checklist(
                                     id={'page':page, 'item':'check-colors', 'location':'modal'},
                                     options=[
-                                        {"label": "Grafico a Colori", "value": "color"}
+                                        {"label": "Grafico a Colori", "value": "colors"}
                                     ],
-                                    value=["color"],
+                                    value=["colors"],
                                     switch=True,
                                     style={"margin-bottom": "15px"}
                                 ),
@@ -265,7 +265,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                                                 {"label": "JPEG", "value": "jpeg"},
                                                 {"label": "WEBP", "value": "webp"}
                                             ],
-                                            value=load_configs()["export_format"],
+                                            value='png',
                                             clearable=False,
                                             style={"width": "100%"}
                                         ),
