@@ -6,7 +6,7 @@ import dash_bootstrap_components as dbc
 import json
 from plotter.code.app_elements import load_configs, config_path, custom_spinner
 
-register_page(__name__, path='/configs', title='configs')
+register_page(__name__, path='/configs', title='Configs')
 
 ## FUNC ##
 def save_config(conf):
@@ -24,11 +24,12 @@ layout = dbc.Container([
         fullscreen=True,
         custom_spinner=custom_spinner("Config Page"),
         overlay_style={"visibility": "visible", "filter": "blur(2px)"},
+        delay_show=500,
         children=[
-            html.H1("Configurazione Applicazione", className="mb-4"),
+            html.H1("Configurazione Applicazione", className="mb-4 mt-3"),
 
             dbc.Card([
-                dbc.CardHeader("Impostazioni Esportazione"),
+                dbc.CardHeader("Impostazioni Esportazione", className="bg-info"),
                 dbc.CardBody([
                     dbc.Row([
                         dbc.Col([
@@ -95,7 +96,7 @@ layout = dbc.Container([
             ], className="mb-4"),
 
             dbc.Card([
-                dbc.CardHeader("Impostazioni Grafiche"),
+                dbc.CardHeader("Impostazioni Grafiche", className="bg-info"),
                 dbc.CardBody([
                     dbc.Row([
                         dbc.Col([

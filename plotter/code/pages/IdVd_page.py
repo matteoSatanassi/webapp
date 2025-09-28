@@ -3,22 +3,14 @@ from dash import dcc, html
 import dash_bootstrap_components as dbc
 from plotter.code.app_elements import *
 
-dash.register_page(__name__, path='/IdVd-plotter')
+dash.register_page(__name__, path='/', name='IdVd')
 
 ## PARAMS ##
 PAGE = 'IdVd'
 
 ## LAYOUT ##
 layout = dbc.Container([
-    # INTESTAZIONE
-    dbc.Row([
-        dbc.Col([
-            html.H1("IdVd Plotter", className="text-center mb-4",
-                    style={'color': '#2c3e50', 'fontWeight': 'bold'}),
-        ], width=12)
-    ], className="mb-4"),
-
-    # TABS PRINCIPALI (per alternare tra visualizzazioni)
+    # TABS PRINCIPALI
     dbc.Tabs([
         # TAB 1: VISUALIZZAZIONE TABELLA
         dbc.Tab([
@@ -29,8 +21,8 @@ layout = dbc.Container([
                         dbc.CardHeader([
                             html.H5("📋 Esperimenti Disponibili", className="mb-0"),
                             html.Small("Seleziona gli esperimenti da analizzare",
-                                       style={'color': '#6c757d'})
-                        ]),
+                                        style={'color': '#6c757d'})
+                        ], className="py-2 bg-info"),
                         dbc.CardBody([
                             # Opzioni di visualizzazione
                             mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'page'}),
@@ -51,7 +43,7 @@ layout = dbc.Container([
                                 dbc.Button(
                                     "📊 Genera Grafico",
                                     id={'page': PAGE, 'item': 'button-plot'},
-                                    color="primary",
+                                    color="secondary",
                                     className="w-100 mt-3",
                                     size="lg"
                                 ),
@@ -92,15 +84,14 @@ layout = dbc.Container([
                                             html.H5("📈 Visualizzazione Grafici", className="mb-0"),
                                             html.Small("Interagisci con i grafici generati",
                                                        style={'color': '#6c757d'})
-                                        ], className="me-auto"),
+                                        ], className="py-2 me-auto"),
 
                                         # Pulsanti allineati a destra
                                         html.Div([
                                             dbc.Button(
                                                 "❌ Chiudi corrente",
                                                 id={'page': PAGE, 'item': 'button-close-current-tab'},
-                                                # f"{PAGE_PREFIX}-close-current-tab-button",
-                                                color="outline-warning",
+                                                color="outline-danger",
                                                 size="sm",
                                                 className="me-2",
                                                 style={'display': 'none'}
@@ -108,14 +99,14 @@ layout = dbc.Container([
                                             dbc.DropdownMenu(
                                                 label="⚙️ Gestione tab",
                                                 children=[],
-                                                color="outline-secondary",
+                                                color="warning",
                                                 size="sm",
                                                 id={'page': PAGE, 'item': 'menu-tab-management'},
                                                 style={'display': 'none'}
                                             )
                                         ], className="d-flex align-items-center")
                                     ], className="d-flex justify-content-between align-items-center w-100")
-                                ], className="py-2"),
+                                ], className="py-2 bg-info"),
                                 dbc.CardBody([
                                     # Tabs dei grafici
                                     dcc.Tabs(
@@ -161,7 +152,10 @@ layout = dbc.Container([
                 ])
                 ]
             ), label="📈 Grafici", tab_id="tab-graphs"),
-    ], id={'page':PAGE, 'item':'main-tabs'}, active_tab="tab-table"),
+    ], id={'page':PAGE, 'item':'main-tabs'},
+        active_tab="tab-table",
+        className='mb-3'
+    ),
 
     # MODAL ESPORTAZIONE
     export_modal({'page':PAGE, 'item':'modal'}),
@@ -169,7 +163,7 @@ layout = dbc.Container([
     fluid=True,
     className='IdVd_dashboard py-4',
     style={
-        'backgroundColor': '#f8f9fa',
+        'backgroundColor': 'var(--bs-light, #f8f9fa)',
         'minHeight': '100vh'
     }
 )

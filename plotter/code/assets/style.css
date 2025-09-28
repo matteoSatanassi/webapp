@@ -1,25 +1,3 @@
-/* Stile personalizzato per i tabs */
-.custom-tabs {
-    margin-bottom: 15px;
-}
-
-.custom-tab {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-bottom: none;
-    padding: 10px 20px;
-    margin-right: 5px;
-    border-radius: 5px 5px 0 0;
-    color: #495057;
-    font-weight: 500;
-}
-
-.custom-tab--selected {
-    background-color: #007bff;
-    color: white;
-    border-color: #007bff;
-}
-
 /* Card improvements */
 .shadow-sm {
     transition: box-shadow 0.2s ease;
@@ -42,13 +20,6 @@
     border-radius: 5px;
 }
 
-/* Header della card */
-.card-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    font-weight: 600;
-}
-
 /* Responsive design */
 @media (max-width: 992px) {
     .IdVd_dashboard .row {
@@ -60,8 +31,6 @@
         margin-bottom: 20px;
     }
 }
-
-/* assets/style.css - Aggiungi queste regole */
 
 /* Miglioramenti specifici per la tabella */
 .dash-table-container {

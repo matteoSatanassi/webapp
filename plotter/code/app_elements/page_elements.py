@@ -64,21 +64,20 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
         selected_rows=[],
         hidden_columns=['file_path', 'group' if page == 'IdVd' else None],
         page_size=10,
-        # ✅ MIGLIORATO: Stili per migliore leggibilità
         style_cell={
             'textAlign': 'right',
-            'padding': '8px 12px',  # ✅ Più padding
+            'padding': '8px 12px',
             'fontFamily': 'Arial, sans-serif',
-            'fontSize': '13px',     # ✅ Dimensione font leggermente aumentata
-            'minWidth': '80px',     # ✅ Larghezza minima garantita
-            'maxWidth': '150px',    # ✅ Larghezza massima
-            'whiteSpace': 'normal'  # ✅ Testo che va a capo
+            'fontSize': '13px',
+            'minWidth': '80px',
+            'maxWidth': '150px',
+            'whiteSpace': 'normal'
         },
         style_cell_conditional=[
             {
                 'if': {'column_id': 'trap_distr'},
                 'textAlign': 'left',
-                'minWidth': '120px',  # ✅ Più spazio per i nomi
+                'minWidth': '120px',
                 'fontWeight': '500'
             },
             {
@@ -97,32 +96,31 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
         style_data={
             'color': 'black',
             'backgroundColor': 'white',
-            'border': '1px solid #f0f0f0'  # ✅ Bordi più sottili
+            'border': '1px solid #f0f0f0'
         },
         style_data_conditional=[
             {
                 'if': {'row_index': 'odd'},
-                'backgroundColor': 'rgb(240, 240, 240)',  # ✅ Contrasto migliore
+                'backgroundColor': 'rgb(240, 240, 240)',
             }
         ],
         style_header={
-            'backgroundColor': 'rgb(100, 100, 100)',  # ✅ Header più scuro
+            'backgroundColor': 'rgb(100, 100, 100)',
             'color': 'white',
             'fontWeight': 'bold',
-            'fontSize': '14px',      # ✅ Font header più grande
-            'padding': '12px 15px',  # ✅ Più padding per header
+            'fontSize': '14px',
+            'padding': '12px 15px',
             'textAlign': 'center',
             'whiteSpace': 'normal',
             'height': 'auto'
         },
         css=[{"selector": ".show-hide", "rule": "display: none"}],
         fixed_rows={'headers': True},
-        # ✅ Nuove proprietà per migliore esperienza
         tooltip_data=[],
         tooltip_duration=None,
         style_table={
-            'minWidth': '100%',     # ✅ Occupa tutto lo spazio disponibile
-            'overflowX': 'auto'     # ✅ Scroll orizzontale se necessario
+            'minWidth': '100%',
+            'overflowX': 'auto'
         }
     )
 
@@ -136,17 +134,20 @@ def mode_options(radio_id:dict[str,str])->dcc.RadioItems:
         page = radio_id['page']
     except KeyError:
         raise KeyError('valore di pagina non trovato')
-    return dcc.RadioItems(
-        [
-            {"label": "📊 Modalità Esperimento", "value": "ExpMode"},
-            {"label": "👥 Modalità Gruppo", "value": "GroupMode"}
-         ],
-        value='ExpMode',
-        id=radio_id,
-        inline=True,
-        className='spaced-radio-items',
-        labelStyle={'margin-bottom': '15px'},
-        style={'display': 'none' if page!='IdVd' else 'block'},
+    return dbc.Row(
+        dbc.Col(
+            dcc.RadioItems(
+            [
+                {"label": "📊 Modalità Esperimento", "value": "ExpMode"},
+                {"label": "👥 Modalità Gruppo", "value": "GroupMode"}
+             ],
+            value='ExpMode',
+            id=radio_id,
+            inline=True,
+            className='d-flex justify-content-around',
+            labelStyle={'margin-bottom': '15px'},
+            style={'display': 'none' if page!='IdVd' else 'block'},
+        ), width=4)
     )
 
 def custom_spinner(message:str=""):
