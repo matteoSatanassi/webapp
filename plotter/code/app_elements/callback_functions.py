@@ -208,7 +208,6 @@ def export_current(n_clicks:int, curr_tab:str):
     except Exception as e:
         return f"export failed: {e}"
 
-
 @callback(
     Output({'page':MATCH, 'item':'tabs'}, 'children'),
     Output({'page':MATCH, 'item':'table', 'location':'page'}, 'selected_rows'),

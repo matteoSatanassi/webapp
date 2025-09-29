@@ -26,7 +26,6 @@ layout = dbc.Container([
                         dbc.CardBody([
                             # Opzioni di visualizzazione
                             mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'page'}),
-                            html.Div(style={'height': '15px'}),
 
                             # Tabella
                             html.Div(

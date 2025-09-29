@@ -134,7 +134,9 @@ def mode_options(radio_id:dict[str,str])->dcc.RadioItems:
         page = radio_id['page']
     except KeyError:
         raise KeyError('valore di pagina non trovato')
-    return dcc.RadioItems(
+
+    return html.Div(
+        dcc.RadioItems(
             [
                 {"label": "📊 Modalità Esperimento", "value": "ExpMode"},
                 {"label": "👥 Modalità Gruppo", "value": "GroupMode"}
@@ -144,7 +146,7 @@ def mode_options(radio_id:dict[str,str])->dcc.RadioItems:
             inline=True,
             className='d-flex justify-content-around',
             labelStyle={'margin-bottom': '15px'},
-            style={'display': 'none' if page!='IdVd' else 'block'},
+        ), style={'display': 'none' if page!='IdVd' else 'block'},
     )
 
 def custom_spinner(message:str=""):

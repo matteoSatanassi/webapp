@@ -26,7 +26,6 @@ layout = dbc.Container([
                         dbc.CardBody([
                             # Opzioni di visualizzazione
                             mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'page'}),
-                            html.Div(style={'height': '15px'}),
 
                             # Tabella
                             html.Div(
@@ -152,9 +151,7 @@ layout = dbc.Container([
                 ])
                 ]
             ), label="📈 Grafici", tab_id="tab-graphs"),
-    ], id={'page':PAGE, 'item':'main-tabs'},
-        active_tab="tab-table",
-        className='mb-3'
+    ], id={'page':PAGE, 'item':'main-tabs'}, active_tab="tab-table",
     ),
 
     # MODAL ESPORTAZIONE
