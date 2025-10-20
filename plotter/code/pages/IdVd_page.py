@@ -29,7 +29,7 @@ layout = dbc.Container([
 
                             # Tabella
                             html.Div(
-                                my_table_template({'page':PAGE, 'item':'table', 'location':'page', 'tab':'principal'}),
+                                my_table_template({'page':PAGE, 'item':'table', 'location':'page'}),
                                 style={
                                     'overflowY': 'auto',
                                     'border': '1px solid #dee2e6',
@@ -58,7 +58,8 @@ layout = dbc.Container([
                     ], className="shadow-sm")
                 ], width=12)
             ])
-        ], label="📋 Tabella Esperimenti", tab_id="tab-table"),
+        ], label="📋 Tabella Esperimenti", tab_id="tab-table"
+        ),
 
         # TAB 2: VISUALIZZAZIONE GRAFICI
         dbc.Tab(
@@ -150,7 +151,50 @@ layout = dbc.Container([
                         ], width=12)
                 ])
                 ]
-            ), label="📈 Grafici", tab_id="tab-graphs"),
+            ), label="📈 Grafici", tab_id="tab-graphs"
+        ),
+
+        # TAB 3: TABELLA AFFINITÀ
+        dbc.Tab([
+            dbc.Row([
+                dbc.Col([
+                    # Card per la tabella
+                    dbc.Card([
+                        dbc.CardHeader([
+                            html.H5("⚖️ Affinità Esperimenti", className="mb-0"),
+                            html.Small("Controlla la somiglianza degli esperimenti al target reale",
+                                        style={'color': '#6c757d'})
+                        ], className="py-2 bg-info"),
+                        dbc.CardBody([
+                            # Opzioni di visualizzazione
+                            #mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'page'}),
+
+                            # Tabella
+                            html.Div(
+                                my_table_template({'page':PAGE, 'item':'table', 'location':'affinity_page'}),
+                                style={
+                                    'overflowY': 'auto',
+                                    'border': '1px solid #dee2e6',
+                                    'borderRadius': '5px'
+                                }
+                            ),
+
+                            #Bottoni sotto tabella
+                            dbc.Container([
+                                dbc.Button(
+                                    "🧮 Calcola Affinità",
+                                    id={'page': PAGE, 'item': 'button-calculate-affinity'},
+                                    color="secondary",
+                                    className="w-100 mt-3",
+                                    size="lg"
+                                )
+                            ]),
+                        ])
+                    ], className="shadow-sm")
+                ], width=12)
+            ])
+        ], label="⚖️ Affinità Esperimenti", tab_id="tab-affinity"
+        ),
     ], id={'page':PAGE, 'item':'main-tabs'}, active_tab="tab-table",
     ),
 

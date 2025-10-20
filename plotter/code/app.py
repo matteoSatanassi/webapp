@@ -1,8 +1,10 @@
-from dash import Dash, page_container
+from dash import Dash, page_container,html
 from app_elements import *
 from plotter.code.app_elements.callback_functions import *
 
-indexer(data_dir)   #indexing data files at the start
+indexer(data_dir)   # indexing data files at the start
+affinities_table_updater(indexes_file)  # updating affinities table
+
 app = Dash(
     __name__,
     assets_folder='assets',
@@ -14,7 +16,7 @@ app = Dash(
 ## LAYOUT ##
 nav = dbc.Nav(
     [
-        dbc.NavItem(dbc.NavLink(html.Div(["I",html.Sub("d"),"-V",html.Sub("d")," Plotter"]), href="/", active='exact',
+        dbc.NavItem(dbc.NavLink(html.Div(["I",html.Sub("D"),"-V",html.Sub("D")," Plotter"]), href="/", active='exact',
                                 id={'item':'nav-link', 'link':'IdVd'})),
         dbc.NavItem(dbc.NavLink('Traps data Plotter', href='/TrapData-plotter', active='exact',
                                 id={'item':'nav-link', 'link':'Traps'})),

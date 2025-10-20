@@ -1,6 +1,10 @@
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from plotter.code.app_elements import assets_dir
+
+## PARAMS ##
+target_curves_dir = assets_dir / 'target_curves'
 
 ## CLASSES ##
 class Exp:
@@ -70,8 +74,6 @@ class Curve:
     def sort(self)->None:   #
         """
         Ordina gli array delle coordinate in modo crescente, rispetto alle ordinate
-
-        :return: None
         """
         i_sorted = np.argsort(self.X)
         self.X = self.X[i_sorted]
@@ -81,6 +83,9 @@ class Curve:
     def integrate(self)->float:
         """Integra la curva caricata nell'istanza"""
         return np.trapezoid(self.Y, self.X)
+    def integral_affinity(self, curve:'Curve')->float:
+        target_area = curve.integrate
+        return 100*(1-abs(self.integrate-target_area)/target_area)
     def y_limits(self)->list:
         return self.Y.min(), self.Y.max()
 
@@ -91,6 +96,7 @@ class ExpCurves:
     def __init__(self, *args:Exp|Path|str):
         self.exp = [check_arg(arg) for arg in args]
         self.curves:list[dict[str,Curve]] = []
+        self.affinities:list[dict[str,float]] = []
         if not self.exp:
             raise ValueError("ExpCurves richiede almeno un esperimento")
         if not same_group(*self.exp):
@@ -116,6 +122,7 @@ class ExpCurves:
             for key, curve in curves_dict.items():
                 curve.sort()
         return None
+    @property
     def import_data(self)->'ExpCurves':
         self.curves = [import_csv(exp) for exp in self.exp]
         self.sort()
@@ -135,22 +142,17 @@ class ExpCurves:
         if len(self.exp) > 1:
             return True
         return False
-    def curves_areas(self):
-        """Controlla che l'istanza sia piena, poi, nel caso sia un esperimento IdVd,
-         ritorna un dizionario contenente le aree delle curve al suo interno"""
-        if self.contains_group:
-            return None
-        if self.exp[0].exp_type == 'IdVd':
-            if not self.contains_imported_data:
-                self.import_data()
-            areas = {}
-            for name,curve in self.curves[0].items():
-                areas[name] = curve.integrate
-            return areas
-        return None
     def get_vgf(self,curves_dict:dict[str,Curve])->int:
         """Dato un elemento di self.curves, recupera la Vg_f del rispettivo esperimento"""
         return self.exp[self.curves.index(curves_dict)].Vgf
+    def affinity_calc(self) -> 'ExpCurves':
+        for idx,curves_dict in enumerate(self.curves):
+            vgf = self.get_vgf(curves_dict)
+            self.affinities.append({})
+            for name,curve in curves_dict.items():
+                curve_target = get_target_curve(vgf, name)
+                self.affinities[idx][name] = curve.integral_affinity(curve_target)
+        return self
     def names_update(self)->None:
         """
         Se l'istanza di ExpCurves corrente contiene un gruppo di esperimenti, aggiunge
@@ -238,6 +240,13 @@ def same_group(*args:Exp)->bool:
         return True
     ref = args[0].group
     return all(exp.group == ref for exp in args[1:])
+
+def get_target_curve(vgf:int,state:str)->Curve:
+    df_target = pd.read_excel(target_curves_dir / f"{vgf}.xlsx", sheet_name=state)
+    curve_target = Curve(f"taget {state} - Vgf = {vgf}")
+    curve_target.X = df_target['Vds'].to_numpy(dtype=float)
+    curve_target.Y = df_target['Ids'].to_numpy(dtype=float)
+    return curve_target
 
 ## PARAMS ##
 class CP:

@@ -20,17 +20,8 @@ def load_configs():
 
 ## PARAMS ##
 data_dir = Path(__file__).parent.parent.parent/'data'
-IdVd_df = pd.read_excel(data_dir / 'indexes.xlsx', sheet_name='IdVd')
-IdVd_table_exp_mode = IdVd_df.to_dict('records')
-
-TrapData_df = pd.read_excel(data_dir / 'indexes.xlsx', sheet_name='TrapData')
-TrapData_table = TrapData_df.to_dict('records')
+indexes_file = data_dir/'indexes.xlsx'
 
 assets_dir = Path(__file__).resolve().parent.parent / 'assets'
 config_path = assets_dir / 'config.json'
 affinity_file = assets_dir / 'affinity_table.xlsx'
-affinity_exp_table = pd.read_excel(affinity_file, sheet_name='exp')
-
-## DERIVED PARAMS ##
-group_first_only_indexes = IdVd_df.drop_duplicates(subset='group', keep='first').index.tolist()  # restituisce una lista degli indici delle prime occorrenze di ogni gruppo
-IdVd_table_group_mode = IdVd_df.iloc[group_first_only_indexes].to_dict('records')

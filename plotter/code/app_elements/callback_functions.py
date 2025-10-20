@@ -1,12 +1,21 @@
 from pathlib import Path
 import plotly.io as pio
+import pandas as pd
 import dash_bootstrap_components as dbc
-from dash import dcc, Input, Output, State, callback, callback_context, MATCH, ALL, no_update, html
+from dash import dcc, Input, Output, State, callback, callback_context, MATCH, ALL, no_update
 from plotter.code.common import *
-from .parameters import IdVd_df, IdVd_table_exp_mode, IdVd_table_group_mode, load_configs
+from .parameters import indexes_file, load_configs
 
 ## PARAMS ##
 labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}
+IdVd_df = pd.read_excel(indexes_file, sheet_name='IdVd')
+IdVd_table_exp_mode = IdVd_df.to_dict('records')
+
+## DERIVED PARAMS ##
+IdVd_table_group_mode = IdVd_df.iloc[
+    IdVd_df.drop_duplicates(subset='group', keep='first').index.tolist()
+    # restituisce una lista degli indici delle prime occorrenze di ogni gruppo
+].to_dict('records')
 
 ## DYNAMIC CALLBACKS ##
 
@@ -42,10 +51,10 @@ def update_graph_content(tab: str) -> dcc.Graph:
         return "nulla di selezionato"
     if '.csv' not in tab:
         df_group = IdVd_df.loc[IdVd_df['group'] == tab]
-        g = ExpCurves(*df_group['file_path']).import_data()
+        g = ExpCurves(*df_group['file_path']).import_data
         return dcc.Graph(figure=plot(g, all_c=True))
     else:
-        e = ExpCurves(tab).import_data()
+        e = ExpCurves(tab).import_data
         return dcc.Graph(figure=plot(e, all_c=True), style={'height':'100vh'})
 
 @callback(
@@ -162,7 +171,7 @@ def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[
     figs, exp_file_paths = [], []
     match mode:
         case 'ExpMode':
-            exps: list[ExpCurves] = [ExpCurves(data_table[row_i]['file_path']).import_data() for row_i in selected_rows]  # lista di esperimenti corrispondente alle righe selezionate
+            exps: list[ExpCurves] = [ExpCurves(data_table[row_i]['file_path']).import_data for row_i in selected_rows]  # lista di esperimenti corrispondente alle righe selezionate
             figs: list[go.Figure] = [plot(curves=exp, c_to_plot=selected_curves,
                                           to_export=True, legend=bool(legend), colored=bool(colors)) for exp in exps]
             exp_file_paths: list[Path] = [export_path / Path(f"{exp}.{file_format}") for exp in exps]  # estensioni possibili .png, .svg, .pdf
@@ -170,7 +179,7 @@ def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[
             groups_files: list[list[str]] = [
                 IdVd_df.loc[IdVd_df.group == data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows
             ]  # lista contenente liste di indirizzi di file appartenenti ai gruppi selezionati
-            groups_curves: list[ExpCurves] = [ExpCurves(*group_files).import_data() for group_files in groups_files]
+            groups_curves: list[ExpCurves] = [ExpCurves(*group_files).import_data for group_files in groups_files]
             figs: list[go.Figure] = [
                 plot(curves=group_curves, c_to_plot=selected_curves, to_export=True, legend=bool(legend), colored=bool(colors)) for group_curves in groups_curves]
             exp_file_paths: list[Path] = [export_path / Path(f"{group_curves}.{file_format}") for group_curves in groups_curves]

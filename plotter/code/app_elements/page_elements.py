@@ -1,7 +1,7 @@
 import pandas as pd
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
-from .parameters import IdVd_table_exp_mode,TrapData_table, affinity_exp_table
+from .parameters import indexes_file, affinity_file
 
 ## PARAMS ##
 CURVE_CHECKLIST_IDVD = [
@@ -48,23 +48,30 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
         raise KeyError('valore di pagina non trovato')
 
     if page=='IdVd':
-        columns = TABLE_COLUMNS_IDVD
-        if table_id['tab']=='affinity_table':
-            columns += {'name':'Affinity','id':'affinity'}
+        columns = TABLE_COLUMNS_IDVD.copy()
+        if table_id.get('location', None)=='affinity_page':
+            columns.extend([
+                {'name':'Affinity (0,0)','id':'v0'},
+                {'name':'Affinity (-7,0)','id':'0'},
+                {'name':'Affinity (-7,15)','id':'15'},
+                {'name':'Affinity (-7,30)','id':'30'},
+            ])
     elif page=='TrapData':
-        columns = TABLE_COLUMNS_TRAPDATA
+        columns = TABLE_COLUMNS_TRAPDATA.copy()
     else:
         raise ValueError('Non supportati modi diversi da IdVd o TrapData')
 
     if page=='TrapData':
-        data = TrapData_table
+        data = pd.read_excel(indexes_file, sheet_name='TrapData').to_dict('records')
+    elif table_id.get('page', None)=='affinity_page':
+        data = pd.merge(
+            pd.read_excel(indexes_file, sheet_name='IdVd'),
+            pd.read_excel(affinity_file, sheet_name='exp'),
+            on='file_path')
+        data = data.to_dict('records')
     else:
-        data = IdVd_table_exp_mode
-        try:
-            if table_id['tab']=='affinity_table':
-                data = pd.merge(IdVd_table_exp_mode, affinity_exp_table, on='path')
-        except KeyError:
-            pass
+        data = pd.read_excel(indexes_file, sheet_name='IdVd').to_dict('records')
+
 
     return dash_table.DataTable(
         id=table_id,

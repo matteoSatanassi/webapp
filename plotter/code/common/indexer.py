@@ -4,8 +4,8 @@ import numpy as np
 import re
 
 ## PARAMS ##
-IDVD_COLUMNS = ['trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'group', 'file_path']
-TRAPDATA_COLUMNS = ['trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'start_cond', 'file_path']
+IDVD_COLUMNS = ('trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'group', 'file_path')
+TRAPDATA_COLUMNS = ('trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'start_cond', 'file_path')
 
 ## HELPER FUNC ##
 def is_valid_filename(file_path:Path)->bool:

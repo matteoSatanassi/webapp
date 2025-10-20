@@ -183,7 +183,7 @@ def graphics_trapdata(figure:go.Figure) -> go.Figure:
 def plot(curves:ExpCurves, c_to_plot:list[str]=(), all_c:bool=False, to_export:bool=False, legend:bool=True, colored:bool=True)->go.Figure:
     """Plotta le curve interessate, contenute da un'istanza di ExpCurves, contenente a sua volta uno o più Exp"""
     if not curves.contains_imported_data:
-        curves.import_data()
+        curves = curves.import_data
 
     exp_type = curves.exp[0].exp_type
     curves.names_update()

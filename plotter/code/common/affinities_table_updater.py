@@ -1,10 +1,9 @@
-from ..app_elements import affinity_file
+from plotter.code.app_elements import affinity_file
 from pathlib import Path
 import pandas as pd
-import numpy as np
 
 ## PARAMS ##
-EXP_COLUMNS = ('path', 'group', 'v0', '0', '15', '30')
+EXP_COLUMNS = ('file_path', 'group', 'v0', '0', '15', '30')
 GROUP_COLUMNS = ('group', 'aff')
 
 ## FUNC ##
@@ -12,7 +11,6 @@ def load_or_create_affinity_df(file_path: Path, sheet_name: str, columns: list) 
     """Carica o crea un dataframe di indice"""
     try:
         df = pd.read_excel(file_path, sheet_name=sheet_name)
-        df['path'] = df['path'].apply(Path)
         return df
     except (FileNotFoundError, ValueError):
         return pd.DataFrame(columns=columns)
@@ -34,7 +32,7 @@ def affinities_table_updater(indexes_file: str | Path) -> None:
     idx_file_path = Path(indexes_file)
     idx = pd.read_excel(idx_file_path, sheet_name='IdVd')   # rendo il file degli indici un df
 
-    paths = set(idx['file_path'].apply(Path))
+    paths = set(idx['file_path'])
     groups = set(idx['group'].unique())
 
     paths_to_add = []
@@ -45,11 +43,11 @@ def affinities_table_updater(indexes_file: str | Path) -> None:
     df_aff_group = load_or_create_affinity_df(affinity_file, 'group', GROUP_COLUMNS)
 
     # rimuove le righe con file non esistenti
-    df_aff_exp = df_aff_exp[df_aff_exp['path'].isin(paths)]
+    df_aff_exp = df_aff_exp[df_aff_exp['file_path'].isin(paths)]
     df_aff_group = df_aff_group[df_aff_group['group'].isin(groups)]
 
     # aggiunge i path/groups non presenti nel file a una lista
-    present_paths = set(df_aff_exp['path'])
+    present_paths = set(df_aff_exp['file_path'])
     present_group = set(df_aff_group['group'])
     for path in paths:
         if path not in present_paths:
@@ -60,22 +58,26 @@ def affinities_table_updater(indexes_file: str | Path) -> None:
 
     # aggiunge i nuovi dati ai df
     if paths_to_add:
-        null_list = [None]*len(paths_to_add)
-        df_to_concat = pd.DataFrame({
-            'path' : paths_to_add,
-            'group' : [idx.loc[idx['file_path']==path,'group'].values[0] for path in paths_to_add],
-            'v0':null_list,
-            '0':null_list,
-            '15':null_list,
-            '30':null_list,
-        })
-        pd.concat([df_aff_exp, df_to_concat], ignore_index=True)
+        df_paths = pd.DataFrame({'file_path': paths_to_add})
+        df_to_concat = pd.merge(
+            df_paths,
+            idx[['file_path', 'group']],
+            on='file_path',
+            how='left'
+        )
+        null_list = ['-'] * len(paths_to_add)
+        df_to_concat['v0'] = null_list
+        df_to_concat['0'] = null_list
+        df_to_concat['15'] = null_list
+        df_to_concat['30'] = null_list
+
+        df_aff_exp = pd.concat([df_aff_exp, df_to_concat], ignore_index=True)
     if groups_to_add:
         df_to_concat = pd.DataFrame({
             'group' : groups_to_add,
             'aff': [None]*len(groups_to_add),
         })
-        pd.concat([df_aff_group, df_to_concat], ignore_index=True)
+        df_aff_group = pd.concat([df_aff_group, df_to_concat], ignore_index=True)
 
     # salva i nuovi df
     with pd.ExcelWriter(affinity_file) as writer:
