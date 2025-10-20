@@ -26,7 +26,10 @@ IdVd_table_exp_mode = IdVd_df.to_dict('records')
 TrapData_df = pd.read_excel(data_dir / 'indexes.xlsx', sheet_name='TrapData')
 TrapData_table = TrapData_df.to_dict('records')
 
-config_path = Path(__file__).resolve().parent.parent / 'assets' / 'config.json'
+assets_dir = Path(__file__).resolve().parent.parent / 'assets'
+config_path = assets_dir / 'config.json'
+affinity_file = assets_dir / 'affinity_table.xlsx'
+affinity_exp_table = pd.read_excel(affinity_file, sheet_name='exp')
 
 ## DERIVED PARAMS ##
 group_first_only_indexes = IdVd_df.drop_duplicates(subset='group', keep='first').index.tolist()  # restituisce una lista degli indici delle prime occorrenze di ogni gruppo

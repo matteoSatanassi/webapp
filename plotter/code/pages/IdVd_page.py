@@ -29,7 +29,7 @@ layout = dbc.Container([
 
                             # Tabella
                             html.Div(
-                                my_table_template({'page':PAGE, 'item':'table', 'location':'page'}),
+                                my_table_template({'page':PAGE, 'item':'table', 'location':'page', 'tab':'principal'}),
                                 style={
                                     'overflowY': 'auto',
                                     'border': '1px solid #dee2e6',

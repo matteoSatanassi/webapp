@@ -1,4 +1,4 @@
-from dash import Dash, page_registry, page_container, html
+from dash import Dash, page_container
 from app_elements import *
 from plotter.code.app_elements.callback_functions import *
 

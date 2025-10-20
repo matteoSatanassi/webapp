@@ -1,6 +1,7 @@
+import pandas as pd
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
-from .parameters import IdVd_table_exp_mode,TrapData_table
+from .parameters import IdVd_table_exp_mode,TrapData_table, affinity_exp_table
 
 ## PARAMS ##
 CURVE_CHECKLIST_IDVD = [
@@ -48,14 +49,26 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
 
     if page=='IdVd':
         columns = TABLE_COLUMNS_IDVD
+        if table_id['tab']=='affinity_table':
+            columns += {'name':'Affinity','id':'affinity'}
     elif page=='TrapData':
         columns = TABLE_COLUMNS_TRAPDATA
     else:
         raise ValueError('Non supportati modi diversi da IdVd o TrapData')
 
+    if page=='TrapData':
+        data = TrapData_table
+    else:
+        data = IdVd_table_exp_mode
+        try:
+            if table_id['tab']=='affinity_table':
+                data = pd.merge(IdVd_table_exp_mode, affinity_exp_table, on='path')
+        except KeyError:
+            pass
+
     return dash_table.DataTable(
         id=table_id,
-        data=IdVd_table_exp_mode if page=='IdVd' else TrapData_table,
+        data=data,
         columns=columns,
         sort_action='native',
         filter_action='native',

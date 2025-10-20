@@ -77,6 +77,10 @@ class Curve:
         self.X = self.X[i_sorted]
         self.Y = self.Y[i_sorted]
         return None
+    @property
+    def integrate(self)->float:
+        """Integra la curva caricata nell'istanza"""
+        return np.trapezoid(self.Y, self.X)
     def y_limits(self)->list:
         return self.Y.min(), self.Y.max()
 
@@ -131,6 +135,19 @@ class ExpCurves:
         if len(self.exp) > 1:
             return True
         return False
+    def curves_areas(self):
+        """Controlla che l'istanza sia piena, poi, nel caso sia un esperimento IdVd,
+         ritorna un dizionario contenente le aree delle curve al suo interno"""
+        if self.contains_group:
+            return None
+        if self.exp[0].exp_type == 'IdVd':
+            if not self.contains_imported_data:
+                self.import_data()
+            areas = {}
+            for name,curve in self.curves[0].items():
+                areas[name] = curve.integrate
+            return areas
+        return None
     def get_vgf(self,curves_dict:dict[str,Curve])->int:
         """Dato un elemento di self.curves, recupera la Vg_f del rispettivo esperimento"""
         return self.exp[self.curves.index(curves_dict)].Vgf
@@ -170,7 +187,7 @@ def toggle(value:str)->str:
 def check_arg(arg)->Exp:
     """
     Controlla gli argomenti in ingresso alla classe ExpCurves,
-    facendo in modo che siano sempre istanze di classe Exp compilate
+    facendo in modo di ritornare sempre istanze della classe Exp compilate
     """
     if isinstance(arg, Exp):
         if arg.is_to_compile:

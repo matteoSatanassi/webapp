@@ -54,7 +54,7 @@ def load_or_create_index(file_path: Path, sheet_name: str, columns: list) -> pd.
     """Carica o crea un dataframe di indice"""
     try:
         df = pd.read_excel(file_path, sheet_name=sheet_name)
-        df['file_path'] = df['file_path'].apply(Path)
+        df['file_path'] = df['file_path'].apply(Path)   # rendo i valori della colonna dei Path invece che stringhe
         return df
     except (FileNotFoundError, ValueError):
         return pd.DataFrame(columns=columns)
@@ -104,10 +104,6 @@ def indexer(data_dir: str | Path) -> list[Path]:
     # controlla che il file degli indici esista, altrimenti crea il DataFrame
     df_indexes_IdVd = load_or_create_index(excel_indexes_file, 'IdVd', IDVD_COLUMNS)
     df_indexes_TrapData = load_or_create_index(excel_indexes_file, 'TrapData', TRAPDATA_COLUMNS)
-
-    # rendo i valori nelle colonne file_path dei Path invece che delle stringhe
-    df_indexes_IdVd['file_path'] = df_indexes_IdVd['file_path'].apply(Path)
-    df_indexes_TrapData['file_path'] = df_indexes_TrapData['file_path'].apply(Path)
 
     # rimuove le righe con file non esistenti
     df_indexes_IdVd = df_indexes_IdVd[df_indexes_IdVd['file_path'].isin(files_set)]
