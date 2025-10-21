@@ -3,7 +3,7 @@ import plotly.io as pio
 import pandas as pd
 import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, State, callback, callback_context, MATCH, ALL, no_update
-from plotter.code.common import *
+from .common import *
 from .parameters import indexes_file, affinity_file, load_configs
 
 ## PARAMS ##
@@ -383,17 +383,15 @@ def affinity_calc(n_clicks:int, mode:str):
     rows_exp_sheet = []
     rows_group_sheet = []
     for group in df_affinity_groups['group']:
-        print(group)
-        print(df_affinity.loc[df_affinity['group'] == group]['file_path'].to_string(index=False))
         g = ExpCurves(*df_affinity.loc[df_affinity['group'] == group]['file_path']).import_data.affinity_calc
 
         for a, e in zip(g.affinities, g.exp):
             row = a.copy()
-            row['file_path'], row['group'] = str(e.path), e.group
+            row['file_path'], row['group'] = str(e.path), group
             rows_exp_sheet.append(row)
 
         row = g.group_affinity.copy()
-        row['group'] = g.group
+        row['group'] = group
         rows_group_sheet.append(row)
 
     df_affinity = pd.DataFrame(rows_exp_sheet)[df_affinity.columns]

@@ -96,6 +96,25 @@ layout = dbc.Container([
             ], className="mb-4"),
 
             dbc.Card([
+                dbc.CardHeader("Impostazioni Dati", className="bg-info"),
+                dbc.CardBody([
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Label("Cartella Dati"),
+                            dbc.InputGroup([
+                                dbc.Input(
+                                    id="config-data-path",
+                                    value="",
+                                    type="text"
+                                ),
+                            ]),
+                            dbc.FormText("Cartella contenente i file da visualizzare")
+                        ], width=6),
+                    ])
+                ])
+            ], className="mb-4"),
+
+            dbc.Card([
                 dbc.CardHeader("Impostazioni Grafiche", className="bg-info"),
                 dbc.CardBody([
                     dbc.Row([
@@ -165,6 +184,7 @@ layout = dbc.Container([
 ## CALLBACKS ##
 @callback(
     Output("config-export-path", "value"),
+    Output("config-data-path", "value"),
     Output("config-export-format", "value"),
     Output("config-theme", "value"),
     Output("current-theme", "data"),
@@ -177,7 +197,7 @@ layout = dbc.Container([
 def initialize_config_values(is_loaded):
     """Inizializza i valori della pagina e non permette ulteriori aggiornamenti"""
     if is_loaded:
-        return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
     config = load_configs()
 
@@ -189,6 +209,7 @@ def initialize_config_values(is_loaded):
 
     return (
         config["export_directory"],
+        config["data_directory"],
         config["export_format"],
         config["theme"],
         config["theme"],

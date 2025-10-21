@@ -1,5 +1,4 @@
 from pathlib import Path
-import pandas as pd
 import json
 
 ## FUNC ##
@@ -11,6 +10,7 @@ def load_configs():
     else:
         return {
             "theme": "SUPERHERO",
+            "data_directory": str(Path(__file__).parent.parent.parent/'data'),
             "export_directory": str(Path.home() / 'Desktop' / 'exported_files'),
             "export_format": "png",
             "legend": True,
@@ -19,10 +19,9 @@ def load_configs():
         }
 
 ## PARAMS ##
-data_dir = Path(__file__).parent.parent.parent/'data'
-indexes_file = data_dir/'indexes.xlsx'
-
 assets_dir = Path(__file__).resolve().parent.parent / 'assets'
 config_path = assets_dir / 'config.json'
 
+data_dir = Path(load_configs()["data_directory"])
+indexes_file = data_dir/'indexes.xlsx'
 affinity_file = data_dir/'affinity_table.xlsx'

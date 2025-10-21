@@ -1,6 +1,6 @@
 from dash import Dash, page_container,html
 from app_elements import *
-from plotter.code.app_elements.callback_functions import *
+from app_elements.callback_functions import *
 
 indexer(data_dir)   # indexing data files at the start
 affinities_table_updater(indexes_file)  # updating affinities table
