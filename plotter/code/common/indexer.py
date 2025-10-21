@@ -27,13 +27,13 @@ def info_extract(file_path:Path)->list:
     :rtype: list
     :example:
     >>> info_extract('../IdVd_exponential_Vgf_2_Es_1.72_Em_1.04.csv')
-    ['exponential', 1.72, 1.04, 2, 'exponential_1.04_1.72', '../IdVd_exponential_Vgf_2_Es_1.72_Em_1.04.csv']
+    ['exponential', 1.72, 1.04, 2, 'IdVd_exponential_Em_1.04_Es_1.72', '../IdVd_exponential_Vgf_2_Es_1.72_Em_1.04.csv']
     >>> info_extract('../TrapData_exponential_Vgf_0_Es_1.72_Em_0.18_(0,0).csv')
     ['exponential', 1.72, 0.18, 0, 'v0', '../TrapData_exponential_Vgf_0_Es_1.72_Em_0.18_(0,0).csv']
     """
     info = np.array((file_path.stem.split('_'))) #es: IdVd_exponential_Vgf_2_Es_1.72_Em_1.04
     if info[0] == 'IdVd':
-        group = f"{info[1]}_{info[7]}_{info[5]}"
+        group = f"IdVd_{info[1]}_Em_{info[7]}_Es_{info[5]}"
         return info[1],info[5],info[7],info[3],group,str(file_path)
     else:
         return info[1],info[5],info[7],info[3],info[8],str(file_path)

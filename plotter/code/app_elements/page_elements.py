@@ -24,20 +24,20 @@ CURVE_CHECKLIST_TRAPDATA = [
     {'label': 'x=1.834µm', 'value': '1.8340'}
 ]
 TABLE_COLUMNS_IDVD = [
-    {'name': 'Trap Distribution', 'id': 'trap_distr'},
-    {'name': 'E_mid', 'id': 'e_mid'},
-    {'name': 'E_σ', 'id': 'e_sigma'},
-    {'name': 'V_gf', 'id': 'v_gf'},
-    {'name': 'file_path', 'id': 'file_path'},
-    {'name': 'group', 'id': 'group'},
+    {'name': 'Trap Distribution', 'id': 'trap_distr', 'type':'text'},
+    {'name': 'E_mid', 'id': 'e_mid', 'type':'numeric'},
+    {'name': 'E_σ', 'id': 'e_sigma', 'type':'numeric'},
+    {'name': 'V_gf', 'id': 'v_gf', 'type':'numeric'},
+    {'name': 'file_path', 'id': 'file_path', 'type':'text'},
+    {'name': 'group', 'id': 'group', 'type':'text'},
 ]
 TABLE_COLUMNS_TRAPDATA = [
-    {'name': 'Trap Distribution', 'id': 'trap_distr'},
-    {'name': 'E_mid', 'id': 'e_mid'},
-    {'name': 'E_σ', 'id': 'e_sigma'},
-    {'name': 'V_gf', 'id': 'v_gf'},
-    {'name': 'file_path', 'id': 'file_path'},
-    {'name': 'Start Condition', 'id': 'start_cond'},
+    {'name': 'Trap Distribution', 'id': 'trap_distr', 'type':'text'},
+    {'name': 'E_mid', 'id': 'e_mid', 'type':'numeric'},
+    {'name': 'E_σ', 'id': 'e_sigma', 'type':'numeric'},
+    {'name': 'V_gf', 'id': 'v_gf', 'type':'numeric'},
+    {'name': 'file_path', 'id': 'file_path', 'type':'text'},
+    {'name': 'Start Condition', 'id': 'start_cond', 'type':'text'},
 ]
 
 ## PAGE ELEMENTS ##
@@ -47,31 +47,37 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
     except KeyError:
         raise KeyError('valore di pagina non trovato')
 
-    if page=='IdVd':
+    if page == 'IdVd':
         columns = TABLE_COLUMNS_IDVD.copy()
-        if table_id.get('location', None)=='affinity_page':
+        if table_id.get('location', None) == 'affinity_page':
             columns.extend([
-                {'name':'Affinity (0,0)','id':'v0'},
-                {'name':'Affinity (-7,0)','id':'0'},
-                {'name':'Affinity (-7,15)','id':'15'},
-                {'name':'Affinity (-7,30)','id':'30'},
+                {'name': 'Affinity (0,0)', 'id': 'v0', 'type': 'numeric', 'format':dash_table.FormatTemplate.percentage(2)},
+                {'name': 'Affinity (-7,0)', 'id': '0', 'type': 'numeric', 'format':dash_table.FormatTemplate.percentage(2)},
+                {'name': 'Affinity (-7,15)', 'id': '15', 'type': 'numeric', 'format':dash_table.FormatTemplate.percentage(2)},
+                {'name': 'Affinity (-7,30)', 'id': '30', 'type': 'numeric', 'format':dash_table.FormatTemplate.percentage(2)},
             ])
-    elif page=='TrapData':
+    elif page == 'TrapData':
         columns = TABLE_COLUMNS_TRAPDATA.copy()
     else:
         raise ValueError('Non supportati modi diversi da IdVd o TrapData')
 
-    if page=='TrapData':
-        data = pd.read_excel(indexes_file, sheet_name='TrapData').to_dict('records')
-    elif table_id.get('page', None)=='affinity_page':
+    columns = pd.DataFrame(columns)
+
+    if page == 'TrapData':
+        data = pd.read_excel(indexes_file, sheet_name='TrapData')
+    elif table_id.get('location', None) == 'affinity_page':
         data = pd.merge(
             pd.read_excel(indexes_file, sheet_name='IdVd'),
             pd.read_excel(affinity_file, sheet_name='exp'),
             on='file_path')
-        data = data.to_dict('records')
     else:
-        data = pd.read_excel(indexes_file, sheet_name='IdVd').to_dict('records')
+        data = pd.read_excel(indexes_file, sheet_name='IdVd')
 
+    for col in columns.loc[columns['type'] == 'numeric']['id']:
+        data[col] = pd.to_numeric(data[col], errors='coerce')
+
+    columns = columns.to_dict('records')
+    data = data.fillna('-').to_dict('records')
 
     return dash_table.DataTable(
         id=table_id,

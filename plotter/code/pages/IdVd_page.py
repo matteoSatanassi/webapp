@@ -167,16 +167,23 @@ layout = dbc.Container([
                         ], className="py-2 bg-info"),
                         dbc.CardBody([
                             # Opzioni di visualizzazione
-                            #mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'page'}),
+                            mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'affinity_page'}),
 
                             # Tabella
-                            html.Div(
-                                my_table_template({'page':PAGE, 'item':'table', 'location':'affinity_page'}),
-                                style={
-                                    'overflowY': 'auto',
-                                    'border': '1px solid #dee2e6',
-                                    'borderRadius': '5px'
-                                }
+                            dcc.Loading(
+                                id={'page':PAGE, 'item':'loading-affinity-table'},
+                                fullscreen=True,
+                                custom_spinner=custom_spinner("Calcolando affinità!"),
+                                overlay_style={"visibility": "visible", "filter": "blur(2px)"},
+                                delay_show=500,
+                                children = html.Div(
+                                    my_table_template({'page':PAGE, 'item':'table', 'location':'affinity_page'}),
+                                    style={
+                                        'overflowY': 'auto',
+                                        'border': '1px solid #dee2e6',
+                                        'borderRadius': '5px'
+                                    }
+                                )
                             ),
 
                             #Bottoni sotto tabella

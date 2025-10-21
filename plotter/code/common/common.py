@@ -85,7 +85,7 @@ class Curve:
         return np.trapezoid(self.Y, self.X)
     def integral_affinity(self, curve:'Curve')->float:
         target_area = curve.integrate
-        return 100*(1-abs(self.integrate-target_area)/target_area)
+        return max(1-abs(self.integrate-target_area)/abs(target_area),0)
     def y_limits(self)->list:
         return self.Y.min(), self.Y.max()
 
@@ -97,6 +97,7 @@ class ExpCurves:
         self.exp = [check_arg(arg) for arg in args]
         self.curves:list[dict[str,Curve]] = []
         self.affinities:list[dict[str,float]] = []
+        self.group_affinity:dict[str,float]=None
         if not self.exp:
             raise ValueError("ExpCurves richiede almeno un esperimento")
         if not same_group(*self.exp):
@@ -142,16 +143,33 @@ class ExpCurves:
         if len(self.exp) > 1:
             return True
         return False
-    def get_vgf(self,curves_dict:dict[str,Curve])->int:
-        """Dato un elemento di self.curves, recupera la Vg_f del rispettivo esperimento"""
-        return self.exp[self.curves.index(curves_dict)].Vgf
+    def get_vgf(self,attribute:dict)->int:
+        """Dato un elemento di self.curves o self.affinities, recupera la Vg_f del rispettivo esperimento"""
+        if attribute in self.curves:
+            return self.exp[self.curves.index(attribute)].Vgf
+        if attribute in self.affinities:
+            return self.exp[self.affinities.index(attribute)].Vgf
+        return None
+    @property
+    def group(self)->str:
+        if self.contains_group:
+            return self.exp[0].group
+        return None
+    @property
     def affinity_calc(self) -> 'ExpCurves':
+        self.affinities = []
         for idx,curves_dict in enumerate(self.curves):
             vgf = self.get_vgf(curves_dict)
-            self.affinities.append({})
+            e_affinity = {}
             for name,curve in curves_dict.items():
                 curve_target = get_target_curve(vgf, name)
-                self.affinities[idx][name] = curve.integral_affinity(curve_target)
+                e_affinity[name] = curve.integral_affinity(curve_target)
+            self.affinities.append(e_affinity)
+
+        if self.contains_group:
+            df_temp = pd.DataFrame(self.affinities)
+            self.group_affinity = df_temp.mean().to_dict()
+
         return self
     def names_update(self)->None:
         """

@@ -24,4 +24,5 @@ indexes_file = data_dir/'indexes.xlsx'
 
 assets_dir = Path(__file__).resolve().parent.parent / 'assets'
 config_path = assets_dir / 'config.json'
-affinity_file = assets_dir / 'affinity_table.xlsx'
+
+affinity_file = data_dir/'affinity_table.xlsx'

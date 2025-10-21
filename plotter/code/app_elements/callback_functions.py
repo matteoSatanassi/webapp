@@ -4,18 +4,10 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, State, callback, callback_context, MATCH, ALL, no_update
 from plotter.code.common import *
-from .parameters import indexes_file, load_configs
+from .parameters import indexes_file, affinity_file, load_configs
 
 ## PARAMS ##
 labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}
-IdVd_df = pd.read_excel(indexes_file, sheet_name='IdVd')
-IdVd_table_exp_mode = IdVd_df.to_dict('records')
-
-## DERIVED PARAMS ##
-IdVd_table_group_mode = IdVd_df.iloc[
-    IdVd_df.drop_duplicates(subset='group', keep='first').index.tolist()
-    # restituisce una lista degli indici delle prime occorrenze di ogni gruppo
-].to_dict('records')
 
 ## DYNAMIC CALLBACKS ##
 
@@ -49,8 +41,11 @@ def update_graph_content(tab: str) -> dcc.Graph:
     """Aggiorna il grafico in base al tab aperto e alle curve selezionate nella checklist"""
     if not tab:
         return "nulla di selezionato"
+
+    df_IdVd = pd.read_excel(indexes_file, sheet_name='IdVd')
+
     if '.csv' not in tab:
-        df_group = IdVd_df.loc[IdVd_df['group'] == tab]
+        df_group = df_IdVd.loc[df_IdVd['group'] == tab]
         g = ExpCurves(*df_group['file_path']).import_data
         return dcc.Graph(figure=plot(g, all_c=True))
     else:
@@ -71,14 +66,44 @@ def show_graph_button(curr_tab):
     Output({'page':'IdVd', 'item':'table', 'location':MATCH}, 'hidden_columns'),
     Output({'page':'IdVd', 'item':'table', 'location':MATCH}, 'selected_rows', allow_duplicate=True),
     Input({'page':'IdVd', 'item':'radio-mode-toggle', 'location':MATCH}, 'value'),
+    State({'page':'IdVd', 'item':'radio-mode-toggle', 'location':MATCH}, 'id'),
+    State({'page':'IdVd', 'item':'table', 'location':MATCH}, 'columns'),
     prevent_initial_call=True
 )
-def update_table(mode:str):
+def update_table(mode:str,radio_id:dict[str,str],table_columns:list[dict[str,str]]):
     """Aggiorna la tabella nel caso venga cambiata la modalità di visualizzazione esperimenti"""
+
+    cols_to_hide = ['file_path', 'group']
+
+    df_IdVd = pd.read_excel(indexes_file, sheet_name='IdVd')
+
     if mode == 'ExpMode':
-        return IdVd_table_exp_mode, ['file_path', 'group'], []
+        data = df_IdVd
     else:
-        return IdVd_table_group_mode, ['file_path', 'group', 'v_gf'], []
+        data = df_IdVd.iloc[
+            df_IdVd.drop_duplicates(subset='group', keep='first').index.tolist()
+        ]
+        cols_to_hide.append('v_gf')
+
+    if radio_id['location']=='affinity_page':
+        if mode == 'ExpMode':
+            data = pd.merge(
+                data,
+                pd.read_excel(affinity_file, sheet_name='exp'),
+                on='file_path')
+        else:
+            data = pd.merge(
+                data,
+                pd.read_excel(affinity_file, sheet_name='groups'),
+                on='group'
+            )
+
+    columns = pd.DataFrame(table_columns)
+    for col in columns.loc[columns['type'] == 'numeric']['id']:
+        data[col] = pd.to_numeric(data[col], errors='coerce')
+    data.fillna('-', inplace=True)
+
+    return data.to_dict('records'), cols_to_hide, []
 
 @callback(
     Output({'page': MATCH, 'item': 'modal'}, 'is_open'),
@@ -167,6 +192,8 @@ def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[
     if not n_clicks or not selected_rows:
         return no_update, no_update
 
+    df_IdVd = pd.read_excel(indexes_file, sheet_name='IdVd')
+
     export_path = find_export_path()
     figs, exp_file_paths = [], []
     match mode:
@@ -177,7 +204,7 @@ def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[
             exp_file_paths: list[Path] = [export_path / Path(f"{exp}.{file_format}") for exp in exps]  # estensioni possibili .png, .svg, .pdf
         case 'GroupMode':
             groups_files: list[list[str]] = [
-                IdVd_df.loc[IdVd_df.group == data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows
+                df_IdVd.loc[df_IdVd.group == data_table[row_i]['group']]['file_path'].tolist() for row_i in selected_rows
             ]  # lista contenente liste di indirizzi di file appartenenti ai gruppi selezionati
             groups_curves: list[ExpCurves] = [ExpCurves(*group_files).import_data for group_files in groups_files]
             figs: list[go.Figure] = [
@@ -200,13 +227,15 @@ def export_current(n_clicks:int, curr_tab:str):
     if not n_clicks or not curr_tab:
         return no_update, no_update
 
+    df_IdVd = pd.read_excel(indexes_file, sheet_name='IdVd')
+
     configs = load_configs()
     export_dir = find_export_path()
 
     if ".csv" in curr_tab:
         curves = ExpCurves(curr_tab)
     else:
-        df_group = IdVd_df.loc[IdVd_df['group'] == curr_tab]
+        df_group = df_IdVd.loc[df_IdVd['group'] == curr_tab]
         curves = ExpCurves(*df_group['file_path'])
 
     fig = plot(curves=curves, all_c=True, to_export=True,
@@ -335,6 +364,58 @@ def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
         except (KeyError, IndexError):
             pass
     return tabs, open_tab
+
+@callback(
+    Output({'page':'IdVd', 'item':'table', 'location':'affinity_page'}, 'data', allow_duplicate=True),
+    Input({'page': 'IdVd', 'item': 'button-calculate-affinity'}, 'n_clicks'),
+    State({'page':'IdVd', 'item':'radio-mode-toggle', 'location':'affinity_page'}, 'value'),
+    prevent_initial_call=True
+)
+def affinity_calc(n_clicks:int, mode:str):
+    if not n_clicks:
+        return no_update
+
+    df_IdVd = pd.read_excel(indexes_file, sheet_name='IdVd')
+
+    df_affinity = pd.read_excel(affinity_file, sheet_name='exp')
+    df_affinity_groups = pd.read_excel(affinity_file, sheet_name='groups')
+
+    rows_exp_sheet = []
+    rows_group_sheet = []
+    for group in df_affinity_groups['group']:
+        print(group)
+        print(df_affinity.loc[df_affinity['group'] == group]['file_path'].to_string(index=False))
+        g = ExpCurves(*df_affinity.loc[df_affinity['group'] == group]['file_path']).import_data.affinity_calc
+
+        for a, e in zip(g.affinities, g.exp):
+            row = a.copy()
+            row['file_path'], row['group'] = str(e.path), e.group
+            rows_exp_sheet.append(row)
+
+        row = g.group_affinity.copy()
+        row['group'] = g.group
+        rows_group_sheet.append(row)
+
+    df_affinity = pd.DataFrame(rows_exp_sheet)[df_affinity.columns]
+    df_affinity_groups = pd.DataFrame(rows_group_sheet)[df_affinity_groups.columns]
+
+    with pd.ExcelWriter(affinity_file) as writer:
+        df_affinity.to_excel(writer, sheet_name='exp', index=False)
+        df_affinity_groups.to_excel(writer, sheet_name='groups', index=False)
+
+    if mode == 'ExpMode':
+        data = pd.merge(df_IdVd, df_affinity, on='file_path')
+    else:
+        data = df_IdVd.iloc[
+            df_IdVd.drop_duplicates(subset='group', keep='first').index.tolist()
+        ]
+        data = pd.merge(
+            data,
+            df_affinity_groups,
+            on='group'
+        )
+
+    return data.to_dict('records')
 
 ## HELPER FUNC ##
 def try_mkdir(path:Path)->Path:
