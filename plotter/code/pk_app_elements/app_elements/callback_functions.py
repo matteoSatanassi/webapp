@@ -274,11 +274,7 @@ def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab
             if exp_type:
                 tabs.append(create_tab(row, tab_type=exp_type))
 
-    if not open_tabs:
-        # se non c'è alcun tab già aperto, apro il primo tab aggiunto
-        return tabs, [], table_data[selected_rows[0]]['file_path' if curr_mode == 'ExpMode' else 'group']
-    else:
-        return tabs, [], curr_tab  # altrimenti lascio aperto il tab già selezionato
+    return tabs, [], table_data[selected_rows[0]]['file_path' if curr_mode == 'ExpMode' else 'group']
 
 callback([
     Output({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
