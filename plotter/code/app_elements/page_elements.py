@@ -49,7 +49,7 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
 
     if page == 'IdVd':
         columns = TABLE_COLUMNS_IDVD.copy()
-        if table_id.get('location', None) == 'affinity_page':
+        if table_id.get('location', None) == 'affinity-page':
             columns.extend([
                 {'name': 'Affinity (0,0)', 'id': 'v0', 'type': 'numeric', 'format':dash_table.FormatTemplate.percentage(2)},
                 {'name': 'Affinity (-7,0)', 'id': '0', 'type': 'numeric', 'format':dash_table.FormatTemplate.percentage(2)},
@@ -65,10 +65,10 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
 
     if page == 'TrapData':
         data = pd.read_excel(indexes_file, sheet_name='TrapData')
-    elif table_id.get('location', None) == 'affinity_page':
+    elif table_id.get('location', None) == 'affinity-page':
         data = pd.merge(
             pd.read_excel(indexes_file, sheet_name='IdVd'),
-            pd.read_excel(affinity_file, sheet_name='exp'),
+            pd.read_excel(affinity_file, sheet_name='exp').drop(columns=['group']),
             on='file_path')
     else:
         data = pd.read_excel(indexes_file, sheet_name='IdVd')

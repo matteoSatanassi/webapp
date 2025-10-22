@@ -15,8 +15,8 @@ labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}
     Output({'page':MATCH, 'item':'button-close-current-tab'}, 'style'),
     Output({'page':MATCH, 'item':'menu-tab-management'}, 'style'),
     Output({'page':MATCH, 'item':'menu-tab-management'}, 'children'),
-    Input({'page':MATCH, 'item':'tabs'}, 'children'),
-    State({'page':MATCH, 'item':'tabs'}, 'id'),
+    Input({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
+    State({'page':MATCH, 'item': 'graph-tabs'}, 'id'),
 )
 def tab_managers_displayer(tabs:list[dcc.Tab], tabs_id:dict[str,str]):
     """Callback che permette di visualizzare i pulsanti di gestione dei tab"""
@@ -34,8 +34,8 @@ def tab_managers_displayer(tabs:list[dcc.Tab], tabs_id:dict[str,str]):
         return {'display': 'block'}, {'display': 'block'}, dropdown_elems
 
 @callback(
-    Output({'page':MATCH, 'item':'tabs-content'}, 'children'),
-    Input({'page':MATCH, 'item':'tabs'}, 'value')
+    Output({'page':MATCH, 'item': 'graph-tabs-content'}, 'children'),
+    Input({'page':MATCH, 'item': 'graph-tabs'}, 'value')
 )
 def update_graph_content(tab: str) -> dcc.Graph:
     """Aggiorna il grafico in base al tab aperto e alle curve selezionate nella checklist"""
@@ -54,7 +54,7 @@ def update_graph_content(tab: str) -> dcc.Graph:
 
 @callback(
     Output({'page':MATCH, 'item':'graph-controls'}, 'style'),
-    Input({'page':MATCH, 'item':'tabs'}, 'value'),
+    Input({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
 )
 def show_graph_button(curr_tab):
     if not curr_tab:
@@ -85,11 +85,11 @@ def update_table(mode:str,radio_id:dict[str,str],table_columns:list[dict[str,str
         ]
         cols_to_hide.append('v_gf')
 
-    if radio_id['location']=='affinity_page':
+    if radio_id['location']=='affinity-page':
         if mode == 'ExpMode':
             data = pd.merge(
                 data,
-                pd.read_excel(affinity_file, sheet_name='exp'),
+                pd.read_excel(affinity_file, sheet_name='exp').drop(columns=['group']),
                 on='file_path')
         else:
             data = pd.merge(
@@ -218,9 +218,9 @@ def export_selected(n_clicks:int, selected_curves:list[str], selected_rows:list[
         return no_update, f"export failed: {e}"
 
 @callback(
-    Output({'page':MATCH, 'item':'store-loading-placeholder', 'location':'page'}, 'data'),
+    Output({'page':MATCH, 'item':'store-loading-placeholder', 'location':'main-page'}, 'data'),
     Input({'page': MATCH, 'item': 'button-export-current-graph'}, 'n_clicks'),
-    State({'page':MATCH, 'item':'tabs'}, 'value'),
+    State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
     prevent_initial_call=True
 )
 def export_current(n_clicks:int, curr_tab:str):
@@ -246,23 +246,7 @@ def export_current(n_clicks:int, curr_tab:str):
     except Exception as e:
         return f"export failed: {e}"
 
-@callback(
-    Output({'page':MATCH, 'item':'tabs'}, 'children'),
-    Output({'page':MATCH, 'item':'table', 'location':'page'}, 'selected_rows'),
-    Output({'page':MATCH, 'item':'tabs'}, 'value'),
-    # n_clicks (plot button)
-    Input({'page': MATCH, 'item': 'button-plot'}, 'n_clicks'),
-    # selected_rows: indici delle righe selezionate (considerati filtri vari colonne)
-    State({'page': MATCH, 'item': 'table', 'location': 'page'}, 'derived_virtual_selected_rows'),
-    # table_data: dati della tabella (considerati filtri vari colonne)
-    State({'page': MATCH, 'item': 'table', 'location': 'page'}, 'derived_virtual_data'),
-    # curr_tab: tab attualmente aperto (se nessuno None)
-    State({'page': MATCH, 'item': 'tabs'}, 'value'),
-    # tabs: lista dei tab disponibili
-    State({'page': MATCH, 'item': 'tabs'}, 'children'),
-    # curr_mode: modo corrente della tabella (ExpMode/GroupMode)
-    State({'page': MATCH, 'item': 'radio-mode-toggle', 'location': 'page'}, 'value')
-)
+
 def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab:str,
                 tabs:list[dcc.Tab], curr_mode='ExpMode')->list[dcc.Tab]|list|str:
     """
@@ -271,7 +255,7 @@ def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab
     """
     tabs = tabs or []
     if not n_clicks or not selected_rows:
-        return tabs, [], curr_tab
+        return no_update,no_update,no_update
 
     open_tabs = [tab['props']['value'] for tab in tabs]
 
@@ -280,6 +264,7 @@ def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab
 
         if ((row['file_path'] not in open_tabs and curr_mode == 'ExpMode') or
             (row['group'] not in open_tabs and curr_mode == 'GroupMode')):
+
             exp_type=None
             if 'group' in row:
                 exp_type = 'Exp' if curr_mode == 'ExpMode' else 'Group'
@@ -295,24 +280,70 @@ def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab
     else:
         return tabs, [], curr_tab  # altrimenti lascio aperto il tab già selezionato
 
-@callback(
-    Output({'page':MATCH, 'item':'main-tabs'}, 'active_tab'),
-    Input({'page':MATCH, 'item':'button-plot'}, 'n_clicks'),
-    State({'page': MATCH, 'item': 'table', 'location':'page'}, 'selected_rows'),
-    prevent_initial_call=True
-)
+callback([
+    Output({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
+    Output({'page':MATCH, 'item':'table', 'location':'main-page'}, 'selected_rows'),
+    Output({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
+    # n_clicks (plot button)
+    Input({'page': MATCH, 'item': 'button-plot', 'location':'main-page'}, 'n_clicks'),
+    # selected_rows: indici delle righe selezionate (considerati filtri vari colonne)
+    State({'page': MATCH, 'item': 'table', 'location': 'main-page'}, 'derived_virtual_selected_rows'),
+    # table_data: dati della tabella (considerati filtri vari colonne)
+    State({'page': MATCH, 'item': 'table', 'location': 'main-page'}, 'derived_virtual_data'),
+    # curr_tab: tab attualmente aperto (se nessuno None)
+    State({'page': MATCH, 'item': 'graph-tabs'}, 'value'),
+    # tabs: lista dei tab disponibili
+    State({'page': MATCH, 'item': 'graph-tabs'}, 'children'),
+    # curr_mode: modo corrente della tabella (ExpMode/GroupMode)
+    State({'page': MATCH, 'item': 'radio-mode-toggle', 'location': 'main-page'}, 'value')
+])(update_tabs)
+
+callback([
+    Output({'page':'IdVd', 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
+    Output({'page':'IdVd', 'item':'table', 'location':'affinity-page'}, 'selected_rows'),
+    Output({'page':'IdVd', 'item': 'graph-tabs'}, 'value', allow_duplicate=True),
+    # n_clicks (plot button)
+    Input({'page': 'IdVd', 'item': 'button-plot', 'location':'affinity-page'}, 'n_clicks'),
+    # selected_rows: indici delle righe selezionate (considerati filtri vari colonne)
+    State({'page': 'IdVd', 'item': 'table', 'location': 'affinity-page'}, 'derived_virtual_selected_rows'),
+    # table_data: dati della tabella (considerati filtri vari colonne)
+    State({'page': 'IdVd', 'item': 'table', 'location': 'affinity-page'}, 'derived_virtual_data'),
+    # curr_tab: tab attualmente aperto (se nessuno None)
+    State({'page': 'IdVd', 'item': 'graph-tabs'}, 'value'),
+    # tabs: lista dei tab disponibili
+    State({'page': 'IdVd', 'item': 'graph-tabs'}, 'children'),
+    # curr_mode: modo corrente della tabella (ExpMode/GroupMode)
+    State({'page': 'IdVd', 'item': 'radio-mode-toggle', 'location': 'affinity-page'}, 'value'),
+], prevent_initial_call=True)(update_tabs)
+
+
 def switch_to_graphs_tab(n_clicks, selected_rows):
     """Passa alla tab dei grafici quando si clicca su 'Genera Grafico'"""
     if n_clicks and selected_rows:
         return "tab-graphs"
     return "tab-table"
 
+callback(
+    Output({'page':MATCH, 'item':'main-tabs'}, 'active_tab'),
+    Input({'page':MATCH, 'item':'button-plot', 'location':'main-page'}, 'n_clicks'),
+    State({'page': MATCH, 'item': 'table', 'location':'main-page'}, 'selected_rows'),
+    prevent_initial_call=True
+)(switch_to_graphs_tab)
+
+callback(
+    Output({'page':MATCH, 'item':'main-tabs'}, 'active_tab', allow_duplicate=True),
+    Input({'page':MATCH, 'item':'button-plot', 'location':'affinity-page'}, 'n_clicks'),
+    State({'page': MATCH, 'item': 'table', 'location':'affinity-page'}, 'selected_rows'),
+    prevent_initial_call=True
+)(switch_to_graphs_tab)
+
+
 @callback(
-    Output({'page':MATCH, 'item':'tabs'}, 'children', allow_duplicate=True),
-    Output({'page':MATCH, 'item':'tabs'}, 'value', allow_duplicate=True),
+    Output({'page':MATCH, 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
+    Output({'page':MATCH, 'item': 'graph-tabs'}, 'value', allow_duplicate=True),
     Input({'page':MATCH, 'item':'button-close-current-tab'}, 'n_clicks'),
-    State({'page':MATCH, 'item':'tabs'}, 'value'),
-    State({'page':MATCH, 'item':'tabs'}, 'children'),
+    State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
+    State({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
     prevent_initial_call=True
 )
 def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab]):
@@ -333,11 +364,11 @@ def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab]):
     return tabs, next_tab
 
 @callback(
-    Output({'page':MATCH, 'item':'tabs'}, 'children', allow_duplicate=True),
-    Output({'page':MATCH, 'item':'tabs'}, 'value', allow_duplicate=True),
+    Output({'page':MATCH, 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
+    Output({'page':MATCH, 'item': 'graph-tabs'}, 'value', allow_duplicate=True),
     Input({'page':MATCH, 'item':'dd-button', 'tab-index':ALL}, 'n_clicks'),
-    State({'page':MATCH, 'item':'tabs'}, 'children'),
-    State({'page':MATCH, 'item':'tabs'}, 'value'),
+    State({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
+    State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
     prevent_initial_call=True
 )
 def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
@@ -366,9 +397,9 @@ def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
     return tabs, open_tab
 
 @callback(
-    Output({'page':'IdVd', 'item':'table', 'location':'affinity_page'}, 'data', allow_duplicate=True),
+    Output({'page':'IdVd', 'item':'table', 'location':'affinity-page'}, 'data', allow_duplicate=True),
     Input({'page': 'IdVd', 'item': 'button-calculate-affinity'}, 'n_clicks'),
-    State({'page':'IdVd', 'item':'radio-mode-toggle', 'location':'affinity_page'}, 'value'),
+    State({'page':'IdVd', 'item':'radio-mode-toggle', 'location':'affinity-page'}, 'value'),
     prevent_initial_call=True
 )
 def affinity_calc(n_clicks:int, mode:str):
@@ -402,7 +433,7 @@ def affinity_calc(n_clicks:int, mode:str):
         df_affinity_groups.to_excel(writer, sheet_name='groups', index=False)
 
     if mode == 'ExpMode':
-        data = pd.merge(df_IdVd, df_affinity, on='file_path')
+        data = pd.merge(df_IdVd, df_affinity.drop(columns='group'), on='file_path')
     else:
         data = df_IdVd.iloc[
             df_IdVd.drop_duplicates(subset='group', keep='first').index.tolist()

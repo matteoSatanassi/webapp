@@ -1,6 +1,8 @@
 import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
+from fontTools.feaLib import location
+
 from plotter.code.app_elements import *
 
 dash.register_page(__name__, path='/TrapData-plotter', name='TrapData')
@@ -25,11 +27,11 @@ layout = dbc.Container([
                         ], className="py-2 bg-info"),
                         dbc.CardBody([
                             # Opzioni di visualizzazione
-                            mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'page'}),
+                            mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'main-page'}),
 
                             # Tabella
                             html.Div(
-                                my_table_template({'page':PAGE, 'item':'table', 'location':'page'}),
+                                my_table_template({'page':PAGE, 'item':'table', 'location':'main-page'}),
                                 style={
                                     'overflowY': 'auto',
                                     'border': '1px solid #dee2e6',
@@ -41,7 +43,7 @@ layout = dbc.Container([
                             dbc.Container([
                                     dbc.Button(
                                         "📊 Genera Grafico",
-                                        id={'page':PAGE, 'item':'button-plot'},
+                                        id={'page':PAGE, 'item':'button-plot', 'location':'main-page'},
                                         color="secondary",
                                         className="w-100 mt-3",
                                         size="lg"
@@ -109,14 +111,14 @@ layout = dbc.Container([
                                 dbc.CardBody([
                                     # Tabs dei grafici
                                     dcc.Tabs(
-                                        id={'page':PAGE, 'item':'tabs'},
+                                        id={'page':PAGE, 'item': 'graph-tabs'},
                                         value=None,
                                         className="custom-tabs",
                                         children=[],
                                     ),
                                     # Contenitore grafico tab selezionato
                                     html.Div(
-                                        id={'page':PAGE, 'item':'tabs-content'},
+                                        id={'page':PAGE, 'item': 'graph-tabs-content'},
                                         className="p-0 m-0"
                                     ),
                                     # Controlli grafici

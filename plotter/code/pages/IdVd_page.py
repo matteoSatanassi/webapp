@@ -25,11 +25,11 @@ layout = dbc.Container([
                         ], className="py-2 bg-info"),
                         dbc.CardBody([
                             # Opzioni di visualizzazione
-                            mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'page'}),
+                            mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'main-page'}),
 
                             # Tabella
                             html.Div(
-                                my_table_template({'page':PAGE, 'item':'table', 'location':'page'}),
+                                my_table_template({'page':PAGE, 'item':'table', 'location':'main-page'}),
                                 style={
                                     'overflowY': 'auto',
                                     'border': '1px solid #dee2e6',
@@ -41,7 +41,7 @@ layout = dbc.Container([
                             dbc.Container([
                                 dbc.Button(
                                     "📊 Genera Grafico",
-                                    id={'page': PAGE, 'item': 'button-plot'},
+                                    id={'page': PAGE, 'item': 'button-plot', 'location':'main-page'},
                                     color="secondary",
                                     className="w-100 mt-3",
                                     size="lg"
@@ -72,7 +72,7 @@ layout = dbc.Container([
                 children=[
                     dbc.Row([
                         dbc.Col([
-                            dcc.Store(id={'page':PAGE, 'item':'store-loading-placeholder', 'location':'page'},
+                            dcc.Store(id={'page':PAGE, 'item':'store-loading-placeholder', 'location':'main-page'},
                                       data=None),
 
                             # Card per i grafici
@@ -110,14 +110,14 @@ layout = dbc.Container([
                                 dbc.CardBody([
                                     # Tabs dei grafici
                                     dcc.Tabs(
-                                        id={'page': PAGE, 'item': 'tabs'},
+                                        id={'page': PAGE, 'item': 'graph-tabs'},
                                         value=None,
                                         className="custom-tabs",
                                         children=[],
                                     ),
                                     # Contenitore grafico tab selezionato
                                     html.Div(
-                                        id={'page': PAGE, 'item': 'tabs-content'},
+                                        id={'page': PAGE, 'item': 'graph-tabs-content'},
                                         className="p-0 m-0"
                                     ),
                                     # Controlli grafici
@@ -167,7 +167,7 @@ layout = dbc.Container([
                         ], className="py-2 bg-info"),
                         dbc.CardBody([
                             # Opzioni di visualizzazione
-                            mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'affinity_page'}),
+                            mode_options({'page':PAGE, 'item':'radio-mode-toggle', 'location':'affinity-page'}),
 
                             # Tabella
                             dcc.Loading(
@@ -177,7 +177,7 @@ layout = dbc.Container([
                                 overlay_style={"visibility": "visible", "filter": "blur(2px)"},
                                 delay_show=500,
                                 children = html.Div(
-                                    my_table_template({'page':PAGE, 'item':'table', 'location':'affinity_page'}),
+                                    my_table_template({'page':PAGE, 'item':'table', 'location':'affinity-page'}),
                                     style={
                                         'overflowY': 'auto',
                                         'border': '1px solid #dee2e6',
@@ -191,10 +191,17 @@ layout = dbc.Container([
                                 dbc.Button(
                                     "🧮 Calcola Affinità",
                                     id={'page': PAGE, 'item': 'button-calculate-affinity'},
+                                    color="primary",
+                                    className="w-100 mt-3",
+                                    size="lg"
+                                ),
+                                dbc.Button(
+                                    "📊 Genera Grafico",
+                                    id={'page': PAGE, 'item': 'button-plot', 'location': 'affinity-page'},
                                     color="secondary",
                                     className="w-100 mt-3",
                                     size="lg"
-                                )
+                                ),
                             ]),
                         ])
                     ], className="shadow-sm")
