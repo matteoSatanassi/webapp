@@ -1,9 +1,7 @@
 import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
-from fontTools.feaLib import location
-
-from plotter.code.app_elements import *
+from app_elements import *
 
 dash.register_page(__name__, path='/TrapData-plotter', name='TrapData')
 

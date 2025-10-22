@@ -1,10 +1,10 @@
-from pathlib import Path
 import plotly.io as pio
 import pandas as pd
+from pathlib import Path
 import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, State, callback, callback_context, MATCH, ALL, no_update
-from .common import *
-from .parameters import indexes_file, affinity_file, load_configs
+from common import *
+from Assets_Params import *
 
 ## PARAMS ##
 labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}

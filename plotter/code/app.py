@@ -1,9 +1,9 @@
 from dash import Dash, page_container,html
-from app_elements import *
 from app_elements.callback_functions import *
+from Assets_Params import *
 
 indexer(data_dir)   # indexing data files at the start
-affinities_table_updater(indexes_file)  # updating affinities table
+affinities_table_updater(indexes_file, affinity_file)  # updating affinities table
 
 app = Dash(
     __name__,

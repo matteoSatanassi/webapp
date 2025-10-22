@@ -4,14 +4,15 @@ from pathlib import Path
 from dash_bootstrap_templates import ThemeChangerAIO
 import dash_bootstrap_components as dbc
 import json
-from plotter.code.app_elements import load_configs, config_path, custom_spinner
+from app_elements import custom_spinner
+from Assets_Params import *
 
 register_page(__name__, path='/configs', title='Configs')
 
 ## FUNC ##
 def save_config(conf):
     """Salva la configurazione aggiornata"""
-    with open(config_path, 'w') as f:
+    with open(config_file, 'w') as f:
         json.dump(conf, f, indent=4)
 
 ## LAYOUT ##
@@ -224,6 +225,7 @@ def initialize_config_values(is_loaded):
     Output("current-theme", "data", allow_duplicate=True),
     Output(ThemeChangerAIO.ids.radio("theme"), "value", allow_duplicate=True),
     Input("save-config-button", "n_clicks"),
+    State("config-data-path", "value"),
     State("config-export-path", "value"),
     State("config-export-format", "value"),
     State("config-theme", "value"),
@@ -231,7 +233,7 @@ def initialize_config_values(is_loaded):
     State("config-DPI-selector", "value"),
     prevent_initial_call=True
 )
-def save(n_clicks, export_path, export_format, theme, legend_colors, dpi):
+def save(n_clicks, data_path, export_path, export_format, theme, legend_colors, dpi):
     if not n_clicks:
         return no_update, no_update, no_update
     try:
@@ -241,6 +243,7 @@ def save(n_clicks, export_path, export_format, theme, legend_colors, dpi):
 
     configs = {
         "theme": theme,
+        "data_directory":data_path,
         "export_directory": export_path,
         "export_format": export_format,
         "legend": 'show_legend' in legend_colors,
@@ -270,7 +273,7 @@ def reset(n_clicks):
     if not n_clicks:
         return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
     try:
-        config_path.unlink(missing_ok=True)
+        config_file.unlink(missing_ok=True)
     except Exception as e:
         return (f"Errore reset config_file: {e}", no_update, no_update, no_update,
                 no_update, no_update, no_update, no_update)#, no_update)

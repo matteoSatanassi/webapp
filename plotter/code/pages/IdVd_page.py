@@ -1,7 +1,7 @@
 import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc
-from plotter.code.app_elements import *
+from app_elements import *
 
 dash.register_page(__name__, path='/', name='IdVd')
 

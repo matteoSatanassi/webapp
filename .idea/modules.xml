@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../plotter/.idea/plotter.iml" filepath="$PROJECT_DIR$/../plotter/.idea/plotter.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/webapp.iml" filepath="$PROJECT_DIR$/.idea/webapp.iml" />
     </modules>
   </component>

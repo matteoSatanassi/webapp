@@ -1,4 +1,4 @@
-from .common import ExpCurves, toggle
+from .classes import ExpCurves, toggle
 import plotly.graph_objects as go
 import numpy as np
 

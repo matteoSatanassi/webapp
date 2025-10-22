@@ -1,7 +1,7 @@
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from plotter.code.app_elements import assets_dir
+from Assets_Params import assets_dir
 
 ## PARAMS ##
 target_curves_dir = assets_dir / 'target_curves'

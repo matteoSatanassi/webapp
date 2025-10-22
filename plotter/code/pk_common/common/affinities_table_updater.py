@@ -1,4 +1,3 @@
-from plotter.code.app_elements import affinity_file
 from pathlib import Path
 import pandas as pd
 
@@ -16,12 +15,14 @@ def load_or_create_affinity_df(file_path: Path, sheet_name: str, columns: list) 
         return pd.DataFrame(columns=columns)
 
 ## MAIN FUNC ##
-def affinities_table_updater(indexes_file: str | Path) -> None:
+def affinities_table_updater(indexes_file: str | Path, affinity_file: str | Path) -> None:
     """
     Aggiorna il file contenente i valori delle affinità dei vari esperimenti a partire dal file degli indici
     """
     # Params
     idx_file_path = Path(indexes_file)
+    affinity_file_path = Path(affinity_file)
+
     idx = pd.read_excel(idx_file_path, sheet_name='IdVd')   # rendo il file degli indici un df
 
     paths = set(idx['file_path'])
@@ -31,8 +32,8 @@ def affinities_table_updater(indexes_file: str | Path) -> None:
     groups_to_add = []
 
     # controlla che il file contenente i valori delle affinità esista, altrimenti crea un DataFrame vuoto
-    df_aff_exp = load_or_create_affinity_df(affinity_file, 'exp', EXP_COLUMNS)
-    df_aff_group = load_or_create_affinity_df(affinity_file, 'groups', GROUP_COLUMNS)
+    df_aff_exp = load_or_create_affinity_df(affinity_file_path, 'exp', EXP_COLUMNS)
+    df_aff_group = load_or_create_affinity_df(affinity_file_path, 'groups', GROUP_COLUMNS)
 
     # rimuove le righe con file/gruppi non esistenti
     df_aff_exp = df_aff_exp[df_aff_exp['file_path'].isin(paths)]

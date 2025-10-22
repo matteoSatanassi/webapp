@@ -1,7 +1,7 @@
 import pandas as pd
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
-from .parameters import indexes_file, affinity_file
+from Assets_Params import *
 
 ## PARAMS ##
 CURVE_CHECKLIST_IDVD = [
