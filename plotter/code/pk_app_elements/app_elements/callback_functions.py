@@ -4,7 +4,7 @@ from pathlib import Path
 import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, State, callback, callback_context, MATCH, ALL, no_update
 from common import *
-from Assets_Params import *
+from params import *
 
 ## PARAMS ##
 labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}
@@ -38,7 +38,7 @@ def tab_managers_displayer(tabs:list[dcc.Tab], tabs_id:dict[str,str]):
     Input({'page':MATCH, 'item': 'graph-tabs'}, 'value')
 )
 def update_graph_content(tab: str) -> dcc.Graph:
-    """Aggiorna il grafico in base al tab aperto e alle curve selezionate nella checklist"""
+    """Aggiorna il grafico in base al tab aperto"""
     if not tab:
         return "nulla di selezionato"
 
@@ -410,7 +410,9 @@ def affinity_calc(n_clicks:int, mode:str):
     rows_exp_sheet = []
     rows_group_sheet = []
     for group in df_affinity_groups['group']:
-        g = ExpCurves(*df_affinity.loc[df_affinity['group'] == group]['file_path']).import_data.affinity_calc
+        g = ExpCurves(
+            *df_affinity.loc[df_affinity['group'] == group]['file_path']
+        ).import_data.affinity_calc
 
         for a, e in zip(g.affinities, g.exp):
             row = a.copy()
@@ -429,18 +431,18 @@ def affinity_calc(n_clicks:int, mode:str):
         df_affinity_groups.to_excel(writer, sheet_name='groups', index=False)
 
     if mode == 'ExpMode':
-        data = pd.merge(df_IdVd, df_affinity.drop(columns='group'), on='file_path')
+        df_table = pd.merge(df_IdVd, df_affinity.drop(columns='group'), on='file_path')
     else:
-        data = df_IdVd.iloc[
+        df_table = df_IdVd.iloc[
             df_IdVd.drop_duplicates(subset='group', keep='first').index.tolist()
         ]
-        data = pd.merge(
-            data,
+        df_table = pd.merge(
+            df_table,
             df_affinity_groups,
             on='group'
         )
 
-    return data.to_dict('records')
+    return df_table.to_dict('records')
 
 ## HELPER FUNC ##
 def try_mkdir(path:Path)->Path:

@@ -5,7 +5,7 @@ from dash_bootstrap_templates import ThemeChangerAIO
 import dash_bootstrap_components as dbc
 import json
 from app_elements import custom_spinner
-from Assets_Params import *
+from params import *
 
 register_page(__name__, path='/configs', title='Configs')
 

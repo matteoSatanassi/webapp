@@ -1,4 +1,4 @@
-from .classes import ExpCurves, toggle
+from .classes import ExpCurves, Exp, IdVd_names
 import plotly.graph_objects as go
 import numpy as np
 
@@ -17,8 +17,7 @@ def add_summary_legend(figure:go.Figure, colored:bool) -> go.Figure:
         ))
 
     # Aggiunge indicatori curve
-    curves = ('v0', '0', '15', '30')
-    for curve in curves:
+    for curve in IdVd_names:
         figure.add_trace(go.Scatter(
             x=[None], y=[None],
             mode = 'lines',
@@ -27,7 +26,7 @@ def add_summary_legend(figure:go.Figure, colored:bool) -> go.Figure:
                 dash=None if colored else linestyles[curve],
                 width=3,
             ),
-            name=toggle(curve),
+            name=Exp.toggle(curve),
             showlegend=True,
             legendgroup="curves"
         ))
@@ -218,14 +217,6 @@ def plot(curves:ExpCurves, c_to_plot:list[str]=(), all_c:bool=False, to_export:b
     return fig
 
 ## PARAMS ##
-class Config:
-    DPI = 300
-    bk_color = 'white'
-    sec_color = 'black'
-    out_ext = 'png' #png, pdf, svg
-    legend = True
-    colors = True
-
 colors = {
     'v0': 'red',
     '0': 'limegreen',
@@ -245,8 +236,8 @@ colors = {
 }
 linestyles = {
     "v0": "dashdot",
-    "0": "dotted",
-    "15": "dashed",
+    "0": "dot",
+    "15": "dash",
     "30": "solid"
 }   # to use in case of colorless image configuration
 markers = {
