@@ -132,11 +132,14 @@ def open_close_modal(n_clicks_open: int, n_clicks_close: int, is_open: bool):
     Output({'page':MATCH, 'item':'selector-dpi', 'location':'modal'}, 'value'),
     Output({'page':MATCH, 'item':'selector-format', 'location':'modal'}, 'value'),
     Input({'page':MATCH, 'item': 'modal'}, 'is_open'),
+    State({'page':MATCH, 'item': 'modal'}, 'id')
 )
-def initialize_values(is_open: bool):
+def initialize_values(is_open: bool, modal_id:dict[str,str]):
     if not is_open:
         return no_update, no_update, no_update, no_update
     config = load_configs()
+    if modal_id['page']=='TrapData':
+        config['colors']=True
     return (['show_legend'] if bool(config['legend']) else [],
             ['colors'] if bool(config['colors']) else [],
             int(config['DPI']), config['export_format'])

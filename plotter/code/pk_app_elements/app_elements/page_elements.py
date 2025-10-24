@@ -263,7 +263,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                                             ],
                                             value=["colors"],
                                             switch=True,
-                                            style={"margin-bottom": "15px"}
+                                            style={"margin-bottom": "15px", 'display': 'none' if page=='TrapData' else 'inline-block'}
                                         ),
 
                                         # DPI

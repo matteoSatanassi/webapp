@@ -1,10 +1,10 @@
-from .classes import ExpCurves, Exp, IdVd_names
+from .classes import ExpCurves, Exp
 import plotly.graph_objects as go
 import numpy as np
 
 ## FUNC ##
 def add_summary_legend(figure:go.Figure, colored:bool) -> go.Figure:
-    """Aggiunge una legenda riassuntiva ad una figura contenete un gruppo di esperimenti"""
+    """Aggiunge una legenda riassuntiva a una figura contenete un gruppo di esperimenti"""
     # Aggiunge indicatori Vgf
     for vgf,marker in markers.items():
         figure.add_trace(go.Scatter(
@@ -17,7 +17,7 @@ def add_summary_legend(figure:go.Figure, colored:bool) -> go.Figure:
         ))
 
     # Aggiunge indicatori curve
-    for curve in IdVd_names:
+    for curve in Exp.IdVd_names:
         figure.add_trace(go.Scatter(
             x=[None], y=[None],
             mode = 'lines',
@@ -106,7 +106,7 @@ def graphics_trapdata(figure:go.Figure) -> go.Figure:
             showline=True,
             linewidth=2,
             linecolor='black',
-            mirror=True,
+            mirror=False,
             tickmode='linear',
             dtick=0.5,
             ticklen=8,
@@ -120,13 +120,13 @@ def graphics_trapdata(figure:go.Figure) -> go.Figure:
                 tickwidth=1,
                 tickcolor='black',
                 ticks='outside',
-                gridcolor='lightgray',
-                griddash='dot',
-                gridwidth=0.5,
+                # gridcolor='lightgray',
+                # griddash='dot',
+                # gridwidth=0.5,
             ),
-            gridcolor='gray',
+            gridcolor='lightgray',
             gridwidth=1,
-            griddash='dash',
+            griddash='dashdot',
             showgrid=True,
             zeroline=False,
         ),
@@ -135,7 +135,7 @@ def graphics_trapdata(figure:go.Figure) -> go.Figure:
             showline=True,
             linewidth=2,
             linecolor='black',
-            mirror=True,
+            mirror=False,
             tickmode='linear',
             dtick=0.5,
             ticklen=8,
@@ -149,13 +149,13 @@ def graphics_trapdata(figure:go.Figure) -> go.Figure:
                 tickwidth=1,
                 tickcolor='black',
                 ticks='outside',
-                gridcolor='lightgray',
-                griddash='dot',
-                gridwidth=0.5,
+                # gridcolor='lightgray',
+                # griddash='dot',
+                # gridwidth=0.5,
             ),
-            gridcolor='gray',
+            gridcolor='lightgray',
             gridwidth=1,
-            griddash='dash',
+            griddash='dashdot',
             showgrid=True,
             zeroline=False,
         ),

@@ -15,7 +15,7 @@ def load_or_create_affinity_df(file_path: Path, sheet_name: str, columns: list) 
         return pd.DataFrame(columns=columns)
 
 ## MAIN FUNC ##
-def affinities_table_updater(indexes_file: str | Path, affinity_file: str | Path) -> None:
+def affinities_updater(indexes_file: str | Path, affinity_file: str | Path) -> None:
     """
     Aggiorna il file contenente i valori delle affinità dei vari esperimenti a partire dal file degli indici
     """

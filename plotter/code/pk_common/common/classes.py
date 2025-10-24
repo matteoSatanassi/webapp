@@ -3,11 +3,6 @@ import numpy as np
 import pandas as pd
 from params import assets_dir
 
-## PARAMS ##
-target_curves_dir = assets_dir / 'target_curves'
-IdVd_names = ('v0','0','15','30')
-IdVd_labels = ('(0,0)','(-7,0)','(-7,15)','(-7,30)')
-
 ## CLASSES ##
 class Exp:
     """
@@ -17,6 +12,11 @@ class Exp:
 
     Utilizzabile sia per i file IdVd che quelli di TrapDistr
     """
+
+    # Variabili di classe
+    IdVd_names = ('v0', '0', '15', '30')
+    IdVd_labels = ('(0,0)', '(-7,0)', '(-7,15)', '(-7,30)')
+
     def __init__(self) -> None:
         self.exp_type: str = None
         self.trap_distr: str = None
@@ -68,8 +68,8 @@ class Exp:
         :return: label/nome della curva
         """
         translator = {
-            **dict(zip(IdVd_names, IdVd_labels)),
-            **dict(zip(IdVd_labels, IdVd_names))
+            **dict(zip(Exp.IdVd_names, Exp.IdVd_labels)),
+            **dict(zip(Exp.IdVd_labels, Exp.IdVd_names))
         }
         if value not in translator:
             raise ValueError(f"{value} non è supportato come nome o label per una curva")
@@ -93,9 +93,12 @@ class Curve:
         return self.name
     @classmethod
     def get_target(cls, vgf: int, state: str) -> 'Curve':
-        if state not in IdVd_names:
+        if state not in Exp.IdVd_names:
             raise ValueError(f"la curva target con stato di quiescenza {state} non è presente")
-        df_target = pd.read_excel(target_curves_dir / f"{vgf}.xlsx", sheet_name=state)
+        df_target = pd.read_excel(
+            assets_dir /'target_curves'/ f"{vgf}.xlsx",
+            sheet_name=state
+        )
         target_curve = cls(f"taget {state} - Vgf = {vgf}")
         target_curve.X = df_target['Vds'].to_numpy(dtype=float)
         target_curve.Y = df_target['Ids'].to_numpy(dtype=float)
@@ -109,12 +112,12 @@ class Curve:
         self.Y = self.Y[i_sorted]
         return None
     @property
-    def integrate(self)->float:
+    def integral(self)->float:
         """Integra la curva caricata nell'istanza"""
         return np.trapezoid(self.Y, self.X)
     def integral_affinity(self, curve:'Curve')->float:
-        target_area = curve.integrate
-        return max(1-abs(self.integrate-target_area)/abs(target_area),0)
+        target_area = curve.integral
+        return max(1-abs(self.integral-target_area)/abs(target_area),0)
     def y_limits(self)->list:
         return self.Y.min(), self.Y.max()
 
@@ -123,7 +126,7 @@ class ExpCurves:
     Classe che comprende le informazione di uno o più esperimenti e le rispettive curve
     """
     def __init__(self, *args:Exp|Path|str):
-        self.exp = [self.check_arg(arg) for arg in args]
+        self.exp:list[Exp] = [self.check_arg(arg) for arg in args]
         self.curves:list[dict[str,Curve]] = []
         self.affinities:list[dict[str,float]] = []
         self.group_affinity:dict[str,float]=None
