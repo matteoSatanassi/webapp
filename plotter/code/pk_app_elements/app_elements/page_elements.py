@@ -150,7 +150,7 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
         }
     )
 
-def mode_options(radio_id:dict[str,str])->dcc.RadioItems:
+def mode_options(radio_id:dict[str,str]):
     """
     Crea una lista in cui scegliere l'opzione di visualizzazione delle tabelle nella pagina IdVd
 

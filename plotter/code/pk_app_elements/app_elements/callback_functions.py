@@ -13,17 +13,18 @@ labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}
 
 @callback(
     Output({'page':MATCH, 'item':'button-close-current-tab'}, 'style'),
+    Output({'page': MATCH, 'item': 'graph-controls'}, 'style'),
     Output({'page':MATCH, 'item':'menu-tab-management'}, 'style'),
     Output({'page':MATCH, 'item':'menu-tab-management'}, 'children'),
     Input({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
     State({'page':MATCH, 'item': 'graph-tabs'}, 'id'),
 )
-def tab_managers_displayer(tabs:list[dcc.Tab], tabs_id:dict[str,str]):
+def graph_buttons_displayer(tabs:list[dcc.Tab], tabs_id:dict[str,str]):
     """Callback che permette di visualizzare i pulsanti di gestione dei tab"""
     if not tabs:
-        return {'display': 'none'}, {'display': 'none'}, None
+        return no_update, no_update, no_update, no_update
     if len(tabs) == 1:
-        return {'display': 'block'}, {'display': 'none'}, None
+        return {'display': 'block'}, {'display': 'block'}, {'display': 'none'}, None
     else:
         page = tabs_id['page']
         dropdown_elems = [
@@ -31,35 +32,26 @@ def tab_managers_displayer(tabs:list[dcc.Tab], tabs_id:dict[str,str]):
             f"❌ {tab['props']['label']}",
             id={'page':page, 'item':'dd-button', 'tab-index':i},
             ) for i, tab in enumerate(tabs)]
-        return {'display': 'block'}, {'display': 'block'}, dropdown_elems
+        return {'display': 'block'}, {'display': 'block'}, {'display': 'block'}, dropdown_elems
 
 @callback(
     Output({'page':MATCH, 'item': 'graph-tabs-content'}, 'children'),
     Input({'page':MATCH, 'item': 'graph-tabs'}, 'value')
 )
-def update_graph_content(tab: str) -> dcc.Graph:
+def update_graph_content(tab: str):
     """Aggiorna il grafico in base al tab aperto"""
     if not tab:
         return "nulla di selezionato"
 
-    df_IdVd = pd.read_excel(indexes_file, sheet_name='IdVd')
+    df_idvd = pd.read_excel(indexes_file, sheet_name='IdVd')
 
     if '.csv' not in tab:
-        df_group = df_IdVd.loc[df_IdVd['group'] == tab]
+        df_group = df_idvd.loc[df_idvd['group'] == tab]
         g = ExpCurves(*df_group['file_path']).import_data
         return dcc.Graph(figure=plot(g, all_c=True))
     else:
         e = ExpCurves(tab).import_data
         return dcc.Graph(figure=plot(e, all_c=True), style={'height':'100vh'})
-
-@callback(
-    Output({'page':MATCH, 'item':'graph-controls'}, 'style'),
-    Input({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
-)
-def show_graph_button(curr_tab):
-    if not curr_tab:
-        return {'display': 'none'}
-    return {'display': 'block'}
 
 @callback(
     Output({'page':'IdVd', 'item':'table', 'location':MATCH}, 'data'),
@@ -135,6 +127,7 @@ def open_close_modal(n_clicks_open: int, n_clicks_close: int, is_open: bool):
     State({'page':MATCH, 'item': 'modal'}, 'id')
 )
 def initialize_values(is_open: bool, modal_id:dict[str,str]):
+    """All'apertura del modal inizializza i valori dei vari oggetti in base alle impostazioni salvate nei config"""
     if not is_open:
         return no_update, no_update, no_update, no_update
     config = load_configs()
@@ -150,7 +143,7 @@ def initialize_values(is_open: bool, modal_id:dict[str,str]):
     State({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows'),
     prevent_initial_call=True
 )
-def unselect_rows_modal_callback(is_open:bool, selected_rows:list[int]):
+def unselect_rows_modal(is_open:bool, selected_rows:list[int]):
     """Deseleziona le righe quando viene chiuso il pop-up"""
     if not is_open:
         return []
@@ -250,8 +243,8 @@ def export_current(n_clicks:int, curr_tab:str):
         return f"export failed: {e}"
 
 
-def update_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab:str,
-                tabs:list[dcc.Tab], curr_mode='ExpMode')->list[dcc.Tab]|list|str:
+def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, curr_tab:str,
+                tabs:list[dcc.Tab], curr_mode='ExpMode'):
     """
     Aggiorna la lista dei tab al click del bottone, in base agli esperimenti selezionati nella tabella
     :return: la lista dei tab aggiornata, azzera la lista delle righe selezionate e imposta il tab da visualizzare dopo la callback
@@ -295,7 +288,7 @@ callback([
     State({'page': MATCH, 'item': 'graph-tabs'}, 'children'),
     # curr_mode: modo corrente della tabella (ExpMode/GroupMode)
     State({'page': MATCH, 'item': 'radio-mode-toggle', 'location': 'main-page'}, 'value')
-])(update_tabs)
+])(add_tabs)
 
 callback([
     Output({'page':'IdVd', 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
@@ -313,7 +306,7 @@ callback([
     State({'page': 'IdVd', 'item': 'graph-tabs'}, 'children'),
     # curr_mode: modo corrente della tabella (ExpMode/GroupMode)
     State({'page': 'IdVd', 'item': 'radio-mode-toggle', 'location': 'affinity-page'}, 'value'),
-], prevent_initial_call=True)(update_tabs)
+], prevent_initial_call=True)(add_tabs)
 
 
 def switch_to_graphs_tab(n_clicks, selected_rows):
@@ -346,6 +339,7 @@ callback(
     prevent_initial_call=True
 )
 def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab]):
+    """Chiude il tab correntemente aperto"""
     if not n_clicks or not tabs or not active_tab:
         return tabs, None
     if len(tabs) == 1:
@@ -402,10 +396,11 @@ def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
     prevent_initial_call=True
 )
 def affinity_calc(n_clicks:int, mode:str):
+    """Si occupa di calcolar le percentuali di affinità di ogni esperimento presente nei dati, e salvare i risultati nel file designato"""
     if not n_clicks:
         return no_update
 
-    df_IdVd = pd.read_excel(indexes_file, sheet_name='IdVd')
+    df_idvd = pd.read_excel(indexes_file, sheet_name='IdVd')
 
     df_affinity = pd.read_excel(affinity_file, sheet_name='exp')
     df_affinity_groups = pd.read_excel(affinity_file, sheet_name='groups')
@@ -434,10 +429,10 @@ def affinity_calc(n_clicks:int, mode:str):
         df_affinity_groups.to_excel(writer, sheet_name='groups', index=False)
 
     if mode == 'ExpMode':
-        df_table = pd.merge(df_IdVd, df_affinity.drop(columns='group'), on='file_path')
+        df_table = pd.merge(df_idvd, df_affinity.drop(columns='group'), on='file_path')
     else:
-        df_table = df_IdVd.iloc[
-            df_IdVd.drop_duplicates(subset='group', keep='first').index.tolist()
+        df_table = df_idvd.iloc[
+            df_idvd.drop_duplicates(subset='group', keep='first').index.tolist()
         ]
         df_table = pd.merge(
             df_table,
