@@ -1,2 +1,5 @@
-/datacd \
+/data
 /test
+/code/pkg_params/params.egg-info
+/code/pkg_common/common.egg-info
+/code/pkg_app_elements/app_elements.egg-info
