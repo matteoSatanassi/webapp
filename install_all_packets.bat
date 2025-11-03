@@ -1,5 +1,6 @@
 @echo off
 setlocal
+cd /d "%~dp0"
 
 REM ==============================
 REM 1️. Crea un ambiente virtuale se non esiste
@@ -32,26 +33,16 @@ if exist "requirements.txt" (
 REM ==============================
 REM 4️. Installa pacchetti locali (editable mode)
 REM ==============================
-if exist ".\code\pk_common\" (
-    echo Installing pk_common...
-    pip install -e .\code\pk_common\
-) else (
-    echo pacchetto common non trovato.
-)
 
-if exist ".\code\pk_app_elements\" (
-    echo Installing pk_app_elements...
-    pip install -e .\code\pk_app_elements\
-) else (
-    echo pacchetto app_elements non trovato.
-)
+echo Installing pk_common...
+pip install -e ".\code\pkg_common"
 
-if exist ".\code\pk_params\" (
-    echo Installing pk_params...
-    pip install -e .\code\pk_params\
-) else (
-    echo pacchetto params non trovato.
-)
+echo Installing pk_app_elements...
+pip install -e ".\code\pkg_app_elements"
+
+
+echo Installing pk_params...
+pip install -e ".\code\pkg_params"
 
 REM ==============================
 REM 5️. Fine script
