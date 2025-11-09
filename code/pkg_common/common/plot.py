@@ -1,4 +1,4 @@
-from .classes import ExpCurves, Exp
+from classes import ExpCurves, Exp
 import plotly.graph_objects as go
 import numpy as np
 
@@ -247,3 +247,10 @@ markers = {
     1: "diamond",
     2: "star"
 }  # to use in same fig, multiple plots
+
+
+if __name__=='__main__':
+    e = ExpCurves(
+        r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_exponential_Vgf_1_Es_1.72_Em_1.31_(0,0).csv"
+    ).import_data
+    plot(e, all_c=True).show()

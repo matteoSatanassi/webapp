@@ -120,6 +120,9 @@ class Curve:
         return max(1-abs(self.integral-target_area)/abs(target_area),0)
     def y_limits(self)->list:
         return self.Y.min(), self.Y.max()
+    def retrace_trap_curves(self):
+        self.X -= self.X[-1]
+        return None
 
 class ExpCurves:
     """
@@ -212,6 +215,9 @@ class ExpCurves:
     def import_data(self)->'ExpCurves':
         self.curves = [self.exp_data(exp) for exp in self.exp]
         self.sort()
+        for e,c in zip(self.exp, self.curves):
+            for key,curve in c.items():
+                curve.retrace_trap_curves() if e.exp_type == 'TrapData' else None
         return self
     @property
     def contains_imported_data(self)->bool:
@@ -279,6 +285,8 @@ class ExpCurves:
         return None
 
 if __name__ == '__main__':
+    pass
+
     # exp = Exp().from_path(
     #     'C:\\Users\\user\\Documents\\Uni\\Tirocinio\\webapp\\plotter\\data\\IdVd_exponential_Vgf_-1_Es_1.72_Em_1.31.csv'
     # )
@@ -297,8 +305,12 @@ if __name__ == '__main__':
     # print(target.X)
     # print(target.Y)
 
-    e = ExpCurves(
-         'C:\\Users\\user\\Documents\\Uni\\Tirocinio\\webapp\\plotter\\data\\IdVd_exponential_Vgf_-1_Es_1.72_Em_1.31.csv'
-    ).import_data
+    # e = ExpCurves(
+    #      'C:\\Users\\user\\Documents\\Uni\\Tirocinio\\webapp\\plotter\\data\\IdVd_exponential_Vgf_-1_Es_1.72_Em_1.31.csv'
+    # ).import_data
+    #
+    # print(e.curves)
 
-    print(e.curves)
+    # a = np.array([.1,.2,.3,.4])
+    # a-=1
+    # print(a)

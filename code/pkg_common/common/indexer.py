@@ -136,7 +136,7 @@ def indexer(data_dir: str | Path) -> list[Path]:
 
 fileName_pattern = re.compile(
     r"^(IdVd|TrapData)_"            # inizia con IdVd_ o TrapData_
-    r"(exponential|gaussian|uniform)_"  # distribuzione
+    r"(exponential|gaussian|uniform|level)_"  # distribuzione
     r"Vgf_-?\d+_"                   # Vgf_ seguito da intero (può essere negativo)
     r"Es_\d+(\.\d+)?_"               # Es_ seguito da numero (con o senza decimali)
     r"Em_\d+(\.\d+)?"                # Em_ seguito da numero (con o senza decimali)

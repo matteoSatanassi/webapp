@@ -7,7 +7,7 @@ from common import *
 from params import *
 
 ## PARAMS ##
-labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif'}
+labels = {'exponential':'exp', 'gaussian':'gauss', 'uniform':'unif', 'level':'level'}
 
 ## DYNAMIC CALLBACKS ##
 
