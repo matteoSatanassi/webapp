@@ -1,8 +1,7 @@
 from pathlib import Path
 import pandas as pd
 import numpy as np
-import re
-
+from params import *
 ## PARAMS ##
 IDVD_COLUMNS = ('trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'group', 'file_path')
 TRAPDATA_COLUMNS = ('trap_distr', 'e_sigma', 'e_mid', 'v_gf', 'start_cond', 'file_path')
@@ -98,8 +97,14 @@ def indexer(data_dir: str | Path) -> list[Path]:
     excel_indexes_file = data_dir / "indexes.xlsx"
 
     files_set = set(data_dir.glob('*.csv'))  # set di tutti i file .csv nella data_dir
-    files_to_index: dict[str,list[list]] = {'IdVd':[],'TrapData':[]}
+    files_df = pd.DataFrame([{
+        "file_type": file.stem.split('_')[0].upper(), "file_path": str(file),
+    } for file in files_set])
+
+    files_to_index = {'IdVd':[],'TrapData':[]}
     unsupported_files: list[Path] = []
+
+    for FileType in load_files_info().keys():
 
     # controlla che il file degli indici esista, altrimenti crea il DataFrame
     df_indexes_IdVd = load_or_create_index(excel_indexes_file, 'IdVd', IDVD_COLUMNS)
