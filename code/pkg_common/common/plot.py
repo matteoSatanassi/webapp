@@ -1,6 +1,23 @@
-from .classes import ExpCurves, Exp
+from .classes import FileCurves
 import plotly.graph_objects as go
 import numpy as np
+
+
+## PARAMS ##
+def load_plotter_configs():
+    """
+    Carica i parametri di funzionamento del plotter
+    """
+    from pathlib import Path
+    import json
+
+    config_file = Path(__file__).parent / "plotter_configs.json"
+    if config_file.exists():
+        with open(config_file, 'r') as f:
+            return json.load(f)
+    else:
+        raise FileNotFoundError("Non è stato possibile trovare il file di configurazione")
+
 
 ## FUNC ##
 def add_summary_legend(figure:go.Figure, colored:bool) -> go.Figure:
@@ -178,79 +195,78 @@ def graphics_trapdata(figure:go.Figure) -> go.Figure:
     )
     return figure
 
+
 ## MAIN FUNC ##
-def plot(curves:ExpCurves, c_to_plot:list[str]=(), all_c:bool=False, to_export:bool=False, legend:bool=True, colored:bool=True)->go.Figure:
+def plot(curves:FileCurves,
+         c_to_plot:list[str]=(),
+         all_c:bool=False,
+         to_export:bool=False,
+         legend:bool=True,
+         colored:bool=True)->go.Figure:
     """Plotta le curve interessate, contenute da un'istanza di ExpCurves, contenente a sua volta uno o più Exp"""
-    if not curves.contains_imported_data:
-        curves = curves.import_data
+    plotter_configs = load_plotter_configs()
 
-    exp_type = curves.exp[0].exp_type
-    curves.names_update()
-    fig = go.Figure()
+    if curves.file_type == "TRAPDATA": colored=True # colorless non supportato per curve trapdata
+    if curves.contains_group:
+        try:
+            if curves.grouped_by in plotter_configs["GroupMarkers"][curves.file_type]:
+                fig = go.Figure()
+            else:
+                raise AttributeError(
+                    "Non è stato possibile individuare la feature di raggruppamento tra quelle supportate dal plotter"
+                )
+        except AttributeError:
+            raise AttributeError(
+                f"Il file type {curves.file_type} non è supportato per il raggruppamento curve"
+            )
 
-    for curves_dict in curves.curves:
-        for key in curves_dict.keys():
+    out = []
+
+    for f_features,f_curves in curves.expose_all:
+
+        if not curves.contains_group:
+            fig  = go.Figure()
+
+        # per ogni curva del file considerato in questo ciclo
+        for key in f_curves.keys():
+            # se la curva è nella lista di quelle da stampare o se sono tutte da stampare
             if key in c_to_plot or all_c:
                 fig.add_trace(go.Scatter(
-                    x=curves_dict[key].X,
-                    y=curves_dict[key].Y/1e13 if exp_type=='TrapData' else curves_dict[key].Y,
-                    name=curves_dict[key].name,
-                    mode='lines+markers',
-                    line=dict(
-                        color= colors[key] if colored else 'black',
-                        dash=None if colored else linestyles[key],
+                    x = f_curves[key].X,
+                    y = f_curves[key].Y,
+                    name = f_curves[key].name,
+                    mode = 'lines+markers',
+                    line = dict(
+                        color= plotter_configs["AllowedCurveColors"][curves.file_type][key] if colored else "black",
+                        dash=None if colored else plotter_configs["Linestyles"][curves.file_type][key],
                         width=0.75 if curves.contains_group else None,
                     ),
-                    marker=dict(
-                        symbol= markers[curves.get_vgf(curves_dict)] if curves.contains_group else 'square'
+                    marker = dict(
+                        symbol= plotter_configs["GroupMarkers"][curves.file_type][f_features[curves.grouped_by]] if
+                        curves.contains_group else "square",
                     ),
                     visible=True,
-                    showlegend=True if (not to_export or legend and not curves.contains_group) else False,
+                    showlegend = True if (legend and not curves.contains_group) else False
                 ))
-    if to_export and legend and curves.contains_group:
-        fig = add_summary_legend(fig, colored=colored)
 
-    if exp_type=='IdVd':
-        fig = graphics_idvd(fig, curves.contains_group)
-    elif exp_type=='TrapData':
-        fig = graphics_trapdata(fig)
-    return fig
+        if not curves.contains_group:
+            out.append(fig)
 
-## PARAMS ##
-colors = {
-    'v0': 'red',
-    '0': 'limegreen',
-    '15': 'dodgerblue',
-    '30': 'darkorange',
-    'trap_density': 'black',
-    '0.5000': '#1f77b4',    # blu
-    '0.6160': '#ff7f0e',    # arancione
-    '0.7660': '#2ca02c',    # verde
-    '0.7830': '#d62728',    # rosso
-    '0.9500': '#17e3bc',    # verde acqua
-    '0.9670': '#9467bd',    # viola
-    '0.9840': '#8c564b',    # marrone
-    '1.1840': '#e377c2',    # rosa
-    '1.3340': '#17becf',    # azzurro
-    '1.8340': '#bcbd22'     # giallo
-}
-linestyles = {
-    "v0": "dashdot",
-    "0": "dot",
-    "15": "dash",
-    "30": "solid"
-}   # to use in case of colorless image configuration
-markers = {
-    -2: "square",
-    -1: "circle",
-    0: "triangle-down",
-    1: "diamond",
-    2: "star"
-}  # to use in same fig, multiple plots
+    if curves.contains_group and legend:
+        fig  = add_group_legend()
+        out.append(fig)
+
+    match curves.file_type:
+        case "IDVD": out = [graphics_idvd(fig, group=curves.contains_group) for fig in out]
+        case "TRAPDATA": out = [graphics_trapdata(fig) for fig in out]
+
+    return out
 
 
 if __name__=='__main__':
-    e = ExpCurves(
-        r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_exponential_Vgf_1_Es_1.72_Em_1.31_(0,0).csv"
-    ).import_data
-    plot(e, all_c=True).show()
+    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
+    # e = FileCurves.from_path(path)
+    # plot(e, all_c=True).show()
+    from pathlib import Path
+
+    print(Path(__file__).parent/"plotter_configs.json")

@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-from classes_2 import FilesFeatures
+from classes import FilesFeatures
 from params import *
 
 ## HELPER FUNC ##
@@ -20,15 +20,15 @@ def add_aff_cols(data_type:str, df:pd.DataFrame):
     return df
 
 ## MAIN FUNC ##
-def indexer(data_dir:str|Path)->list[Path]:
+def indexer(data_directory:str|Path)->list[Path]:
     # config params
     files_configs = load_files_info()
 
     # params
-    data_dir = Path(data_dir)
-    excel_indexes_file = data_dir / "indexes.xlsx"
+    data_directory = Path(data_directory)
+    excel_indexes_file = data_directory / "indexes.xlsx"
 
-    files_set = set(data_dir.glob("*.csv"))
+    files_set = set(data_directory.glob("*.csv"))
     df_files = pd.DataFrame([
         {"file_type": f.stem.split("_")[0].upper(), "file_path": str(f)}
         for f in files_set
