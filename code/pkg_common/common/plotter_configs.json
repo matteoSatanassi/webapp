@@ -1,5 +1,5 @@
 {
-  "AllowedCurveColors": {
+  "Colors": {
     "IDVD": {
       "v0": "red",
       "0": "limegreen",
@@ -31,11 +31,14 @@
   "GroupMarkers": {
     "IDVD": {
       "Vgf": {
+        "Size": "V",
+        "Values":{
         "-2": "square",
         "-1": "circle",
         "0": "triangle-down",
         "1": "diamond",
         "2": "star"
+        }
       }
     }
   }

@@ -5,7 +5,7 @@ import json
 def load_configs():
     """Carica configurazione esistente o crea default"""
     if config_file.exists():
-        with open(config_file, 'r') as f:
+        with open(config_file, 'r', encoding="utf-8") as f:
             return json.load(f)
     else:
         return {
@@ -24,7 +24,7 @@ def load_files_info():
     i parametri a loro associati e le curve contenute
     """
     if files_configs_file.exists():
-        with open(files_configs_file, 'r') as f:
+        with open(files_configs_file, 'r', encoding="utf-8") as f:
             return json.load(f)
     else:
         return {}

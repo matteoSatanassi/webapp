@@ -130,13 +130,20 @@ class Curve(object):
     :param name: Nome della curva
     :type name: str
     """
-    __slots__ = ('X', 'Y', 'name')
     def __init__(self, name:str):
         self.name:str = name
         self.X: np.ndarray = None
         self.Y: np.ndarray = None
     def __str__(self):
         return self.name
+    @property
+    def y_scale(self):
+        """Ritorna la scala delle ordinate della curva"""
+        return self.get_data_scale(self.Y)
+    @property
+    def x_scale(self):
+        """Ritorna la scala delle ascisse della curva"""
+        return self.get_data_scale(self.X)
     @property
     def integral(self)->float:
         """Integra la curva caricata nell'istanza"""
@@ -160,6 +167,27 @@ class Curve(object):
         """
         self.X -= self.X[-1]
         return None
+    @staticmethod
+    def get_data_scale(values:np.ndarray)->float:
+        """Ritorna la scala dei dati contenuti in un array numpy"""
+        max_val = np.nanmax(np.abs(values))
+        if max_val == 0:
+            return 0
+        exponent = int(np.floor(np.log10(max_val)))
+        # esponente arrotondato alla decade (1e13 → 13)
+        return exponent
+    @staticmethod
+    def get_curves_scales(*args:"Curve")->float:
+        """
+        Ritorna le scale di ordinate e ascisse del gruppo di curve passato come argomento
+        :return: Dizionario del tipo {"X":x_scale, "Y":y_scale}
+        """
+        if all(isinstance(arg, Curve) for arg in args):
+            return {
+                "X": max(arg.x_scale for arg in args),
+                "Y": max(arg.y_scale for arg in args),
+            }
+        raise ValueError("Gli argomenti passati non erano tutte istanze della classe Curve")
 
 
 class FileCurves(FilesFeatures):
@@ -203,7 +231,20 @@ class FileCurves(FilesFeatures):
         if self.num_files != len(self._curves):
             raise AttributeError("Numero di file e curve contenuti nell'istanza non congruo!!")
         return zip(self._data, self._curves)
+    @property
+    def subdivide(self):
+        """Ritorna una lista di oggetti FileCurves, ognuno contenente solo i dati di un file"""
+        if self.num_files != len(self._curves):
+            raise AttributeError("Numero di file e curve contenuti nell'istanza non congruo!!")
+        return [self._create_single_file_inst(f,c) for f,c in self.expose_all]
 
+    def _create_single_file_inst(self, f_features, f_curves)->"FileCurves":
+        """Crea un'istanza di FileCurves contenente le informazioni del file passate come argomento"""
+        temp = FileCurves()
+        temp.file_type = self.file_type
+        temp._data = [f_features]
+        temp._curves = [f_curves]
+        return temp
     def import_all(self):
         """importa i dati dei file contenuti nell'istanza, salvandoli nell'attributo curves"""
         for file in self._data:
