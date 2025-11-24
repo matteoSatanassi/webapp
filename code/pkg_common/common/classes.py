@@ -88,8 +88,13 @@ class FilesFeatures(object):
         """
         Dato un path, controlla che il file sia di un tipo supportato,
         e in caso positivo estrae le feature contenute nel nome.
-        Ritorna la tipologia di file seguita dal dizionario delle feature estratte.
-        Nel caso only_file_type sia True, ritorna solo la tipologia di file, dopo aver controllato sia supportata
+
+        Ritorna la tipologia di file seguita dal dizionario di tutte le feature
+        specificate per il corrispondente file_type. Le feature senza nessun valore
+        specificato nel nome, avranno valore None.
+
+        Nel caso only_file_type sia True, ritorna solo la tipologia di file,
+        dopo aver controllato sia supportata.
         """
         file_name = Path(file_path).stem
         file_features = file_name.split('_')

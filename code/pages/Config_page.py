@@ -4,7 +4,7 @@ from pathlib import Path
 from dash_bootstrap_templates import ThemeChangerAIO
 import dash_bootstrap_components as dbc
 import json
-from app_elements import custom_spinner
+from app_elements.page_elements import custom_spinner
 from params import *
 
 register_page(__name__, path='/configs', title='Configs')

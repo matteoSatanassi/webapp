@@ -3,81 +3,20 @@ from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
 from params import *
 
-## PARAMS ##
-CURVE_CHECKLIST_IDVD = [
-    {'label': 'Curva (0,0)', 'value': 'v0'},
-    {'label': 'Curva (-7,0)', 'value': '0'},
-    {'label': 'Curva (-7,15)', 'value': '15'},
-    {'label': 'Curva (-7,30)', 'value': '30'},
-]
-CURVE_CHECKLIST_TRAPDATA = [
-    {'label': 'trap_density', 'value': 'trap_density'},
-    {'label': 'x=0.5µm', 'value': '0.5000'},
-    {'label': 'x=0.616µm', 'value': '0.6160'},
-    {'label': 'x=0.766µm', 'value': '0.7660'},
-    {'label': 'x=0.783µm', 'value': '0.7830'},
-    {'label': 'x=0.95µm', 'value': '0.9500'},
-    {'label': 'x=0.967µm', 'value': '0.9670'},
-    {'label': 'x=0.984µm', 'value': '0.9840'},
-    {'label': 'x=1.184µm', 'value': '1.1840'},
-    {'label': 'x=1.334µm', 'value': '1.3340'},
-    {'label': 'x=1.834µm', 'value': '1.8340'}
-]
-TABLE_COLUMNS_IDVD = [
-    {'name': 'Trap Distribution', 'id': 'trap_distr', 'type':'text'},
-    {'name': 'E_mid', 'id': 'e_mid', 'type':'numeric'},
-    {'name': 'E_σ', 'id': 'e_sigma', 'type':'numeric'},
-    {'name': 'V_gf', 'id': 'v_gf', 'type':'numeric'},
-    {'name': 'file_path', 'id': 'file_path', 'type':'text'},
-    {'name': 'group', 'id': 'group', 'type':'text'},
-]
-TABLE_COLUMNS_TRAPDATA = [
-    {'name': 'Trap Distribution', 'id': 'trap_distr', 'type':'text'},
-    {'name': 'E_mid', 'id': 'e_mid', 'type':'numeric'},
-    {'name': 'E_σ', 'id': 'e_sigma', 'type':'numeric'},
-    {'name': 'V_gf', 'id': 'v_gf', 'type':'numeric'},
-    {'name': 'file_path', 'id': 'file_path', 'type':'text'},
-    {'name': 'Start Condition', 'id': 'start_cond', 'type':'text'},
-]
-
 ## PAGE ELEMENTS ##
 def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
-    try:
-        page = table_id['page']
-    except KeyError:
-        raise KeyError('valore di pagina non trovato')
+    """
+    Template custom per la visualizzazione dei file.
 
-    if page == 'IdVd':
-        columns = TABLE_COLUMNS_IDVD.copy()
-        if table_id.get('location', None) == 'affinity-page':
-            columns.extend([
-                {'name': 'Affinity (0,0)', 'id': 'v0', 'type': 'numeric', 'format':dash_table.FormatTemplate.percentage(2)},
-                {'name': 'Affinity (-7,0)', 'id': '0', 'type': 'numeric', 'format':dash_table.FormatTemplate.percentage(2)},
-                {'name': 'Affinity (-7,15)', 'id': '15', 'type': 'numeric', 'format':dash_table.FormatTemplate.percentage(2)},
-                {'name': 'Affinity (-7,30)', 'id': '30', 'type': 'numeric', 'format':dash_table.FormatTemplate.percentage(2)},
-            ])
-    elif page == 'TrapData':
-        columns = TABLE_COLUMNS_TRAPDATA.copy()
-    else:
-        raise ValueError('Non supportati modi diversi da IdVd o TrapData')
+    I dati sono presi automaticamente a partire dal file di indicizzazione nella cartella dei dati,
+    in base al data_type passato all'interno dell'id.
 
-    columns = pd.DataFrame(columns)
+    Vengono nascoste le colonne vuote e la colonna degli indirizzi. Le celle vuote vengono riempite con "-".
+    :param table_id:
+    :return:
+    """
 
-    if page == 'TrapData':
-        data = pd.read_excel(indexes_file, sheet_name='TrapData')
-    elif table_id.get('location', None) == 'affinity-page':
-        data = pd.merge(
-            pd.read_excel(indexes_file, sheet_name='IdVd'),
-            pd.read_excel(affinity_file, sheet_name='exp').drop(columns=['group']),
-            on='file_path')
-    else:
-        data = pd.read_excel(indexes_file, sheet_name='IdVd')
-
-    for col in columns.loc[columns['type'] == 'numeric']['id']:
-        data[col] = pd.to_numeric(data[col], errors='coerce')
-
-    columns = columns.to_dict('records')
-    data = data.fillna('-').to_dict('records')
+    data, columns, cols_to_hide = get_table(table_id)
 
     return dash_table.DataTable(
         id=table_id,
@@ -88,7 +27,7 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
         filter_options={"placeholder_text": "Filter column..."},
         row_selectable='multi',
         selected_rows=[],
-        hidden_columns=['file_path', 'group' if page == 'IdVd' else None],
+        hidden_columns=cols_to_hide,
         page_size=10,
         style_cell={
             'textAlign': 'right',
@@ -150,30 +89,69 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
         }
     )
 
-def mode_options(radio_id:dict[str,str]):
+def grouping_selector(selector_id:dict[str,str]):
     """
-    Crea una lista in cui scegliere l'opzione di visualizzazione delle tabelle nella pagina IdVd
+    Crea un DropDown menu e una lista di scelta.
 
-    Le opzioni sono Exp mode e Group mode
+    Il primo serve per selezionare la feature secondo cui raggruppare tra quelle possibili;
+    La seconda per decidere se visualizzare la tabella secondo i raggruppamenti o esplosa.
     """
     try:
-        page = radio_id['page']
+        page = selector_id['page']
     except KeyError:
-        raise KeyError('valore di pagina non trovato')
+        raise KeyError("Valore di pagina non specificato nell'id")
 
-    return html.Div(
-        dcc.RadioItems(
-            [
-                {"label": "📊 Modalità Esperimento", "value": "ExpMode"},
-                {"label": "👥 Modalità Gruppo", "value": "GroupMode"}
-             ],
-            value='ExpMode',
-            id=radio_id,
-            inline=True,
-            className='d-flex justify-content-around',
-            labelStyle={'margin-bottom': '15px'},
-        ), style={'display': 'none' if page!='IdVd' else 'block'},
-    )
+    type_configs = load_files_info()[page]
+
+    try:
+        data = pd.read_excel(indexes_file, sheet_name=page)
+    except Exception:
+        raise FileNotFoundError(
+            f"""Non è stato possibile trovare il file di indicizzazione necessario
+            data_type specificato = {page}"""
+        )
+
+    features = type_configs["AllowedFeatures"].keys()
+
+    # nasconderò le colonne vuote e la colonna dei file_path
+    f_to_pop = data.columns[data.isna().all()].tolist()
+    f_to_pop.append("file_path")
+
+    features = [f for f in features if f not in f_to_pop]
+
+    # elems ids
+    radio_id = selector_id.copy()
+    radio_id["item"] = "radio-table-mode"
+
+    menu_id = selector_id.copy()
+    menu_id["item"] = "menu-grouping-features"
+
+    selectors = dbc.Container([
+        dbc.Row([
+            dbc.Col(
+                dcc.RadioItems(
+                    options=[
+                        {"label": "📊 files", "value": "normal"},
+                        {"label": "👥 gruppi", "value": "grouped"}
+                    ],
+                    value='normal',
+                    id=radio_id,
+                    inline=True,
+                    className='d-flex justify-content-around',
+                    labelStyle={'margin-bottom': '15px'},
+                )
+            ),
+            dbc.Col(
+                dcc.Dropdown(
+                    options=features,
+                    value="Vgf" if "Vgf" in features else features[0],
+                    id=menu_id,
+                )
+            )
+        ])
+    ])
+
+    return None
 
 def custom_spinner(message:str=""):
     if not message:
@@ -181,16 +159,20 @@ def custom_spinner(message:str=""):
     return html.H1([message, dbc.Spinner(color="primary", size='md', spinner_class_name="ms-3")])
 
 def export_modal(modal_id:dict[str,str])->dbc.Modal:
-    """Crea una finestra pop-up in cui selezionare la curve da esportare"""
+    """Crea una finestra pop-up in cui selezionare le curve da esportare e i parametri di esportazione"""
     try:
         page = modal_id['page']
     except KeyError:
-        raise KeyError('valore di pagina non trovato')
+        raise KeyError("Valore di pagina non specificato nell'id")
 
-    if page not in ('IdVd', 'TrapData'):
-        raise ValueError('Non supportati pagine diverse da IdVd o TrapData')
+    type_configs = load_files_info()[page]
 
-    curves_checklist_opt = CURVE_CHECKLIST_IDVD if page=='IdVd' else CURVE_CHECKLIST_TRAPDATA
+    curves_checklist_opt = [
+        {
+            "value":acronym,
+            "label":label
+        } for acronym,label in type_configs["AllowedCurves"].items()
+    ]
 
     return dbc.Modal([
 
@@ -212,7 +194,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                         dbc.Row([
                             # Colonna con tabella, mode selector
                             dbc.Col([
-                                mode_options({'page':page, 'item':'radio-mode-toggle', 'location':'modal'}),
+                                grouping_selector({'page':page, 'item':'radio-mode-toggle', 'location':'modal'}),
                                 html.Div(
                                     my_table_template({'page':page, 'item':'table', 'location':'modal'}),
                                     style={"overflow-y": "auto"}
@@ -367,3 +349,51 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
         scrollable=True,
         backdrop='static'   # Previene la chiusura cliccando fuori
     )
+
+
+## HELPER FUNC ##
+def get_table(table_id:dict[str,str]):
+    """
+    Ritorna i dati per costruire la DataTable specificata dall'id nella visualizzazione normal.
+    I valori nulli sono riempiti con "-".
+    :return: In ordine data, il df della tabella, columns, ossia il dizionario con le informazioni di colonna
+     da passare a dash, e cols_to_hide, la lista delle colonne da nascondere
+    """
+    try:
+        page = table_id['page']
+    except KeyError:
+        raise KeyError("Valore di pagina non specificato nell'id")
+
+    type_configs = load_files_info()[page]
+
+    # page è anche il nome del data_type dei file da visualizzare
+    try:
+        data = pd.read_excel(indexes_file, sheet_name=page)
+    except Exception:
+        raise FileNotFoundError(
+            f"""Non è stato possibile trovare il file di indicizzazione necessario
+            data_type specificato = {page}"""
+        )
+
+    columns = [
+        {"name":f_name,
+         "id":f_name,
+         "type":"numeric" if f_type in ("integer", "float") else None}
+        for f_name,f_type in type_configs["AllowedFeatures"].items()
+    ]
+    if type_configs["TargetCurves"]==1:
+        for curve_id,curve_label in type_configs["TargetCurves"].items():
+            columns.append({
+                "name":f"Aff {curve_label}",
+                "id":f"aff_{curve_id}",
+                "type":"numeric",
+                "format":dash_table.FormatTemplate.percentage(2)
+            })
+
+    # nasconderò le colonne vuote e la colonna dei file_path
+    cols_to_hide = ["file_path", data.columns[data.isna().all()].tolist()]
+
+    # riempio le celle vuote con un trattino placeholder
+    data.fillna("-")
+
+    return data, columns, cols_to_hide

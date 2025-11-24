@@ -22,11 +22,11 @@
 
 /* Responsive design */
 @media (max-width: 992px) {
-    .IdVd_dashboard .row {
+    .dashboard .row {
         flex-direction: column;
     }
 
-    .IdVd_dashboard .col {
+    .dashboard .col {
         width: 100% !important;
         margin-bottom: 20px;
     }
@@ -77,21 +77,21 @@
 
 /* Responsive per tabelle */
 @media (max-width: 1200px) {
-    .IdVd_dashboard .col-md-4 {
+    .dashboard .col-md-4 {
         width: 40% !important;
     }
 
-    .IdVd_dashboard .col-md-8 {
+    .dashboard .col-md-8 {
         width: 60% !important;
     }
 }
 
 @media (max-width: 992px) {
-    .IdVd_dashboard .row {
+    .dashboard .row {
         flex-direction: column;
     }
 
-    .IdVd_dashboard .col {
+    .dashboard .col {
         width: 100% !important;
         margin-bottom: 20px;
     }

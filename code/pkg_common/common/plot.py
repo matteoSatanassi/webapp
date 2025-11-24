@@ -126,8 +126,11 @@ class CustomFigure(go.Figure):
         """Ritorna la feature di raggruppamento se ne esiste una"""
         return self._curves.grouped_by if self.contains_group else None
 
-    def add_curve(self, curve:Curve, scales:dict[str,float]) -> "CustomFigure":
+    def add_curve(self,
+                  curve:Curve,
+                  scales:dict[str,float] = None) -> "CustomFigure":
         """Aggiunge tutte le curve salvate nell'istanza, traccia per traccia, con """
+        if not scales: scales = {"X":1, "Y":1}
         try:
             self.add_trace(
                 go.Scatter(
@@ -182,8 +185,9 @@ class CustomFigure(go.Figure):
 
         return self
 
-    def add_graphics(self, scales:dict[str,float]) -> "CustomFigure":
+    def add_graphics(self, scales:dict[str,float]=None) -> "CustomFigure":
         """In base alla tipologia di file contenuta chiama il giusto metodo per aggiungere la parte grafica alla figura"""
+        if not scales: scales = {"X":1, "Y":1}
         match self._curves.file_type:
             case "IDVD":
                 return self._graphics_idvd()
@@ -191,7 +195,7 @@ class CustomFigure(go.Figure):
                 return self._graphics_trapdata(scales)
             case _:
                 raise f"I file {self._curves.file_type} non hanno una grafica supportata"
-    def _graphics_idvd(self, group:bool=False) -> "CustomFigure":
+    def _graphics_idvd(self) -> "CustomFigure":
         """Implementa la parte grafica della figura nel caso di grafico IdVd"""
         tick_x_pos = np.arange(-25, 25, 0.5)
         self.update_layout(
@@ -344,11 +348,12 @@ class CustomFigure(go.Figure):
             raise KeyError(
                 """Non è stato possibile individuare la feature di raggruppamento tra quelle supportate dal plotter
                 Aggiungere i marker di gruppo dedicati alla feature nei file di configurazione del plotter"""
-                           )
+                )
 
         for f_features, f_curves in self._curves.expose_all:
             # f_features: dizionario delle features del file correntemente considerato
             # f_curves: dizionario delle curve contenute nel file
+
             for key, curve in f_curves.items():
                 curve = curve.copy()
                 if key in self.c_to_plot or self.all_c:
