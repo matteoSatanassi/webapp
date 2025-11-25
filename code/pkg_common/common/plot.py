@@ -1,4 +1,4 @@
-from classes import FileCurves, Curve
+from common.classes import FileCurves, Curve
 import plotly.graph_objects as go
 import numpy as np
 
@@ -57,7 +57,7 @@ def plot(curves:FileCurves,
          c_to_plot:list[str]=(),
          all_c:bool=True,
          legend:bool=True,
-         colored:bool=True)->go.Figure:
+         colored:bool=True)->"CustomFigure":
     """Plotta le curve interessate, contenute da un'istanza di ExpCurves, contenente a sua volta uno o più Exp"""
 
     custom_fig = CustomFigure(curves,
@@ -383,7 +383,7 @@ class CustomFigure(go.Figure):
         """
 
         # caso in cui l'istanza contenga i dati di un solo file
-        if self._curves.num_files == 1:
+        if len(self._curves) == 1:
             for f_features, f_curves in self._curves.expose_all:
                 scales = Curve.get_curves_scales(*[curve for curve in f_curves.values()])
                 for key, curve in f_curves.items():
@@ -415,7 +415,7 @@ if __name__=='__main__':
 
     #path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
     path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_TrapDistr_exponential_Vgf_1_Es_1.72_Em_1.31_state_v0.csv"
-    e = FileCurves.from_path(path)
+    e = FileCurves.from_paths(path)
     plot(e, all_c=True).show()
 
     # da fare prova con molti file(IdVd e trapdata) e con gruppo

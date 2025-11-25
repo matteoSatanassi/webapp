@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-from classes import FilesFeatures
+from common.classes import FilesFeatures
 from params import *
 
 ## HELPER FUNC ##

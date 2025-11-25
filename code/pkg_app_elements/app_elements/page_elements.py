@@ -352,12 +352,15 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
 
 
 ## HELPER FUNC ##
-def get_table(table_id:dict[str,str]):
+def get_table(table_id:dict[str,str], only_df=False):
     """
     Ritorna i dati per costruire la DataTable specificata dall'id nella visualizzazione normal.
     I valori nulli sono riempiti con "-".
+
+    :param table_id: id della tabella di cui sono richiesti i valori.
+    :param only_df: default False. Se True la funzione ritorna solo il df letto in memoria.
     :return: In ordine data, il df della tabella, columns, ossia il dizionario con le informazioni di colonna
-     da passare a dash, e cols_to_hide, la lista delle colonne da nascondere
+     da passare a dash, e cols_to_hide, la lista delle colonne da nascondere.
     """
     try:
         page = table_id['page']
@@ -365,10 +368,13 @@ def get_table(table_id:dict[str,str]):
         raise KeyError("Valore di pagina non specificato nell'id")
 
     type_configs = load_files_info()[page]
+    aff_cols = type_configs["TargetCurves"]==1
 
     # page è anche il nome del data_type dei file da visualizzare
     try:
         data = pd.read_excel(indexes_file, sheet_name=page)
+        if only_df:
+            return data
     except Exception:
         raise FileNotFoundError(
             f"""Non è stato possibile trovare il file di indicizzazione necessario
@@ -381,7 +387,8 @@ def get_table(table_id:dict[str,str]):
          "type":"numeric" if f_type in ("integer", "float") else None}
         for f_name,f_type in type_configs["AllowedFeatures"].items()
     ]
-    if type_configs["TargetCurves"]==1:
+    aff_cols_ids = []
+    if aff_cols:
         for curve_id,curve_label in type_configs["TargetCurves"].items():
             columns.append({
                 "name":f"Aff {curve_label}",
@@ -389,9 +396,12 @@ def get_table(table_id:dict[str,str]):
                 "type":"numeric",
                 "format":dash_table.FormatTemplate.percentage(2)
             })
+            aff_cols_ids.append(f"aff_{curve_id}")
 
     # nasconderò le colonne vuote e la colonna dei file_path
-    cols_to_hide = ["file_path", data.columns[data.isna().all()].tolist()]
+    cols_to_hide = ["file_path", *data.columns[data.isna().all()].tolist()]
+    if aff_cols_ids:
+        cols_to_hide.append(*aff_cols_ids)
 
     # riempio le celle vuote con un trattino placeholder
     data.fillna("-")
