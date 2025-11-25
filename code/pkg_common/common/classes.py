@@ -21,58 +21,75 @@ class FilesFeatures(object):
         else:
             stems = [row["file_path"].stem for row in self._data]
             return ", ".join(stems)
+    def __len__(self):
+        return len(self._data)
 
     @classmethod
-    def from_path(cls, file_path:Path|str):
-        if not Path(file_path).exists():
-            raise FileNotFoundError(f'file {file_path} non trovato!')
+    def from_paths(cls, *args, grouping_feature=None):
+        if not all(isinstance(arg,(Path,str)) for arg in args):
+            raise TypeError("I valori passati al costruttore non sono tutti stringhe o paths")
+
         inst = cls()
-        inst.file_type, data = cls.extract_features(file_path)
-        inst._data.append(data)
+        inst.file_type = cls.extract_features(Path(args[0]), only_file_type=True)
+        for arg in set(args):
+
+            if not Path(arg).exists():
+                raise FileNotFoundError(f'file {arg} non trovato!')
+
+            file_type, data = cls.extract_features(arg)
+
+            if file_type != inst.file_type:
+                raise ValueError(f"Il file {arg} non è dello stesso tipo dei precedenti ({inst.file_type})")
+
+            inst._data.append(data)
+
+        if grouping_feature:
+            inst.grouped_by = grouping_feature
+
+            if not inst.contains_group:
+                return ValueError("Il gruppo di file passati non fanno parte dello stesso raggruppamento")
+
         return inst
     @classmethod
-    def from_df(cls, df:pd.DataFrame, grouped_by:str=None):
+    def from_df(cls, df: pd.DataFrame, grouped_by: str = None):
         try:
             file_path_col = df["file_path"].tolist()
         except KeyError:
-            raise "Colonna file_path inesistente"
+            raise KeyError("Colonna file_path inesistente")
         if len(
                 set([FilesFeatures.extract_features(file_path, only_file_type=True) for file_path in file_path_col])
         ) != 1:
-            raise "I file passati non sono parte dello stesso file_type"
+            raise ValueError("I file passati non sono parte dello stesso file_type")
         else:
             file_type = FilesFeatures.extract_features(file_path_col[0], only_file_type=True)
 
-        type_configs = cls.get_type_configs(file_type)
+        type_configs = FilesFeatures.get_type_configs(file_type)
 
-        if df.columns.tolist() != type_configs["AllowedFeatures"].keys():
-            raise f"""
-            Le feature contenute nel df sono manchevoli o errate
-            Feature presentate: {', '.join(df.columns)} 
-            Feature supportate: {', '.join(type_configs["AllowedFeatures"].keys())} 
-            """
+        if set(df.columns.tolist()) != set(type_configs["AllowedFeatures"].keys()):
+            raise ValueError(f"""
+                Le feature contenute nel df sono manchevoli o errate
+                Feature presentate: {', '.join(df.columns)} 
+                Feature supportate: {', '.join(type_configs["AllowedFeatures"].keys())} 
+                """)
 
         try:
-            df["file_path"] = df["file_path"].astype(Path)
+            df["file_path"] = df["file_path"].apply(lambda p: Path(p))
         except:
-            raise f"Non è stato possibile convertire in indirizzi la colonna del dataframe"
+            raise ValueError("Non è stato possibile convertire in indirizzi la colonna file_path del dataframe")
 
         inst = cls()
         if grouped_by is not None:
             if grouped_by not in df.columns:
-                raise f"Feature di raggruppamento non supportata"
+                raise ValueError(f"Feature di raggruppamento non supportata")
             inst.grouped_by = grouped_by
 
         inst.file_type, inst._data = file_type, df[type_configs["AllowedFeatures"].keys()].to_dict(orient='records')
         return inst
 
     @property
-    def num_files(self):
-        return len(self._data)
-    @property
     def contains_group(self):
         """Ritorna True se i file formano effettivamente un gruppo omogeneo"""
-        if self.grouped_by is None or self.num_files <= 1:
+        if self.grouped_by is None or len(self) <= 1:
             return False
 
         df_data = pd.DataFrame(self._data)
@@ -82,6 +99,18 @@ class FilesFeatures(object):
 
         # ogni colonna deve avere un solo valore distinto
         return all(df_data[col].nunique() == 1 for col in other_cols)
+
+    def get_tab_label(self):
+        prefix = "GROUP" if self.contains_group else "FILE"
+
+        features = self._data[0].copy()
+        del features["file_path"]
+        if self.grouped_by:
+            del features[self.grouped_by]
+
+        vals = [str(v) if v is not None else "." for v in features.values()]
+
+        return f"{prefix} {self.file_type} - {"/".join(vals)}"
 
     @staticmethod
     def extract_features(file_path:Path|str, only_file_type = False):
@@ -203,17 +232,25 @@ class FileCurves(FilesFeatures):
         super().__init__()
         self._curves = []
 
+    def _validate(self):
+        if not len(self._curves)==len(self._data):
+            raise ValueError("I numeri di curve e di file salvati nell'istanza non uguali")
+
+    # noinspection PyUnresolvedReferences,PyProtectedMember
     @classmethod
-    def from_path(cls, file_path:Path|str)->"FileCurves":
+    def from_paths(cls, *args, grouping_feature=None)-> "FileCurves":
         """crea un'istanza della classe e importa i dati a partire dall'indirizzo del file corrispondente"""
-        inst = super(FileCurves, cls).from_path(file_path)
+        inst = super(FileCurves, cls).from_paths(*args, grouping_feature=grouping_feature)
         inst.import_all()
+        inst._validate()
         return inst
+    # noinspection PyUnresolvedReferences,PyProtectedMember
     @classmethod
-    def from_df(cls, df:pd.DataFrame, grouped_by:str=None)->"FileCurves":
+    def from_df(cls, df: pd.DataFrame, grouped_by: str = None) -> "FileCurves":
         """crea un'istanza della classe e importa i dati a partire da un dataframe contenente le feature"""
         inst = super(FileCurves, cls).from_df(df, grouped_by)
         inst.import_all()
+        inst._validate()
         return inst
 
     @property
@@ -233,14 +270,12 @@ class FileCurves(FilesFeatures):
         Ritorna dati e curve contenute nell'istanza di classe
         :return: Oggetto zip con struttura {file_features_dict:file_curves_dict}
         """
-        if self.num_files != len(self._curves):
-            raise AttributeError("Numero di file e curve contenuti nell'istanza non congruo!!")
+        self._validate()
         return zip(self._data, self._curves)
     @property
     def subdivide(self):
         """Ritorna una lista di oggetti FileCurves, ognuno contenente solo i dati di un file"""
-        if self.num_files != len(self._curves):
-            raise AttributeError("Numero di file e curve contenuti nell'istanza non congruo!!")
+        self._validate()
         return [self._create_single_file_inst(f,c) for f,c in self.expose_all]
 
     def _create_single_file_inst(self, f_features, f_curves)->"FileCurves":
@@ -307,9 +342,9 @@ class FileCurves(FilesFeatures):
         ]
         for t_file in target_files:
             if all(token in t_file.stem for token in target_features):
-                return FileCurves.from_path(t_file)
+                return FileCurves.from_paths(t_file)
         raise f"Non è stato possibile trovare il file target per le curve del file {file_features["file_path"].stem}"
-    def calculate_affinities(self):
+    def calculate_affinities(self, autosave=False):
         """
         Calcola le affinità delle curve contenute nei file definiti nell'istanza.
         Nel caso il calcolo dell'affinità non sia supportato per i file del tipo caricati nell'istanza, non ritorna nulla
@@ -321,21 +356,32 @@ class FileCurves(FilesFeatures):
             print("Questa tipologia di file non supporta il calcolo delle affinità")
             return None
 
-        affinities = {}
-        for file,curves in zip(self._data, self._curves):
+        if not autosave:
+            affinities = {}
+            for file_features,curves in self.expose_all:
 
-            affinities[file["file_path"].stem] = {}
-            target = self.find_target_file(self.file_type, file)
+                affinities[file_features["file_path"].stem] = {}
+                target = self.find_target_file(self.file_type, file_features)
 
-            for name,curve in curves.items():
-                affinities[file["file_path"].stem][name] = curve.integral_affinity(target._curves[0][name])
+                for name,curve in curves.items():
+                    affinities[file_features["file_path"].stem][name] = curve.integral_affinity(target._curves[0][name])
 
-        return affinities
+            return affinities
+        else:
+            for file_features,curves in self.expose_all:
+
+                target = self.find_target_file(self.file_type, file_features)
+
+                for name,curve in curves.items():
+                    file_features[f"aff_{name}"] = curve.integral_affinity(target._curves[0][name])
+
+            return self._data
+
 
 
 if __name__ == '__main__':
-    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
-    # prova = FileCurves.from_path(path)
-    # print(tuple(prova.expose_all))
+    path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
+    prova = FileCurves.from_paths(path)
+    prova.calculate_affinities(autosave=True)
+    print(prova._data)
 
-    print((Path(__file__).parent / "plotter_configs.json").exists())
