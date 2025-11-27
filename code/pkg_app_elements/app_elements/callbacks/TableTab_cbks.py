@@ -1,65 +1,14 @@
 import pandas as pd
 from dash import Input, Output, State, callback, MATCH, no_update, dcc
 from app_elements.page_elements import get_table
-from params import *
+from app_elements.callbacks._helper_funcs import explode_group_paths, update_table
 from common import FileCurves, plot
+from params import *
 
 
 ## DYNAMIC CALLBACKS ##
-def update_table(mode:str, grouping_feature:str, hidden_cols:list, table_data:dict, table_id:dict) -> dict:
-    """
-    Updater della tabella di visualizzazione dei file.
 
-    Nel caso venga richiesto il raggruppamento dei dati da parte dell selettore, ricrea la tabella, raggruppando gli
-    esperimenti secondo la feature grouping_feature, e calcolando le medie delle affinità, se presenti. Nella colonna 
-    degli indirizzi verranno salvate degli indirizzi dei file che fanno parte del gruppo sotto forma di stringhe, divisi
-    da cancelletti (#).
-    :param mode:
-    :param grouping_feature:
-    :param hidden_cols:
-    :param table_data:
-    :param table_id:
-    :return:
-    """
-    if mode == "grouped":       # se l'impostazione era normal, posso anche usare i dati già caricati nella tabella
-        df = pd.DataFrame(table_data)
-        type_configs = load_files_info()[table_id["page"]]
-
-        hidden_cols.append(grouping_feature)
-
-        # Costruisco chiave del gruppo
-        group_cols = [col for col in df.columns if col not in hidden_cols and "aff_" not in col]
-        df["group_key"] = df[group_cols].astype(str).agg("_".join, axis=1)
-
-        # Raggruppo
-        groups = df.groupby("group_key")
-
-        # Prendo una riga per gruppo
-        df_out = groups.first().reset_index(drop=True)
-        
-        # raggruppo gli indirizzi dei file del gruppo in un'unica stringa
-        df_out["file_path"] = groups["file_path"].agg(lambda x: "#".join(map(str, x))).values
-
-        # Calcolo medie delle colonne affinità se presenti
-        if type_configs["TargetCurves"] == 1:
-            for curve in type_configs["AllowedCurves"]:
-                aff_col = f"aff_{curve}"
-                if aff_col in df.columns:
-                    df_out[aff_col] = groups[aff_col].mean().values
-
-        # Rimuovo colonna temporanea
-        df_out = df_out.drop(columns=["group_key"])
-
-        return df_out.to_dict("records"), hidden_cols, []
-    elif mode == "grouped":
-        df_out,_,cols_to_hide = get_table(table_id)
-        return df_out.to_dict('records'), cols_to_hide, []
-    elif not mode:
-        return no_update, no_update, no_update
-    else:
-        raise ValueError(f"Il valore passato dal radio selector [{mode}], non è tra quelli supportati")
-
-callback(
+callback([
     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'data'),
     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'hidden_columns'),
     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'selected_rows', allow_duplicate=True),
@@ -67,19 +16,7 @@ callback(
     State({'page':MATCH, 'item':'menu-grouping-features', 'location':'dashboard'}, 'value'),
     State({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'hidden_columns'),
     State({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'data'),
-    State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'id'),
-    prevent_initial_call=True
-)(update_table)
-
-callback(
-    Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'data'),
-    Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'hidden_columns'),
-    Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows', allow_duplicate=True),
-    Input({'page':MATCH, 'item':'radio-table-mode', 'location':'modal'}, 'value'),
-    State({'page':MATCH, 'item':'menu-grouping-features', 'location':'modal'}, 'value'),
-    State({'page':MATCH, 'item':'table', 'location':'modal'}, 'hidden_columns'),
-    State({'page':MATCH, 'item':'table', 'location':'modal'}, 'data'),
-    State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'id'),
+    State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'id')],
     prevent_initial_call=True
 )(update_table)
 
@@ -92,7 +29,7 @@ callback(
     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'derived_virtual_selected_rows'),
     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'derived_virtual_data'),
     State({'page': MATCH, 'item': 'graph-tabs'}, 'children'),
-    State({'page': MATCH, 'item': 'menu-grouping-features', 'location': 'modal'}, 'value'),
+    State({'page': MATCH, 'item': 'menu-grouping-features', 'location': 'dashboard'}, 'value'),
 ])
 def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, tabs:list[dcc.Tab], grouping_feature:str):
     """
@@ -112,17 +49,17 @@ def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, tabs:list[d
 
         if row['file_path'] not in open_tabs:
             path_list = explode_group_paths(row['file_path'])
-            data = FileCurves.from_paths(*path_list,
+            data_to_plot = FileCurves.from_paths(*path_list,
                                          grouping_feature=grouping_feature if len(path_list)>1 else None)
-            tabs.append(create_tab(row["file_path"],data))
+            tabs.append(create_tab(row["file_path"],data_to_plot))
 
     return tabs, table_data[selected_rows[0]]['file_path'], []
 
 
-callback(
+@callback([
     Output({'page':MATCH, 'item':'main-tabs'}, 'active_tab'),
     Input({'page':MATCH, 'item':'button-plot', 'location':'dashboard'}, 'n_clicks'),
-    State({'page': MATCH, 'item': 'table', 'location':'dashboard'}, 'selected_rows'),
+    State({'page': MATCH, 'item': 'table', 'location':'dashboard'}, 'selected_rows')],
     prevent_initial_call=True
 )
 def switch_to_graphs_tab(n_clicks, selected_rows):
@@ -135,14 +72,13 @@ def switch_to_graphs_tab(n_clicks, selected_rows):
     return "tab-table"
 
 
-@callback(
+@callback([
     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'data', allow_duplicate=True),
     Input({'page': MATCH, 'item': 'button-calculate-affinity'}, 'n_clicks'),
-    State({'page': MATCH, 'item': 'table', 'location':'dashboard'}, 'id'),
-    State({'page':MATCH, 'item':'radio-table-mode', 'location':'dashboard'}, 'value'),
+    State({'page': MATCH, 'item': 'table', 'location':'dashboard'}, 'id')],
     prevent_initial_call=True
 )
-def affinity_calc(n_clicks:int, table_id:dict, mode:str):
+def affinity_calc(n_clicks:int, table_id:dict):
     """
     Calcola le percentuali di affinità di ogni esperimento presente nei dati, salva i dati ricavati
     nel file preposto e li visualizza direttamente nella tabella di pagina.
@@ -166,32 +102,35 @@ def affinity_calc(n_clicks:int, table_id:dict, mode:str):
 
 
 ## HELPER FUNCS ##
-def explode_group_paths(string:str):
+def create_tab(tab_data:FileCurves)->dcc.Tab:
     """
-    Data una stringa di indirizzi raggruppati, li esplode in una lista di oggetti Path
+    Dati i parametri richiesti, crea il corrispondete Tab.
 
-    Se la lista contiene un solo elemento ritorna cmq una lista con quell'unico elemento
+    Il valore del Tab sarà il path del file, nel caso tab_data ne contenga solo uno,
+    mentre, nel caso ne contenga più di uno, gli indirizzi saranno concatenati e divisi
+    da caratteri '#'
     """
-    from pathlib import Path
-    return [Path(p) for p in string.split('#')]
+    if len(tab_data) == 1:
+        tab_value = tab_data.paths
+    else:
+        tab_value = "#".join(tab_data.paths)
 
-def create_tab(tab_value:str, data:FileCurves)->dcc.Tab:
-    """Dati i parametri richiesti, crea il corrispondete Tab"""
     return dcc.Tab(
         value=tab_value,
-        label=data.get_tab_label(),
-        children=[plot(data)],
+        label=tab_data.get_tab_label(),
+        children=dcc.Graph(plot(tab_data)),
         style={'fontSize': 8, 'left-margin': '2px'},
     )
 
 ## DEBUG ##
 if __name__ == '__main__':
-    df = get_table({'page':"IDVD", 'item':'table', 'location':'dashboard'}, only_df=True)
-
-    cols = [col for col in df.columns if "aff_" not in col]
-
-    data = FileCurves.from_df(df[cols])
-
-    df_out = pd.DataFrame(data.calculate_affinities(autosave=True))
-
-    print("ciao")
+    pass
+    # df = get_table({'page':"IDVD", 'item':'table', 'location':'dashboard'}, only_df=True)
+    #
+    # cols = [col for col in df.columns if "aff_" not in col]
+    #
+    # data = FileCurves.from_df(df[cols])
+    #
+    # df_out = pd.DataFrame(data.calculate_affinities(autosave=True))
+    #
+    # print("ciao")
