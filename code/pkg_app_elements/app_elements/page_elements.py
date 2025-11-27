@@ -3,6 +3,7 @@ from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
 from params import *
 
+
 ## PAGE ELEMENTS ##
 def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
     """
@@ -187,9 +188,6 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                 style={"height": "100%", "overflow": "auto"},
                 children=[
                     dbc.Container([
-                        dcc.Store(id={'page': page, 'item': 'store-loading-placeholder', 'location': 'modal'},
-                                  data=None),
-
                         # Riga 1: Tabella e selezione impostazioni esportazione
                         dbc.Row([
                             # Colonna con tabella, mode selector

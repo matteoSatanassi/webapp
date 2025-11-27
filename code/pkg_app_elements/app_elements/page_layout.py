@@ -84,12 +84,11 @@ def layout(PAGE:str):
             overlay_style={"visibility": "visible", "filter": "blur(2px)"},
             delay_show=500, # aspetta mezzo secondo prima di mostrare lo spinner
             children=[
+                # Questo store serve da output per callback che non ne hanno,
+                # in modo da attivare lo spinner di loading (es. Quando esporto il grafico corrente)
+                dcc.Store(id={'page':PAGE, 'item':'store-placeholder-graph-tab'}),
                 dbc.Row([
                     dbc.Col([
-                        dcc.Store(id={'page':PAGE, 'item':'store-loading-placeholder'},
-                                  data=None
-                                  ), #?????????? a che serve?
-
                         # Card per i grafici
                         dbc.Card([
                             dbc.CardHeader([

@@ -107,29 +107,37 @@ class CustomFigure(go.Figure):
         return self._colored
 
     @property
-    def get_group_markers(self):
+    def _get_group_markers(self):
         """
         In base alla feature di raggruppamento usata nell'istanza ritorna il giusto dizionario {feature_value:marker}
         """
         return self._plotting_params.get_markers(self._curves.grouped_by)
     @property
-    def get_group_feature_size(self):
+    def _get_group_feature_size(self):
         """
         In base alla feature di raggruppamento usata nell'istanza ritorna la sua grandezza fisica
         """
         return self._plotting_params.get_group_feature_size(self._curves.grouped_by)
     @property
-    def contains_group(self):
+    def _contains_group(self):
         return self._curves.contains_group
     @property
     def grouped_by(self):
         """Ritorna la feature di raggruppamento se ne esiste una"""
-        return self._curves.grouped_by if self.contains_group else None
+        return self._curves.grouped_by if self._contains_group else None
+    @property
+    def get_group_stem(self):
+        """Il metodo controlla che l'istanza contenga i dati di un gruppo e ne ritorna il nome"""
+        return self._curves.get_group_stem
+    @property
+    def get_paths(self):
+        """Ritorna gli indirizzi contenuti nell'istanza"""
+        return self._curves.paths
 
-    def add_curve(self,
-                  curve:Curve,
-                  scales:dict[str,float] = None) -> "CustomFigure":
-        """Aggiunge tutte le curve salvate nell'istanza, traccia per traccia, con """
+    def _add_curve(self,
+                   curve:Curve,
+                   scales:dict[str,float] = None) -> "CustomFigure":
+        """Aggiunge all'istanza la curva specificata, con colore, stile di linea, marker e nome come impostati"""
         if not scales: scales = {"X":1, "Y":1}
         try:
             self.add_trace(
@@ -141,29 +149,31 @@ class CustomFigure(go.Figure):
                     line=dict(
                         color=curve.color,
                         dash=curve.linestyle,
-                        width=0.75 if self.contains_group else None,
+                        width=0.75 if self._contains_group else None,
                     ),
                     marker=dict(
                         symbol=curve.markers
                     ),
                     visible=True,
-                    showlegend=True if (self.legend and not self.contains_group) else False
+                    showlegend=True if (self.legend and not self._contains_group) else False
                 )
             )
         except AttributeError:
             raise f"Non definiti gli attributi necessari nell'oggetto {curve}"
         return self
 
-    def add_summary_legend(self) -> "CustomFigure":
+    def _add_summary_legend(self) -> "CustomFigure":
         """Aggiunge una legenda riassuntiva a una figura contenete un gruppo di esperimenti"""
+        if not self._contains_group:
+            return self
 
         # Aggiunge markers feature raggruppamento (Es. Vgf=-2 -> square)
-        for feature_value,marker in self.get_group_markers.items():
+        for feature_value,marker in self._get_group_markers.items():
             self.add_trace(go.Scatter(
                 x=[None], y=[None],
                 mode='markers',
                 marker=dict(symbol=marker, size=12, color='black'),
-                name=f"{self._curves.grouped_by}={feature_value} {self.get_group_feature_size}",
+                name=f"{self._curves.grouped_by}={feature_value} {self._get_group_feature_size}",
                 showlegend=True,
                 legendgroup="vgf"
             ))
@@ -185,7 +195,7 @@ class CustomFigure(go.Figure):
 
         return self
 
-    def add_graphics(self, scales:dict[str,float]=None) -> "CustomFigure":
+    def _add_graphics(self, scales:dict[str,float]=None) -> "CustomFigure":
         """In base alla tipologia di file contenuta chiama il giusto metodo per aggiungere la parte grafica alla figura"""
         if not scales: scales = {"X":1, "Y":1}
         match self._curves.file_type:
@@ -256,7 +266,7 @@ class CustomFigure(go.Figure):
             paper_bgcolor='white',
             font=dict(size=14),
             # width=800,
-            height=600 if self.contains_group else None,
+            height=600 if self._contains_group else None,
         )
         return self
     def _graphics_trapdata(self, scales) -> "CustomFigure":
@@ -340,11 +350,11 @@ class CustomFigure(go.Figure):
         return self
 
     def plot_group(self) -> "CustomFigure":
-        if not self.contains_group:
-            raise AttributeError(f"{self._curves} non contiene un gruppo")
+        if not self._contains_group:
+            raise ValueError(f"{self._curves} non contiene un gruppo")
         if not self._plotting_params.group_markers:
             raise ValueError(f"Il file type {self._curves.file_type} non è supportato per il raggruppamento curve")
-        if  not self.get_group_markers:
+        if  not self._get_group_markers:
             raise KeyError(
                 """Non è stato possibile individuare la feature di raggruppamento tra quelle supportate dal plotter
                 Aggiungere i marker di gruppo dedicati alla feature nei file di configurazione del plotter"""
@@ -362,24 +372,23 @@ class CustomFigure(go.Figure):
                     curve.linestyle = None if self.colored else self._plotting_params.linestyles[key]
                     # Prendo i marker dal dizionario dei config {feature_group:{feature_group_file:marker_value}}
                     # Es. {Vgf:{2:square}}
-                    curve.markers = self.get_group_markers[f_features[self.grouped_by]]
+                    curve.markers = self._get_group_markers[f_features[self.grouped_by]]
                         # self._plotting_params.get_markers(curves.grouped_by))[f_features[curves.grouped_by]]
                     curve.name = (
-                        f"{curve.name}, {self.grouped_by}={f_features[self.grouped_by]} {self.get_group_feature_size}"
+                        f"{curve.name}, {self.grouped_by}={f_features[self.grouped_by]} {self._get_group_feature_size}"
                     )
 
-                    self.add_curve(curve)
+                    self._add_curve(curve)
 
         if self.legend:
-            self.add_summary_legend()
+            self._add_summary_legend()
 
-        return self.add_graphics()
+        return self._add_graphics()
 
-    def plot_all(self):
+    def plot_all(self) -> "CustomFigure|list[CustomFigure]":
         """
         Ritorna le figure di tutti i file contenuti nell'istanza
-        :return: In caso di un singolo file un'istanza plottata della classe CustomFigure, in caso di più file una
-        lista di istanze plottate
+        :return: In caso di un singolo file un'istanza plottata della classe CustomFigure, in caso di più file una lista di istanze plottate
         """
 
         # caso in cui l'istanza contenga i dati di un solo file
@@ -392,8 +401,8 @@ class CustomFigure(go.Figure):
                     # nel caso di grafici di singoli file non ho bisogno di cambiare i marker, uso quelli di default
                     curve.markers = self._plotting_params.default_marker
                     # il nome rimane quello già salvato nella curva
-                    self.add_curve(curve,scales)
-                return self.add_graphics(scales)
+                    self._add_curve(curve, scales=scales)
+                return self._add_graphics(scales)
 
         # caso in cui l'istanza contenga più di un file
         out = []
