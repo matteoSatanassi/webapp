@@ -1,9 +1,6 @@
 from dash import Dash, page_container,html
 from app_elements.callback_functions import *
 
-indexer(data_dir)   # indexing data files at the start
-affinities_updater(indexes_file, affinity_file)  # updating affinities table
-
 app = Dash(
     __name__,
     assets_folder='assets',
@@ -27,6 +24,7 @@ nav = dbc.Nav(
 
 app.layout = dbc.Container([
     dcc.Location(id='url', refresh=False),
+    dcc.Store(id='store-trigger-indexing', data=True),
 
     dbc.Row(
         dbc.Col([
@@ -44,4 +42,4 @@ app.layout = dbc.Container([
 )
 
 if __name__ == '__main__':
-    app.run(debug=False, host='127.0.0.1', port=8050)
+    app.run(debug=True, host='127.0.0.1', port=8050)
