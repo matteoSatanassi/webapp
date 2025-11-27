@@ -25,6 +25,7 @@ callback([
     Output({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
     Output({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'selected_rows'),
+    Output({'page': MATCH, 'item': 'main-tabs'}, 'active_tab'),
     Input({'page': MATCH, 'item': 'button-plot'}, 'n_clicks'),
     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'derived_virtual_selected_rows'),
     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'derived_virtual_data'),
@@ -40,7 +41,7 @@ def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, tabs:list[d
     """
     tabs = tabs or []
     if not n_clicks or not selected_rows:
-        return no_update,no_update,no_update
+        return no_update,no_update,no_update, no_update
 
     open_tabs = [tab['props']['value'] for tab in tabs]
 
@@ -51,25 +52,9 @@ def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, tabs:list[d
             path_list = explode_group_paths(row['file_path'])
             data_to_plot = FileCurves.from_paths(*path_list,
                                          grouping_feature=grouping_feature if len(path_list)>1 else None)
-            tabs.append(create_tab(row["file_path"],data_to_plot))
+            tabs.append(create_tab(data_to_plot))
 
-    return tabs, table_data[selected_rows[0]]['file_path'], []
-
-
-@callback([
-    Output({'page':MATCH, 'item':'main-tabs'}, 'active_tab'),
-    Input({'page':MATCH, 'item':'button-plot', 'location':'dashboard'}, 'n_clicks'),
-    State({'page': MATCH, 'item': 'table', 'location':'dashboard'}, 'selected_rows')],
-    prevent_initial_call=True
-)
-def switch_to_graphs_tab(n_clicks, selected_rows):
-    """
-    Passa alla tab dei grafici quando si clicca su "Genera Grafico", se almeno
-    una riga della tabella è stata selezionata
-    """
-    if n_clicks and selected_rows:
-        return "tab-graphs"
-    return "tab-table"
+    return tabs, table_data[selected_rows[0]]['file_path'], [], "tab-graphs"
 
 
 @callback([
@@ -110,15 +95,13 @@ def create_tab(tab_data:FileCurves)->dcc.Tab:
     mentre, nel caso ne contenga più di uno, gli indirizzi saranno concatenati e divisi
     da caratteri '#'
     """
-    if len(tab_data) == 1:
-        tab_value = tab_data.paths
-    else:
-        tab_value = "#".join(tab_data.paths)
+    paths = [str(p) for p in tab_data.paths]
+    tab_value = "#".join(paths)
 
     return dcc.Tab(
         value=tab_value,
         label=tab_data.get_tab_label(),
-        children=dcc.Graph(plot(tab_data)),
+        children=dcc.Graph(figure=plot(tab_data)),
         style={'fontSize': 8, 'left-margin': '2px'},
     )
 

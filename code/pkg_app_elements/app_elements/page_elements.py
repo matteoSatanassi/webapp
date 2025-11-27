@@ -19,6 +19,8 @@ def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
 
     data, columns, cols_to_hide = get_table(table_id)
 
+    data = data.to_dict('records')
+
     return dash_table.DataTable(
         id=table_id,
         data=data,
@@ -152,7 +154,7 @@ def grouping_selector(selector_id:dict[str,str]):
         ])
     ])
 
-    return None
+    return selectors
 
 def custom_spinner(message:str=""):
     if not message:
@@ -387,7 +389,7 @@ def get_table(table_id:dict[str,str], only_df=False):
     ]
     aff_cols_ids = []
     if aff_cols:
-        for curve_id,curve_label in type_configs["TargetCurves"].items():
+        for curve_id,curve_label in type_configs["AllowedCurves"].items():
             columns.append({
                 "name":f"Aff {curve_label}",
                 "id":f"aff_{curve_id}",
@@ -398,10 +400,14 @@ def get_table(table_id:dict[str,str], only_df=False):
 
     # nasconderò le colonne vuote e la colonna dei file_path
     cols_to_hide = ["file_path", *data.columns[data.isna().all()].tolist()]
-    if aff_cols_ids:
-        cols_to_hide.append(*aff_cols_ids)
 
     # riempio le celle vuote con un trattino placeholder
     data.fillna("-")
 
     return data, columns, cols_to_hide
+
+if __name__ == '__main__':
+    datas, columnss, cols_to_hidee = get_table({'page':'IDVD', 'item':'table', 'location':'dashboard'})
+
+    print(columnss)
+    print(cols_to_hidee)

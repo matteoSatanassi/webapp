@@ -138,12 +138,12 @@ class CustomFigure(go.Figure):
                    curve:Curve,
                    scales:dict[str,float] = None) -> "CustomFigure":
         """Aggiunge all'istanza la curva specificata, con colore, stile di linea, marker e nome come impostati"""
-        if not scales: scales = {"X":1, "Y":1}
+        if not scales: scales = {"X":0, "Y":0}
         try:
             self.add_trace(
                 go.Scatter(
-                    x=curve.X / (10**scales["X"]),
-                    y=curve.Y / (10**scales["Y"]),
+                    x=curve.X / (10**scales["X"] if scales["X"]>1 else 1),
+                    y=curve.Y / (10**scales["Y"] if scales["Y"]>1 else 1),
                     name=curve.name,
                     mode='lines+markers',
                     line=dict(
@@ -197,17 +197,16 @@ class CustomFigure(go.Figure):
 
     def _add_graphics(self, scales:dict[str,float]=None) -> "CustomFigure":
         """In base alla tipologia di file contenuta chiama il giusto metodo per aggiungere la parte grafica alla figura"""
-        if not scales: scales = {"X":1, "Y":1}
+        if not scales: scales = {"X":0, "Y":0}
         match self._curves.file_type:
             case "IDVD":
-                return self._graphics_idvd()
+                return self._graphics_idvd(scales)
             case "TRAPDATA":
                 return self._graphics_trapdata(scales)
             case _:
                 raise f"I file {self._curves.file_type} non hanno una grafica supportata"
-    def _graphics_idvd(self) -> "CustomFigure":
+    def _graphics_idvd(self, scales:dict[str,int]) -> "CustomFigure":
         """Implementa la parte grafica della figura nel caso di grafico IdVd"""
-        tick_x_pos = np.arange(-25, 25, 0.5)
         self.update_layout(
             xaxis=dict(
                 title="V<sub>D</sub> [V]",
@@ -215,16 +214,13 @@ class CustomFigure(go.Figure):
                 linewidth=2,
                 linecolor='black',
                 mirror=False,
-                tickmode='array',
-                tickvals=tick_x_pos,
-                ticktext=[f'{tick:.1f}' if tick % 1 == 0 else '' for tick in tick_x_pos],
+                tickmode='auto',
                 ticklen=8,
                 tickwidth=2,
                 tickcolor='black',
                 ticks='outside',
                 minor=dict(
-                    tickmode='linear',
-                    dtick=0.1,
+                    tickmode='auto',
                     ticklen=4,
                     tickwidth=1,
                     tickcolor='black',
@@ -242,15 +238,14 @@ class CustomFigure(go.Figure):
                 linewidth=2,
                 linecolor='black',
                 mirror=False,
-                tickmode='linear',
-                dtick=0.1,
+                tickmode='auto',
+                # dtick=0.1,
                 ticklen=8,
                 tickwidth=2,
                 tickcolor='black',
                 ticks='outside',
                 minor=dict(
-                    tickmode='linear',
-                    dtick=0.02,
+                    tickmode='auto',
                     ticklen=4,
                     tickwidth=1,
                     tickcolor='black',
@@ -268,8 +263,32 @@ class CustomFigure(go.Figure):
             # width=800,
             height=600 if self._contains_group else None,
         )
+        if scales["Y"] > 1:
+            self.add_annotation(
+                x=0,
+                y=1.02,
+                xref="paper",
+                yref="paper",
+                text=f"<b>1e{scales["Y"]}</b>",
+                showarrow=False,
+                font=dict(size=14, ),
+                xanchor="right",
+                yanchor="bottom"
+            )
+        if scales["X"] > 1:
+            self.add_annotation(
+                x=1.08,
+                y=-0.075,
+                xref="paper",
+                yref="paper",
+                text=f"<b>1e{scales["X"]}</b>",
+                showarrow=False,
+                font=dict(size=14, ),
+                xanchor="right",
+                yanchor="bottom"
+            )
         return self
-    def _graphics_trapdata(self, scales) -> "CustomFigure":
+    def _graphics_trapdata(self, scales:dict[str,int]) -> "CustomFigure":
         """Implementa la parte grafica della figura nel caso di grafico TrapData"""
         self.update_layout(
             xaxis=dict(
@@ -278,15 +297,15 @@ class CustomFigure(go.Figure):
                 linewidth=2,
                 linecolor='black',
                 mirror=False,
-                tickmode='linear',
-                dtick=0.5,
+                tickmode='auto',
+                # dtick=0.5,
                 ticklen=8,
                 tickwidth=2,
                 tickcolor='black',
                 ticks='outside',
                 minor=dict(
-                    tickmode='linear',
-                    dtick=0.1,
+                    tickmode='auto',
+                    # dtick=0.1,
                     ticklen=4,
                     tickwidth=1,
                     tickcolor='black',
@@ -336,17 +355,30 @@ class CustomFigure(go.Figure):
             # width=800,
             height=600,
         )
-        self.add_annotation(
-            x=0,
-            y=1.02,
-            xref="paper",
-            yref="paper",
-            text=f"<b>1e{scales["Y"]}</b>",
-            showarrow=False,
-            font=dict(size=14, ),
-            xanchor="right",
-            yanchor="bottom"
-        )
+        if scales["Y"] > 1:
+            self.add_annotation(
+                x=0,
+                y=1.02,
+                xref="paper",
+                yref="paper",
+                text=f"<b>1e{scales["Y"]}</b>",
+                showarrow=False,
+                font=dict(size=14, ),
+                xanchor="right",
+                yanchor="bottom"
+            )
+        if scales["X"] > 1:
+            self.add_annotation(
+                x=1.08,
+                y=-0.075,
+                xref="paper",
+                yref="paper",
+                text=f"<b>1e{scales["X"]}</b>",
+                showarrow=False,
+                font=dict(size=14, ),
+                xanchor="right",
+                yanchor="bottom"
+            )
         return self
 
     def plot_group(self) -> "CustomFigure":
@@ -373,7 +405,6 @@ class CustomFigure(go.Figure):
                     # Prendo i marker dal dizionario dei config {feature_group:{feature_group_file:marker_value}}
                     # Es. {Vgf:{2:square}}
                     curve.markers = self._get_group_markers[f_features[self.grouped_by]]
-                        # self._plotting_params.get_markers(curves.grouped_by))[f_features[curves.grouped_by]]
                     curve.name = (
                         f"{curve.name}, {self.grouped_by}={f_features[self.grouped_by]} {self._get_group_feature_size}"
                     )
@@ -422,8 +453,8 @@ class CustomFigure(go.Figure):
 if __name__=='__main__':
     from pathlib import Path
 
-    #path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
-    path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_TrapDistr_exponential_Vgf_1_Es_1.72_Em_1.31_state_v0.csv"
+    path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
+    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_TrapDistr_exponential_Vgf_1_Es_1.72_Em_1.31_state_v0.csv"
     e = FileCurves.from_paths(path)
     plot(e, all_c=True).show()
 

@@ -18,6 +18,10 @@ def update_table(mode:str, grouping_feature:str, hidden_cols:list, table_data:di
     :param table_id:
     :return:
     """
+    import pandas as pd
+    from app_elements.page_elements import get_table
+    from dash import no_update
+
     if mode == "grouped":       # se l'impostazione era normal, posso anche usare i dati già caricati nella tabella
         df = pd.DataFrame(table_data)
         type_configs = load_files_info()[table_id["page"]]
@@ -25,7 +29,7 @@ def update_table(mode:str, grouping_feature:str, hidden_cols:list, table_data:di
         hidden_cols.append(grouping_feature)
 
         # Costruisco chiave del gruppo
-        group_cols = [col for col in df.columns if col not in hidden_cols and "aff_" not in col]
+        group_cols = [col for col in df.columns if col not in hidden_cols and "aff_" not in col and col!="file_path"]
         df["group_key"] = df[group_cols].astype(str).agg("_".join, axis=1)
 
         # Raggruppo
@@ -44,11 +48,8 @@ def update_table(mode:str, grouping_feature:str, hidden_cols:list, table_data:di
                 if aff_col in df.columns:
                     df_out[aff_col] = groups[aff_col].mean().values
 
-        # Rimuovo colonna temporanea
-        df_out = df_out.drop(columns=["group_key"])
-
         return df_out.to_dict("records"), hidden_cols, []
-    elif mode == "grouped":
+    elif mode == "normal":
         df_out,_,cols_to_hide = get_table(table_id)
         return df_out.to_dict('records'), cols_to_hide, []
     elif not mode:
@@ -97,3 +98,20 @@ def find_export_path()->Path:
         if export_path:
           return export_path
         i+=1
+
+
+# if __name__ == '__main__':
+#     from app_elements.page_elements import get_table
+#
+#     table_id = {'page':'IDVD', 'item':'table', 'location':'dashboard'}
+#     datas = get_table(table_id,
+#                       only_df=True)
+#
+#     df_outt, cols_to_hidee, _ = update_table("grouped",
+#                                              "Vgf",
+#                                              [],
+#                                              table_data=datas.to_dict('records'),
+#                                              table_id=table_id)
+#
+#     print(df_outt)
+#     print(cols_to_hidee)

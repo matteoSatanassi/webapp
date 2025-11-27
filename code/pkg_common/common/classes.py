@@ -144,7 +144,7 @@ class FilesFeatures(object):
         df = pd.DataFrame(self._data)
 
         # raggruppo il df in gruppi con colonne tutte uguali tranne grouping_feat
-        other_cols = [col for col in df.columns if col!=grouping_feat]
+        other_cols = [col for col in df.columns if col!=grouping_feat and col!="file_path"]
         grouped = df.groupby(other_cols, dropna=False)
 
         for _, group_df in grouped:
@@ -182,8 +182,9 @@ class FilesFeatures(object):
                 dict_features[feature] = Path(file_path)
             elif feature in file_features:
                 feature_val = file_features[file_features.index(feature)+1]
-                dict_features[feature] = feature_val if f_type=='text' else (
-                    pd.to_numeric(feature_val, downcast=f_type))
+                dict_features[feature] = feature_val if f_type=='text' else round(
+                    pd.to_numeric(feature_val, downcast=f_type, ), 2
+                )
 
         return file_type, dict_features
     @staticmethod
@@ -213,6 +214,7 @@ class Curve(object):
         self.Y: np.ndarray = None
     def __str__(self):
         return self.name
+
     @property
     def y_scale(self):
         """Ritorna la scala delle ordinate della curva"""
@@ -225,10 +227,7 @@ class Curve(object):
     def integral(self)->float:
         """Integra la curva caricata nell'istanza"""
         return np.trapezoid(self.Y, self.X)
-    def integral_affinity(self, curve:'Curve')->float:
-        """calcola il rapporto di affinità tra l'istanza e un'altra curva"""
-        target_area = curve.integral
-        return max(1-abs(self.integral-target_area)/abs(target_area),0)
+
     def sort(self)->None:   #
         """
         Ordina gli array delle coordinate in modo crescente, rispetto alle ordinate
@@ -237,6 +236,10 @@ class Curve(object):
         self.X = self.X[i_sorted]
         self.Y = self.Y[i_sorted]
         return None
+    def integral_affinity(self, curve:'Curve')->float:
+        """calcola il rapporto di affinità tra l'istanza e un'altra curva"""
+        target_area = curve.integral
+        return max(1-abs(self.integral-target_area)/abs(target_area),0)
     def translate_till_left(self):
         """
         Trasla la curva in modo che il valore più alto sia 0
@@ -244,6 +247,7 @@ class Curve(object):
         """
         self.X -= self.X[-1]
         return None
+
     @staticmethod
     def get_data_scale(values:np.ndarray)->float:
         """Ritorna la scala dei dati contenuti in un array numpy"""
@@ -254,7 +258,7 @@ class Curve(object):
         # esponente arrotondato alla decade (1e13 → 13)
         return exponent
     @staticmethod
-    def get_curves_scales(*args:"Curve")->float:
+    def get_curves_scales(*args:"Curve")->dict[str,float]:
         """
         Ritorna le scale di ordinate e ascisse del gruppo di curve passato come argomento
         :return: Dizionario del tipo {"X":x_scale, "Y":y_scale}

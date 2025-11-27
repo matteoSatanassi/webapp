@@ -1,6 +1,5 @@
 import pandas as pd
 from dash import Input, Output, State, callback, MATCH, no_update, callback_context
-from app_elements.callback_functions import explode_group_paths
 from app_elements.callbacks._helper_funcs import find_export_path, update_table
 from common import FileCurves, CustomFigure
 from params import *
@@ -29,7 +28,7 @@ def open_close_modal(n_clicks_open: int, n_clicks_close: int, is_open: bool):
     """Apre/chiude il pop-up di esportazione nel caso venga premuto il pulsante di export/di chiusura"""
     ctx = callback_context
     if not ctx.triggered:
-        return is_open
+        return no_update
 
     triggered_id = ctx.triggered_id
     if triggered_id != '.':
@@ -39,7 +38,7 @@ def open_close_modal(n_clicks_open: int, n_clicks_close: int, is_open: bool):
             elif 'close' in triggered_id['item']:
                 return False
 
-    return is_open
+    return no_update
 
 
 @callback([

@@ -1,4 +1,4 @@
-from page_elements import *
+from app_elements.page_elements import *
 
 def layout(PAGE:str):
     ## PARAMS ##

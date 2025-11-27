@@ -2,9 +2,9 @@
   "IDVD": {
     "AllowedFeatures": {
       "TrapDistr": "text",
-      "Em": "float",
-      "Es": "float",
-      "Vgf": "integer",
+      "Em": "text",
+      "Es": "text",
+      "Vgf": "text",
       "file_path": "text"
     },
     "AllowedCurves": {
