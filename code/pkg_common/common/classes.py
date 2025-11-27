@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing_extensions import Any
+from typing_extensions import Any, Generator, Self
 import numpy as np
 import pandas as pd
 from params import *
@@ -101,10 +101,18 @@ class FilesFeatures(object):
         # ogni colonna deve avere un solo valore distinto
         return all(df_data[col].nunique() == 1 for col in other_cols)
     @property
-    def paths(self):
+    def paths(self) -> Generator[Path, None, None]:
         """Ritorna un generator con tutti i path contenuti nell'istanza"""
         for f_features in self._data:
             yield f_features["file_path"]
+    @property
+    def get_group_stem(self) -> str|None:
+        """Se l'istanza contiene un gruppo, ritorna il nome del gruppo"""
+        if self.contains_group:
+            return (self._data[0]["file_path"].stem
+                    .replace(f"{self.grouped_by}_{self._data[0][self.grouped_by]}_", ""))
+        else:
+            return None
 
     def get_tab_label(self):
         if not len(self)==1 or self.contains_group:
@@ -120,7 +128,7 @@ class FilesFeatures(object):
         vals = [str(v) if v is not None else "." for v in features.values()]
 
         return f"{prefix} {self.file_type} - {"/".join(vals)}"
-    def divide_in_groups(self, grouping_feat:str):
+    def divide_in_groups(self, grouping_feat:str) -> Generator["FilesFeatures"]:
         """
         Il metodo, dato un oggetto FileFeatures contenente i dati di una certa quantità di file,
         divide il dataset in una lista di oggetti dello stesso tipo, ognuno contenente un solo gruppo di file
@@ -401,7 +409,7 @@ class FileCurves(FilesFeatures):
                     file_features[f"aff_{name}"] = curve.integral_affinity(target._curves[0][name])
 
             return self._data
-    def divide_in_groups(self, grouping_feat:str):
+    def divide_in_groups(self, grouping_feat:str) -> Generator["FileCurves"]:
         """
         Il metodo, dato un oggetto FileCurves contenente i dati di una certa quantità di file,
         divide il dataset in una lista di oggetti dello stesso tipo, ognuno contenente un solo gruppo di file.
