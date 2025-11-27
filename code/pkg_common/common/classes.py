@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing_extensions import Any
 import numpy as np
 import pandas as pd
 from params import *
@@ -11,9 +12,9 @@ class FilesFeatures(object):
     """
     __slots__ = ('file_type', '_data', 'grouped_by')
     def __init__(self):
-        self.file_type = None
-        self._data = []
-        self.grouped_by = None
+        self.file_type:str = None
+        self._data:list[dict[str,Any]] = []
+        self.grouped_by:str|None = None
 
     def __str__(self):
         if not self.file_type:
@@ -99,8 +100,16 @@ class FilesFeatures(object):
 
         # ogni colonna deve avere un solo valore distinto
         return all(df_data[col].nunique() == 1 for col in other_cols)
+    @property
+    def paths(self):
+        """Ritorna un generator con tutti i path contenuti nell'istanza"""
+        for f_features in self._data:
+            yield f_features["file_path"]
 
     def get_tab_label(self):
+        if not len(self)==1 or self.contains_group:
+            raise ValueError(f"L'oggetto è applicabile ad un tab di visualizzazione")
+
         prefix = "GROUP" if self.contains_group else "FILE"
 
         features = self._data[0].copy()
@@ -111,6 +120,32 @@ class FilesFeatures(object):
         vals = [str(v) if v is not None else "." for v in features.values()]
 
         return f"{prefix} {self.file_type} - {"/".join(vals)}"
+    def divide_in_groups(self, grouping_feat:str):
+        """
+        Il metodo, dato un oggetto FileFeatures contenente i dati di una certa quantità di file,
+        divide il dataset in una lista di oggetti dello stesso tipo, ognuno contenente un solo gruppo di file
+
+        NB - con gruppo si intende un dataset in cui i file hanno tutti stesse feature, a meno
+        della grouping feature
+        """
+        if (not len(self)>1) or self.contains_group:
+            raise ValueError("L'istanza non è divisibile in sottogruppi")
+        if grouping_feat not in self._data[0].keys():
+            raise ValueError(f"{grouping_feat} non è tra le feature presenti")
+
+        df = pd.DataFrame(self._data)
+
+        # raggruppo il df in gruppi con colonne tutte uguali tranne grouping_feat
+        other_cols = [col for col in df.columns if col!=grouping_feat]
+        grouped = df.groupby(other_cols, dropna=False)
+
+        for _, group_df in grouped:
+            # crea nuova istanza
+            inst = type(self)()  # mantiene la sottoclasse corretta (posso chiamare anche da sottoclassi)
+            inst.file_type = self.file_type
+            inst.grouped_by = grouping_feat
+            inst._data = group_df.to_dict(orient="records")
+            yield inst
 
     @staticmethod
     def extract_features(file_path:Path|str, only_file_type = False):
@@ -228,13 +263,23 @@ class FileCurves(FilesFeatures):
     """
     Classe contenete i dati e le curve di un file dati o di un gruppo di file dati
     """
+    __slots__ = ('file_type', '_data', 'grouped_by', '_curves')
     def __init__(self):
         super().__init__()
-        self._curves = []
+        self._curves:dict[str,dict[str,Curve]] = {}
 
     def _validate(self):
+        """
+        Verifica che l'istanza sia contenga dati corretti.
+
+        Controlla che il numero di file e di curve sia equivalente e che tutti i dati delle curve
+        abbiano un file corrispondente.
+        """
         if not len(self._curves)==len(self._data):
             raise ValueError("I numeri di curve e di file salvati nell'istanza non uguali")
+
+        if set(self._curves.keys()) != set(self.paths):
+            raise ValueError(f"Inconsistenza tra dati e curve")
 
     # noinspection PyUnresolvedReferences,PyProtectedMember
     @classmethod
@@ -268,27 +313,29 @@ class FileCurves(FilesFeatures):
     def expose_all(self):
         """
         Ritorna dati e curve contenute nell'istanza di classe
-        :return: Oggetto zip con struttura {file_features_dict:file_curves_dict}
+        :return: generator function che ritorna {file_features_dict, file_curves_dict}
+        per ogni dato salvato nell'istanza
         """
         self._validate()
-        return zip(self._data, self._curves)
+        for f in self._data:
+            curves = self._curves.get(f["file_path"])
+            yield f, curves
+    # noinspection PyUnboundLocalVariable
     @property
     def subdivide(self):
         """Ritorna una lista di oggetti FileCurves, ognuno contenente solo i dati di un file"""
         self._validate()
-        return [self._create_single_file_inst(f,c) for f,c in self.expose_all]
+        for f in self._data:
+            instance = FileCurves()
+            instance.file_type = self.file_type
+            instance._data = [f]
+            instance._curves = {f["file_path"]: self._curves[f["file_path"]]}
+        yield instance
 
-    def _create_single_file_inst(self, f_features, f_curves)->"FileCurves":
-        """Crea un'istanza di FileCurves contenente le informazioni del file passate come argomento"""
-        temp = FileCurves()
-        temp.file_type = self.file_type
-        temp._data = [f_features]
-        temp._curves = [f_curves]
-        return temp
     def import_all(self):
         """importa i dati dei file contenuti nell'istanza, salvandoli nell'attributo curves"""
-        for file in self._data:
-            self._curves.append(self.import_file_data(file["file_path"]))
+        for path in self.paths:
+            self._curves[path] = self.import_file_data(path)
     def import_file_data(self, file_path:Path|str):
         """
         Importa i dati del file passato come variabile al metodo
@@ -324,6 +371,52 @@ class FileCurves(FilesFeatures):
             raise f"errore leggendo il file {file_path}: \n\t{error}"
         else:
             return curves
+    def calculate_affinities(self, autosave=False):
+        """
+        Calcola le affinità delle curve contenute nei file definiti nell'istanza.
+        Nel caso il calcolo dell'affinità non sia supportato per i file del tipo caricati nell'istanza, non ritorna nulla
+        :return: Dizionario del tipo {file_path:{curve_acronym:curve_affinity}}
+        """
+        if self.get_type_configs["TargetCurves"]==0:
+            print("Questa tipologia di file non supporta il calcolo delle affinità")
+            return None
+
+        if not autosave:
+            affinities = {}
+            for file_features,curves in self.expose_all:
+
+                affinities[file_features["file_path"]] = {}
+                target = self.find_target_file(self.file_type, file_features)
+
+                for name,curve in curves.items():
+                    affinities[file_features["file_path"]][name] = curve.integral_affinity(target._curves[0][name])
+
+            return affinities
+        else:
+            for file_features,curves in self.expose_all:
+
+                target = self.find_target_file(self.file_type, file_features)
+
+                for name,curve in curves.items():
+                    file_features[f"aff_{name}"] = curve.integral_affinity(target._curves[0][name])
+
+            return self._data
+    def divide_in_groups(self, grouping_feat:str):
+        """
+        Il metodo, dato un oggetto FileCurves contenente i dati di una certa quantità di file,
+        divide il dataset in una lista di oggetti dello stesso tipo, ognuno contenente un solo gruppo di file.
+        Vengono importate nei nuovi oggetti anche i dati delle curve corrispondenti.
+
+        NB - con gruppo si intende un dataset in cui i file hanno tutti stesse feature, a meno
+        della grouping feature
+        """
+        # ottengo istanze FileCurves con solo gli attributi file_type, _data e grouped_by
+        out:list[FileCurves] = super().divide_in_groups(grouping_feat)
+
+        for inst in out:
+            for path in inst.paths:
+                inst._curves[path] = self._curves[path]
+            yield inst
 
     @staticmethod
     def find_target_file(file_type, file_features:dict):
@@ -344,39 +437,6 @@ class FileCurves(FilesFeatures):
             if all(token in t_file.stem for token in target_features):
                 return FileCurves.from_paths(t_file)
         raise f"Non è stato possibile trovare il file target per le curve del file {file_features["file_path"].stem}"
-    def calculate_affinities(self, autosave=False):
-        """
-        Calcola le affinità delle curve contenute nei file definiti nell'istanza.
-        Nel caso il calcolo dell'affinità non sia supportato per i file del tipo caricati nell'istanza, non ritorna nulla
-        :return: Dizionario del tipo {file_path:{curve_acronym:curve_affinity}}
-        """
-        type_configs = self.get_type_configs
-
-        if type_configs["TargetCurves"]==0:
-            print("Questa tipologia di file non supporta il calcolo delle affinità")
-            return None
-
-        if not autosave:
-            affinities = {}
-            for file_features,curves in self.expose_all:
-
-                affinities[file_features["file_path"].stem] = {}
-                target = self.find_target_file(self.file_type, file_features)
-
-                for name,curve in curves.items():
-                    affinities[file_features["file_path"].stem][name] = curve.integral_affinity(target._curves[0][name])
-
-            return affinities
-        else:
-            for file_features,curves in self.expose_all:
-
-                target = self.find_target_file(self.file_type, file_features)
-
-                for name,curve in curves.items():
-                    file_features[f"aff_{name}"] = curve.integral_affinity(target._curves[0][name])
-
-            return self._data
-
 
 
 if __name__ == '__main__':
