@@ -135,9 +135,18 @@ class CustomFigure(go.Figure):
         """Il metodo controlla che l'istanza contenga i dati di un gruppo e ne ritorna il nome"""
         return self._curves.get_group_stem
     @property
-    def get_paths(self):
-        """Ritorna gli indirizzi contenuti nell'istanza"""
-        return self._curves.paths
+    def fig_stem(self):
+        """
+        Ritorna il nome da dare alla figura.
+        Il metodo da risultato se la figura contiene i dati di un solo file o di un gruppo,
+        altrimenti ritorna errore
+        """
+        if len(self._curves)==1:
+            return self._curves.paths_list()[0].stem
+        elif self._contains_group:
+            return self.get_group_stem
+        else:
+            raise ValueError("Non è possibile dare un nome ad una figura contenente i grafici di diversi file")
 
     def _add_curve(self,
                    curve:Curve,
@@ -427,10 +436,10 @@ class CustomFigure(go.Figure):
         :return: In caso di un singolo file un'istanza plottata della classe CustomFigure, in caso di più file una lista di istanze plottate
         """
 
-        # caso in cui l'istanza contenga i dati di un solo file
+        # caso 1 solo file -> ritorna una CustomFigure
         if len(self._curves) == 1:
             for f_features, f_curves in self._curves.expose_all:
-                scales = Curve.get_curves_scales(*[curve for curve in f_curves.values()])
+                scales = Curve.get_curves_scales(*f_curves.values())
                 for key, curve in f_curves.items():
                     curve = curve.__copy__()
                     curve.color = self._plotting_params.colors[key] if self.colored else "black"
@@ -441,7 +450,7 @@ class CustomFigure(go.Figure):
                     self._add_curve(curve, scales=scales)
                 return self._add_graphics(scales)
 
-        # caso in cui l'istanza contenga più di un file
+        # caso più file -> lista di figure
         out = []
         for file_data in self._curves.subdivide:
             # creo istanze CustomFigure contenenti i dati di singoli file
@@ -459,9 +468,18 @@ class CustomFigure(go.Figure):
 # if __name__=='__main__':
 #     from pathlib import Path
 #
-#     path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
+#     # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
 #     # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_TrapDistr_exponential_Vgf_1_Es_1.72_Em_1.31_state_v0.csv"
-#     e = FileCurves.from_paths(path)
-#     plot(e, all_c=True).show()
+#     paths = [
+#         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
+#         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
+#         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
+#         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
+#         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
+#     e = FileCurves.from_paths(*paths)
+#     figs = CustomFigure(e).plot_all()
 #
-#     # da fare prova con molti file(IdVd e trapdata) e con gruppo
+#     print(len(figs))
+#
+#     for f in figs:
+#         f.show()

@@ -154,6 +154,8 @@ class FilesFeatures(object):
             inst.grouped_by = grouping_feat
             inst._data = group_df.to_dict(orient="records")
             yield inst
+    def paths_list(self)->list[Path]:
+        return [p for p in self.paths]
 
     @staticmethod
     def extract_features(file_path:Path|str, only_file_type = False):
@@ -357,7 +359,7 @@ class FileCurves(FilesFeatures):
             instance.file_type = self.file_type
             instance._data = [f]
             instance._curves = {f["file_path"]: self._curves[f["file_path"]]}
-        yield instance
+            yield instance
 
     def import_all(self):
         """importa i dati dei file contenuti nell'istanza, salvandoli nell'attributo curves"""
@@ -474,15 +476,13 @@ class FileCurves(FilesFeatures):
         raise f"Non è stato possibile trovare il file target per le curve del file {file_features["file_path"].stem}"
 
 
-if __name__ == '__main__':
-    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
-    # paths = [Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
-    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
-    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
-    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
-    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
-    # prova = FileCurves.from_paths(*paths, grouping_feature="Vgf")
-    # prova.calculate_affinities(autosave=True)
-    # print(prova._data)
-    a = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv"
-    b = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv"
+# if __name__ == '__main__':
+#     path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
+#     paths = [Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
+#              Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
+#              Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
+#              Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
+#              Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
+#     prova = FileCurves.from_paths(*paths, grouping_feature="Vgf")
+#     prova.calculate_affinities(autosave=True)
+#     print(prova._data)

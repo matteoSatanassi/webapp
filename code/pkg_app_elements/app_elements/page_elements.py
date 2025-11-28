@@ -186,9 +186,13 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                 id={'page': page, 'item': 'modal-loading'},
                 custom_spinner=custom_spinner("Esportando!"),
                 overlay_style={"visibility": "visible", "filter": "blur(2px)"},
-                delay_show=500,
+                delay_show=700,
                 style={"height": "100%", "overflow": "auto"},
                 children=[
+                    # serve come target delle callback, nel caso non ne avessero nel modal, per
+                    # attivare il loading
+                    dcc.Store(id={'page': page, 'item': 'store-placeholder-modal'}),
+
                     dbc.Container([
                         # Riga 1: Tabella e selezione impostazioni esportazione
                         dbc.Row([

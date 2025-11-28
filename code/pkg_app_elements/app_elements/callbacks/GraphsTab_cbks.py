@@ -10,9 +10,9 @@ from params import load_configs
     Output({'page' :MATCH, 'item' :'button-close-current-tab'}, 'style'),
     Output({'page': MATCH, 'item': 'graph-controls'}, 'style'),
     Output({'page' :MATCH, 'item' :'menu-tab-management'}, 'style'),
-    Output({'page' :MATCH, 'item' :'menu-tab-management'}, 'children'),
+    Output({'page' :MATCH, 'item' :'menu-tab-management'}, 'children')],
     Input({'page' :MATCH, 'item': 'graph-tabs'}, 'children'),
-    State({'page' :MATCH, 'item': 'graph-tabs'}, 'id')],
+    State({'page' :MATCH, 'item': 'graph-tabs'}, 'id'),
 )
 def graph_buttons_displayer(tabs :list[dcc.Tab], tabs_id :dict[str ,str]):
     """
@@ -40,9 +40,9 @@ def graph_buttons_displayer(tabs :list[dcc.Tab], tabs_id :dict[str ,str]):
 
 @callback([
     Output({'page':MATCH, 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
-    Output({'page':MATCH, 'item': 'graph-tabs'}, 'value', allow_duplicate=True),
+    Output({'page':MATCH, 'item': 'graph-tabs'}, 'value', allow_duplicate=True)],
     Input({'page':MATCH, 'item':'button-close-current-tab'}, 'n_clicks'),
-    State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
+    [State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
     State({'page':MATCH, 'item': 'graph-tabs'}, 'children')],
     prevent_initial_call=True
 )
@@ -67,9 +67,9 @@ def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab]):
 
 @callback([
     Output({'page':MATCH, 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
-    Output({'page':MATCH, 'item': 'graph-tabs'}, 'value', allow_duplicate=True),
+    Output({'page':MATCH, 'item': 'graph-tabs'}, 'value', allow_duplicate=True)],
     Input({'page':MATCH, 'item':'dd-button', 'tab-index':ALL}, 'n_clicks'),
-    State({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
+    [State({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
     State({'page':MATCH, 'item': 'graph-tabs'}, 'value')],
     prevent_initial_call=True
 )
@@ -99,10 +99,10 @@ def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
     return tabs, open_tab
 
 
-@callback([
+@callback(
     Output({'page':MATCH, 'item': 'store-placeholder-graph-tab'}, 'data'),
     Input({'page': MATCH, 'item': 'button-export-current-graph'}, 'n_clicks'),
-    State({'page':MATCH, 'item': 'graph-tabs'}, 'value')],
+    State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
     prevent_initial_call=True
 )
 def export_current(n_clicks:int, curr_tab:str):
