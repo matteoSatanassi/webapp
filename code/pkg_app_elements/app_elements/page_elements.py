@@ -373,6 +373,7 @@ def get_table(table_id:dict[str,str], only_df=False):
     # page è anche il nome del data_type dei file da visualizzare
     try:
         data = pd.read_excel(indexes_file, sheet_name=page)
+        data = add_overall_aff(data)
         if only_df:
             return data
     except Exception:
@@ -389,6 +390,12 @@ def get_table(table_id:dict[str,str], only_df=False):
     ]
     aff_cols_ids = []
     if aff_cols:
+        columns.append({
+            "name":"Aff Overall",
+            "id":"aff_tot",
+            "type":"numeric",
+            "format":dash_table.FormatTemplate.percentage(2)
+        })
         for curve_id,curve_label in type_configs["AllowedCurves"].items():
             columns.append({
                 "name":f"Aff {curve_label}",
@@ -405,6 +412,20 @@ def get_table(table_id:dict[str,str], only_df=False):
     data.fillna("-")
 
     return data, columns, cols_to_hide
+
+def add_overall_aff(table_df:pd.DataFrame)->pd.DataFrame:
+    """
+    Se il df contiene delle colonne di affinità, crea una colonna delle loro medie di riga,
+    altrimenti ritorna il df senza modifiche
+    """
+    aff_cols = [col for col in table_df.columns if "aff_" in col]
+
+    if not aff_cols:
+        return table_df
+
+    table_df["aff_tot"] = table_df[aff_cols].mean(axis=1, skipna=True)
+
+    return table_df
 
 if __name__ == '__main__':
     datas, columnss, cols_to_hidee = get_table({'page':'IDVD', 'item':'table', 'location':'dashboard'})

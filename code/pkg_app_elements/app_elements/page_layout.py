@@ -23,10 +23,14 @@ def layout(PAGE:str):
 
                         # Tabella
                         dbc.Container(
-                            my_table_template({'page':PAGE, 'item':'table', 'location':'dashboard'}),
+                            dcc.Loading(
+                                children=my_table_template({'page':PAGE, 'item':'table', 'location':'dashboard'}),
+                                custom_spinner=custom_spinner(),
+                                overlay_style={"visibility": "visible", "filter": "blur(2px)"},
+                                delay_show=500,  # aspetta mezzo secondo prima di mostrare lo spinner
+                            ),
                             style={
                                 'overflowY': 'auto',
-                                'border': '1px solid #dee2e6',
                                 'borderRadius': '5px'
                             }
                         )

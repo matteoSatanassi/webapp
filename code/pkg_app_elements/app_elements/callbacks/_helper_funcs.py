@@ -3,7 +3,11 @@ from params import *
 
 
 ## COMMON CALLBACKS ##
-def update_table(mode:str, grouping_feature:str, hidden_cols:list, table_data:dict, table_id:dict) -> dict:
+def update_table(mode:str,
+                 grouping_feature:str,
+                 hidden_cols:list,
+                 table_data:list[dict],
+                 table_id:dict) -> list[dict]:
     """
     Updater della tabella di visualizzazione dei file.
 
@@ -18,37 +22,12 @@ def update_table(mode:str, grouping_feature:str, hidden_cols:list, table_data:di
     :param table_id:
     :return:
     """
-    import pandas as pd
     from app_elements.page_elements import get_table
     from dash import no_update
 
     if mode == "grouped":       # se l'impostazione era normal, posso anche usare i dati già caricati nella tabella
-        df = pd.DataFrame(table_data)
-        type_configs = load_files_info()[table_id["page"]]
-
-        hidden_cols.append(grouping_feature)
-
-        # Costruisco chiave del gruppo
-        group_cols = [col for col in df.columns if col not in hidden_cols and "aff_" not in col and col!="file_path"]
-        df["group_key"] = df[group_cols].astype(str).agg("_".join, axis=1)
-
-        # Raggruppo
-        groups = df.groupby("group_key")
-
-        # Prendo una riga per gruppo
-        df_out = groups.first().reset_index(drop=True)
-
-        # raggruppo gli indirizzi dei file del gruppo in un'unica stringa
-        df_out["file_path"] = groups["file_path"].agg(lambda x: "#".join(map(str, x))).values
-
-        # Calcolo medie delle colonne affinità se presenti
-        if type_configs["TargetCurves"] == 1:
-            for curve in type_configs["AllowedCurves"]:
-                aff_col = f"aff_{curve}"
-                if aff_col in df.columns:
-                    df_out[aff_col] = groups[aff_col].mean().values
-
-        return df_out.to_dict("records"), hidden_cols, []
+        df_out, cols_to_hide = group_table(table_data, grouping_feature, table_id)
+        return df_out.to_dict('records'), cols_to_hide, []
     elif mode == "normal":
         df_out,_,cols_to_hide = get_table(table_id)
         return df_out.to_dict('records'), cols_to_hide, []
@@ -98,6 +77,44 @@ def find_export_path()->Path:
         if export_path:
           return export_path
         i+=1
+
+def group_table(table_data:list[dict],
+                grouping_feature:str,
+                table_id:dict[str,str])->tuple:
+    """
+    Funzione chiamata per raggruppare i dati di una tabella in base alla feature di raggruppamento passata
+
+    Ritorna anche la lista aggiornata delle colonne da nascondere
+    """
+    import pandas as pd
+
+    df = pd.DataFrame(table_data)
+
+    # ricavo le colonne da nascondere
+    cols_to_hide = ["file_path", grouping_feature, *df.columns[df.isna().all()].tolist()]
+
+    # Costruisco chiave del gruppo
+    group_cols = [col for col in df.columns if col not in cols_to_hide and "aff_" not in col]
+    df["group_key"] = df[group_cols].astype(str).agg("_".join, axis=1)
+
+    # Raggruppo
+    groups = df.groupby("group_key")
+
+    # Prendo una riga per gruppo
+    df_out = groups.first().reset_index(drop=True)
+
+    # raggruppo gli indirizzi dei file del gruppo in un'unica stringa
+    df_out["file_path"] = groups["file_path"].agg(lambda x: "#".join(map(str, x))).values
+
+    # Calcolo medie delle colonne affinità se presenti
+    type_configs = load_files_info()[table_id["page"]]
+    if type_configs["TargetCurves"] == 1:
+        for curve in type_configs["AllowedCurves"]:
+            aff_col = f"aff_{curve}"
+            if aff_col in df.columns:
+                df_out[aff_col] = groups[aff_col].mean().values
+
+    return df_out, cols_to_hide
 
 
 # if __name__ == '__main__':

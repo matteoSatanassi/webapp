@@ -402,7 +402,12 @@ class FileCurves(FilesFeatures):
     def calculate_affinities(self, autosave=False):
         """
         Calcola le affinità delle curve contenute nei file definiti nell'istanza.
-        Nel caso il calcolo dell'affinità non sia supportato per i file del tipo caricati nell'istanza, non ritorna nulla
+        Nel caso il calcolo dell'affinità non sia supportato per i file del tipo
+        caricati nell'istanza, non ritorna nulla.
+
+        :param autosave: Nel caso sia True (default False), i dati delle affinità calcolati
+            sono salvati direttamente nell'attributo _data dell'istanza, e il metodo ritorna
+            appunto quell'attributo
         :return: Dizionario del tipo {file_path:{curve_acronym:curve_affinity}}
         """
         if self.get_type_configs["TargetCurves"]==0:
