@@ -25,7 +25,9 @@ def load_files_info():
     """
     if files_configs_file.exists():
         with open(files_configs_file, 'r', encoding="utf-8") as f:
-            return json.load(f)
+            out = json.load(f)
+            out.pop("_comments")
+            return out
     else:
         return {}
 
@@ -38,3 +40,6 @@ files_configs_file = assets_dir / 'files_configs.json'
 data_dir = Path(load_configs()["data_directory"])
 indexes_file = data_dir/'indexes.xlsx'
 affinity_file = data_dir/'affinity_table.xlsx'
+
+if __name__ == '__main__':
+    print(load_files_info())

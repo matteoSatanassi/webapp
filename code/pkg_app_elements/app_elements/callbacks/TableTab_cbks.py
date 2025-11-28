@@ -50,9 +50,12 @@ def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, tabs:list[d
 
         if row['file_path'] not in open_tabs:
             path_list = explode_group_paths(row['file_path'])
-            data_to_plot = FileCurves.from_paths(*path_list,
-                                         grouping_feature=grouping_feature if len(path_list)>1 else None)
-            tabs.append(create_tab(data_to_plot))
+            tab = create_tab(
+                row['file_path'],
+                FileCurves.from_paths(*path_list,
+                                      grouping_feature=grouping_feature if len(path_list) > 1 else None)
+            )
+            tabs.append(tab)
 
     return tabs, table_data[selected_rows[0]]['file_path'], [], "tab-graphs"
 
@@ -87,7 +90,7 @@ def affinity_calc(n_clicks:int, table_id:dict):
 
 
 ## HELPER FUNCS ##
-def create_tab(tab_data:FileCurves)->dcc.Tab:
+def create_tab(tab_value:str, tab_data:FileCurves)->dcc.Tab:
     """
     Dati i parametri richiesti, crea il corrispondete Tab.
 
@@ -95,9 +98,6 @@ def create_tab(tab_data:FileCurves)->dcc.Tab:
     mentre, nel caso ne contenga più di uno, gli indirizzi saranno concatenati e divisi
     da caratteri '#'
     """
-    paths = [str(p) for p in tab_data.paths]
-    tab_value = "#".join(paths)
-
     return dcc.Tab(
         value=tab_value,
         label=tab_data.get_tab_label(),

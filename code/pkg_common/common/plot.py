@@ -1,6 +1,5 @@
 from common.classes import FileCurves, Curve
 import plotly.graph_objects as go
-import numpy as np
 
 
 ## PARAMS ##
@@ -27,15 +26,21 @@ class PlotterConfigs(object):
     def get_markers(self, group_feature):
         """Metodo che, data una feature di raggruppamento, ritorna un dizionario del tipo {feature_value:marker}"""
         try:
-            return self.group_markers[group_feature]["Value"]
+            return self.group_markers[group_feature]["Values"]
         except KeyError:
-            return None
+            raise KeyError(
+                """Non è stato possibile individuare la feature di raggruppamento tra quelle supportate dal plotter
+                Aggiungere i marker di gruppo dedicati alla feature nei file di configurazione del plotter"""
+            )
     def get_group_feature_size(self, group_feature):
         """Metodo che, data una feature di raggruppamento, ritorna la sua grandezza fisica"""
         try:
             return self.group_markers[group_feature]["Size"]
         except KeyError:
-            return None
+            raise KeyError(
+                """Non è stato possibile individuare la feature di raggruppamento tra quelle supportate dal plotter
+                Aggiungere i marker di gruppo dedicati alla feature nei file di configurazione del plotter"""
+            )
 
     @staticmethod
     def load_plotter_configs():
@@ -386,7 +391,7 @@ class CustomFigure(go.Figure):
             raise ValueError(f"{self._curves} non contiene un gruppo")
         if not self._plotting_params.group_markers:
             raise ValueError(f"Il file type {self._curves.file_type} non è supportato per il raggruppamento curve")
-        if  not self._get_group_markers:
+        if not self._get_group_markers:
             raise KeyError(
                 """Non è stato possibile individuare la feature di raggruppamento tra quelle supportate dal plotter
                 Aggiungere i marker di gruppo dedicati alla feature nei file di configurazione del plotter"""
@@ -397,7 +402,7 @@ class CustomFigure(go.Figure):
             # f_curves: dizionario delle curve contenute nel file
 
             for key, curve in f_curves.items():
-                curve = curve.copy()
+                curve = curve.__copy__()
                 if key in self.c_to_plot or self.all_c:
                     # per ogni curva salviamo colore, linestyle e marker utilizzato e modifichiamo il nome
                     curve.color = self._plotting_params.colors[key] if self.colored else "black"
@@ -427,6 +432,7 @@ class CustomFigure(go.Figure):
             for f_features, f_curves in self._curves.expose_all:
                 scales = Curve.get_curves_scales(*[curve for curve in f_curves.values()])
                 for key, curve in f_curves.items():
+                    curve = curve.__copy__()
                     curve.color = self._plotting_params.colors[key] if self.colored else "black"
                     curve.linestyle = None if self.colored else self._plotting_params.linestyles[key]
                     # nel caso di grafici di singoli file non ho bisogno di cambiare i marker, uso quelli di default
@@ -450,12 +456,12 @@ class CustomFigure(go.Figure):
         return out
 
 
-if __name__=='__main__':
-    from pathlib import Path
-
-    path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
-    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_TrapDistr_exponential_Vgf_1_Es_1.72_Em_1.31_state_v0.csv"
-    e = FileCurves.from_paths(path)
-    plot(e, all_c=True).show()
-
-    # da fare prova con molti file(IdVd e trapdata) e con gruppo
+# if __name__=='__main__':
+#     from pathlib import Path
+#
+#     path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
+#     # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_TrapDistr_exponential_Vgf_1_Es_1.72_Em_1.31_state_v0.csv"
+#     e = FileCurves.from_paths(path)
+#     plot(e, all_c=True).show()
+#
+#     # da fare prova con molti file(IdVd e trapdata) e con gruppo

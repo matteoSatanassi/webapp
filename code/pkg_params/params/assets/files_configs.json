@@ -21,9 +21,9 @@
   "TRAPDATA": {
     "AllowedFeatures": {
       "TrapDistr": "text",
-      "Em": "float",
-      "Es": "float",
-      "Vgf": "integer",
+      "Em": "text",
+      "Es": "text",
+      "Vgf": "text",
       "state": "text",
       "file_path": "text"
     },
@@ -43,5 +43,8 @@
     "TargetCurves": 0,
     "TargetFeatures":[
     ]
+  },
+  "_comments":{
+    "AllowedFeatures": "le feature possono avere come argomento 'text', 'float', 'integer'"
   }
 }

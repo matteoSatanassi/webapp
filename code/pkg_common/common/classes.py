@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing_extensions import Any, Generator, Self
+from typing_extensions import Any, Generator
 import numpy as np
 import pandas as pd
 from params import *
@@ -96,7 +96,7 @@ class FilesFeatures(object):
         df_data = pd.DataFrame(self._data)
 
         # tutte le colonne tranne quella di raggruppamento
-        other_cols = [c for c in df_data.columns if c != self.grouped_by]
+        other_cols = [c for c in df_data.columns if c not in (self.grouped_by,"file_path")]
 
         # ogni colonna deve avere un solo valore distinto
         return all(df_data[col].nunique() == 1 for col in other_cols)
@@ -115,8 +115,8 @@ class FilesFeatures(object):
             return None
 
     def get_tab_label(self):
-        if not len(self)==1 or self.contains_group:
-            raise ValueError(f"L'oggetto è applicabile ad un tab di visualizzazione")
+        if not len(self)==1 and not self.contains_group:
+            raise ValueError(f"L'oggetto non è applicabile ad un tab di visualizzazione")
 
         prefix = "GROUP" if self.contains_group else "FILE"
 
@@ -214,6 +214,11 @@ class Curve(object):
         self.Y: np.ndarray = None
     def __str__(self):
         return self.name
+    def __copy__(self):
+        copy = type(self)(self.name)
+        copy.X = self.X
+        copy.Y = self.Y
+        return copy
 
     @property
     def y_scale(self):
@@ -283,6 +288,7 @@ class FileCurves(FilesFeatures):
     def _validate(self):
         """
         Verifica che l'istanza sia contenga dati corretti.
+        In caso positivo ritorna l'istanza.
 
         Controlla che il numero di file e di curve sia equivalente e che tutti i dati delle curve
         abbiano un file corrispondente.
@@ -293,22 +299,31 @@ class FileCurves(FilesFeatures):
         if set(self._curves.keys()) != set(self.paths):
             raise ValueError(f"Inconsistenza tra dati e curve")
 
+        return self
+
+    @classmethod
+    def _from_super(cls, data:FilesFeatures)-> "FileCurves":
+        if not isinstance(data,FilesFeatures):
+            return ValueError("L'argomento passato non è del tipo FileFeatures")
+        inst = cls()
+        inst.file_type = data.file_type
+        inst.grouped_by = data.grouped_by
+        inst._data = data._data
+        return inst.import_all()._validate()
     # noinspection PyUnresolvedReferences,PyProtectedMember
     @classmethod
     def from_paths(cls, *args, grouping_feature=None)-> "FileCurves":
         """crea un'istanza della classe e importa i dati a partire dall'indirizzo del file corrispondente"""
-        inst = super(FileCurves, cls).from_paths(*args, grouping_feature=grouping_feature)
-        inst.import_all()
-        inst._validate()
-        return inst
+        return cls._from_super(
+            super().from_paths(*args, grouping_feature=grouping_feature)
+        )
     # noinspection PyUnresolvedReferences,PyProtectedMember
     @classmethod
     def from_df(cls, df: pd.DataFrame, grouped_by: str = None) -> "FileCurves":
         """crea un'istanza della classe e importa i dati a partire da un dataframe contenente le feature"""
-        inst = super(FileCurves, cls).from_df(df, grouped_by)
-        inst.import_all()
-        inst._validate()
-        return inst
+        return cls._from_super(
+            super().from_df(df, grouped_by)
+        )
 
     @property
     def allowed_curves(self):
@@ -348,6 +363,7 @@ class FileCurves(FilesFeatures):
         """importa i dati dei file contenuti nell'istanza, salvandoli nell'attributo curves"""
         for path in self.paths:
             self._curves[path] = self.import_file_data(path)
+        return self
     def import_file_data(self, file_path:Path|str):
         """
         Importa i dati del file passato come variabile al metodo
@@ -401,7 +417,8 @@ class FileCurves(FilesFeatures):
                 target = self.find_target_file(self.file_type, file_features)
 
                 for name,curve in curves.items():
-                    affinities[file_features["file_path"]][name] = curve.integral_affinity(target._curves[0][name])
+                    target_path = target._data[0]["file_path"]
+                    affinities[file_features["file_path"]][name] = curve.integral_affinity(target._curves[target_path][name])
 
             return affinities
         else:
@@ -410,7 +427,8 @@ class FileCurves(FilesFeatures):
                 target = self.find_target_file(self.file_type, file_features)
 
                 for name,curve in curves.items():
-                    file_features[f"aff_{name}"] = curve.integral_affinity(target._curves[0][name])
+                    target_path = target._data[0]["file_path"]
+                    file_features[f"aff_{name}"] = curve.integral_affinity(target._curves[target_path][name])
 
             return self._data
     def divide_in_groups(self, grouping_feat:str) -> Generator["FileCurves"]:
@@ -452,8 +470,14 @@ class FileCurves(FilesFeatures):
 
 
 if __name__ == '__main__':
-    path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
-    prova = FileCurves.from_paths(path)
-    prova.calculate_affinities(autosave=True)
-    print(prova._data)
-
+    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
+    # paths = [Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
+    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
+    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
+    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
+    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
+    # prova = FileCurves.from_paths(*paths, grouping_feature="Vgf")
+    # prova.calculate_affinities(autosave=True)
+    # print(prova._data)
+    a = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv"
+    b = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv#C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv"

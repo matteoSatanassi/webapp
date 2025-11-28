@@ -1,5 +1,10 @@
 from dash import Dash, page_container,html
 from app_elements.callback_functions import *
+from common import indexer
+from params import data_dir
+
+
+indexer(data_dir)
 
 app = Dash(
     __name__,
@@ -24,7 +29,7 @@ nav = dbc.Nav(
 
 app.layout = dbc.Container([
     dcc.Location(id='url', refresh=False),
-    dcc.Store(id='store-trigger-indexing', data=True),
+    dcc.Store(id='store-trigger-indexing', data=False),
 
     dbc.Row(
         dbc.Col([
