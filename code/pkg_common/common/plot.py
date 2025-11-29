@@ -486,7 +486,7 @@ class CustomFigure(go.Figure):
             for t_features,t_curves in target.expose_all:
                 t_scales = Curve.get_curves_scales(*t_curves.values())
                 for key,curve in t_curves.items():
-                    curve.color = "lightgrey"
+                    curve.color = "gray"
                     curve.linestyle = self._plotting_params.linestyles[key]
                     if self._contains_group:
                         curve.name = (
