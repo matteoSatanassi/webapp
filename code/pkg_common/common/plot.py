@@ -58,11 +58,12 @@ class PlotterConfigs(object):
             raise FileNotFoundError("Non è stato possibile trovare il file di configurazione")
 
 ## MAIN FUNC ##
-def plot(curves:FileCurves,
-         c_to_plot:list[str]=(),
-         all_c:bool=True,
-         legend:bool=True,
-         colored:bool=True)->"CustomFigure":
+def plot_tab(curves:FileCurves,
+            c_to_plot:list[str]=(),
+            all_c:bool=True,
+            legend:bool=True,
+            colored:bool=True,
+            plot_targets:bool=False)->"CustomFigure":
     """Plotta le curve interessate, contenute da un'istanza di ExpCurves, contenente a sua volta uno o più Exp"""
 
     custom_fig = CustomFigure(curves,
@@ -74,9 +75,15 @@ def plot(curves:FileCurves,
 
     # controllo se curves contiene un gruppo di curve
     if curves.contains_group:
-        return custom_fig.plot_group()
+        if plot_targets:
+            return custom_fig.plot_targets().plot_group()
+        else:
+            return custom_fig.plot_group()
     else:
-        return custom_fig.plot_all()
+        if plot_targets:
+            return custom_fig.plot_targets().plot_all()
+        else:
+            return custom_fig.plot_all()
 
 ## CLASS ##
 class CustomFigure(go.Figure):
@@ -464,22 +471,53 @@ class CustomFigure(go.Figure):
             out.append(fig.plot_all())
         return out
 
+    def plot_targets(self) -> "CustomFigure":
+        """
+        Il metodo aggiunge alla figura le curve target, in nero, delle curve contenute nell'istanza
 
-# if __name__=='__main__':
-#     from pathlib import Path
-#
-#     # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
-#     # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_TrapDistr_exponential_Vgf_1_Es_1.72_Em_1.31_state_v0.csv"
-#     paths = [
-#         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
-#         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
-#         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
-#         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
-#         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
-#     e = FileCurves.from_paths(*paths)
-#     figs = CustomFigure(e).plot_all()
-#
-#     print(len(figs))
-#
-#     for f in figs:
-#         f.show()
+        La funzione non si occupa di stampare le curve contenute nell'istanza o aggiungere le grafiche,
+        quindi l'operazione deve essere fatta in precedenza o in seguito
+        """
+        if not len(self._curves)==1 and not self._contains_group:
+            raise ValueError(f"L'oggetto non è applicabile ad un tab di visualizzazione")
+
+        for f_features,_ in self._curves.expose_all:
+            target = FileCurves.find_target_file(self._curves.file_type, f_features)
+            for t_features,t_curves in target.expose_all:
+                t_scales = Curve.get_curves_scales(*t_curves.values())
+                for key,curve in t_curves.items():
+                    curve.color = "lightgrey"
+                    curve.linestyle = self._plotting_params.linestyles[key]
+                    if self._contains_group:
+                        curve.name = (
+                            f"{curve.name}, {self.grouped_by}={t_features[self.grouped_by]} {self._get_group_feature_size}"
+                        )
+                        curve.markers = self._get_group_markers[t_features[self.grouped_by]]
+
+                        self._add_curve(curve)
+                    else:
+                        curve.name = f"{curve.name}"
+                        curve.markers = self._plotting_params.default_marker
+
+                        self._add_curve(curve,t_scales)
+
+        return self
+
+
+if __name__=='__main__':
+    from pathlib import Path
+
+    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
+    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_TrapDistr_exponential_Vgf_1_Es_1.72_Em_1.31_state_v0.csv"
+    paths = [
+        Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
+        Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
+        Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
+        Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
+        Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
+    e = FileCurves.from_paths(*paths)
+    e.get_grouping_feat()
+    figs = CustomFigure(e).plot_targets().plot_group().show()
+
+    # for f in figs:
+    #     f.show()

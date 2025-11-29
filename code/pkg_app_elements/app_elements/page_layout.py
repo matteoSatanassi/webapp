@@ -91,6 +91,11 @@ def layout(PAGE:str):
                 # Questo store serve da output per callback che non ne hanno,
                 # in modo da attivare lo spinner di loading (es. Quando esporto il grafico corrente)
                 dcc.Store(id={'page':PAGE, 'item':'store-placeholder-graph-tab'}),
+
+                # Questo store serve a tenere traccia di quali tab hanno nei grafici già plottate
+                # le curve target
+                dcc.Store(id={'page':PAGE, 'item':'store-tabs-with-targets'}, data=[]),
+
                 dbc.Row([
                     dbc.Col([
                         # Card per i grafici

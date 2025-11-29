@@ -156,6 +156,32 @@ class FilesFeatures(object):
             yield inst
     def paths_list(self)->list[Path]:
         return [p for p in self.paths]
+    def get_grouping_feat(self)->bool:
+        """
+        Il metodo, data un'istanza contenete i dati di più file, controlla
+        se sono o no parte dello stesso raggruppamento, e nel caso aggiorna
+        l'attributo grouped_by
+
+        :return: False se non contiene nessun gruppo, True altrimenti
+        """
+        if not len(self)>1:
+            return False
+
+        data = pd.DataFrame(self._data)
+
+        # Trova tutte le colonne che cambiano almeno una volta
+        variable_cols = [
+            col for col in data.columns
+            if data[col].nunique() > 1 and col!="file_path"
+        ]
+
+        # Se ci sono 0 o più di 1 colonne variabili ⇒ NON è un grouping valido
+        if len(variable_cols) != 1:
+            return False
+
+        # Altrimenti quella è la grouping feature
+        self.grouped_by = variable_cols[0]
+        return True
 
     @staticmethod
     def extract_features(file_path:Path|str, only_file_type = False):
@@ -476,13 +502,17 @@ class FileCurves(FilesFeatures):
         raise f"Non è stato possibile trovare il file target per le curve del file {file_features["file_path"].stem}"
 
 
-# if __name__ == '__main__':
-#     path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
-#     paths = [Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
-#              Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
-#              Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
-#              Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
-#              Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
-#     prova = FileCurves.from_paths(*paths, grouping_feature="Vgf")
-#     prova.calculate_affinities(autosave=True)
-#     print(prova._data)
+if __name__ == '__main__':
+    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
+    paths = [Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
+             Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
+             Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
+             Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
+             Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
+    # prova = FileCurves.from_paths(*paths)
+    # prova.calculate_affinities(autosave=True)
+    # print(prova._data)
+
+    prova = FilesFeatures().from_paths(*paths)
+    print(prova.get_grouping_feat())
+    print(prova.grouped_by)

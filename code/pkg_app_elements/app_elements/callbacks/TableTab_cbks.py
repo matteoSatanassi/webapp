@@ -2,7 +2,7 @@ import pandas as pd
 from dash import Input, Output, State, callback, MATCH, no_update, dcc
 from app_elements.page_elements import get_table, add_overall_aff
 from app_elements.callbacks._helper_funcs import explode_group_paths, update_table, group_table
-from common import FileCurves, plot
+from common import FileCurves, plot_tab
 from params import *
 
 
@@ -124,7 +124,7 @@ def create_tab(tab_value:str, tab_data:FileCurves)->dcc.Tab:
     return dcc.Tab(
         value=tab_value,
         label=tab_data.get_tab_label(),
-        children=dcc.Graph(figure=plot(tab_data)),
+        children=dcc.Graph(figure=plot_tab(tab_data)),
         style={'fontSize': 8, 'left-margin': '2px'},
     )
 

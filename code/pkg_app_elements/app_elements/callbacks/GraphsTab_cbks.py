@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, State, callback, MATCH, ALL, no_update, callback_context
 from app_elements.callbacks._helper_funcs import find_export_path, explode_group_paths
-from common import FileCurves, plot
+from common import FileCurves, plot_tab
 from params import load_configs
 
 
@@ -49,7 +49,7 @@ def graph_buttons_displayer(tabs :list[dcc.Tab], tabs_id :dict[str ,str]):
 def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab]):
     """Chiude il tab correntemente aperto"""
     if not n_clicks or not tabs or not active_tab:
-        return tabs, None
+        return no_update, no_update
     if len(tabs) == 1:
         return [], None
 
@@ -117,17 +117,62 @@ def export_current(n_clicks:int, curr_tab:str):
     configs = load_configs()
     export_dir = find_export_path()
 
-    fig = plot(
-        FileCurves().from_paths(*paths),
+    tab_data = FileCurves().from_paths(*paths)
+
+    if len(paths)>1:
+        if not tab_data.get_grouping_feat():
+            raise ValueError("Il tab contiene gli indirizzi di più file, ma non sono parte dello stesso gruppo")
+
+    fig = plot_tab(
+        tab_data,
         colored=bool(configs["colors"]),
         legend=bool(configs["legend"]),
     )
 
-    if len(paths)>1:
-        export_path = export_dir / Path(f"{fig.get_group_stem}.{configs["export_format"]}")
-    else:
-        export_path = export_dir / Path(f"{fig.get_paths.stem}.{configs["export_format"]}")
+    export_path = export_dir / Path(f"{fig.fig_stem}.{configs["export_format"]}")
 
     pio.write_image(fig, export_path, format=configs["export_format"], scale=configs['DPI']/72)
 
     return None
+
+
+@callback(
+    [Output({'page':MATCH, 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
+     Output({'page':MATCH, 'item':'store-tabs-with-targets'}, 'data')],
+    Input({'page':MATCH, 'item':'button-target-visualize'}, 'n_clicks'),
+    [State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
+     State({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
+     State({'page':MATCH, 'item':'store-tabs-with-targets'}, 'data')],
+    prevent_initial_call=True
+)
+def plot_targets(n_clicks:int, curr_tab:str, tabs:list[dcc.Tab], tab_with_targets:list[str]):
+    """
+    La callback si occupa di stampare le curve target nel tab aperto,
+    in caso non siano già presenti, alla pressione dell'apposito pulsante.
+
+    Nel caso fossero già state stampate, le toglie dalla figura.
+    """
+    if not n_clicks or not tabs or not curr_tab:
+        return no_update, no_update
+
+    tab_values = [tab['props']['value'] for tab in tabs]
+    tab_index = tab_values.index(curr_tab)
+
+    paths = explode_group_paths(curr_tab)
+    tab_data = FileCurves().from_paths(*paths)
+
+    if len(paths)>1:
+        if not tab_data.get_grouping_feat():
+            raise ValueError("Il tab contiene gli indirizzi di più file, ma non sono parte dello stesso gruppo")
+
+    tabs[tab_index] = dcc.Tab(value=tab_values[tab_index],
+                              label=tab_data.get_tab_label(),
+                              children=dcc.Graph(figure=plot_tab(
+                                  tab_data, plot_targets=True if curr_tab not in tab_with_targets else False
+                              )),
+                              style={'fontSize': 8, 'left-margin': '2px'},
+                              )
+
+    tab_with_targets.remove(curr_tab) if curr_tab in tab_with_targets else tab_with_targets.append(curr_tab)
+
+    return tabs, tab_with_targets
