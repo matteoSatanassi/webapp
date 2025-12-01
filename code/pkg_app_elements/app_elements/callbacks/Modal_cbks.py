@@ -61,6 +61,19 @@ def initialize_values(is_open:bool):
 
 @callback(
     Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows', allow_duplicate=True),
+    Input({'page':MATCH, 'item':'button-select-all'}, 'n_clicks'),
+    State({'page':MATCH, 'item':'table', 'location':'modal'}, 'data'),
+    prevent_initial_call=True
+)
+def select_all_rows(n_clicks, table_data):
+    if not n_clicks:
+        return no_update
+
+    return [i for i in range(len(table_data))]
+
+
+@callback(
+    Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows', allow_duplicate=True),
     Input({'page':MATCH, 'item':'modal'}, 'is_open'),
     State({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows'),
     prevent_initial_call=True
@@ -147,3 +160,8 @@ def export_selected(n_clicks:int, selected_rows:list[int],table_data:list[dict],
         return False, None
     except Exception:
         return no_update, None
+
+
+## DEBUGGING ##
+if __name__ == "__main__":
+    print(select_all_rows(1,[1,2,3,4,5,6]))

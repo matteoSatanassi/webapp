@@ -1,9 +1,9 @@
 {
     "theme": "MINTY",
-    "data_directory": "C:\\Users\\user\\Documents\\Uni\\Tirocinio\\webapp\\data",
+    "data_directory": "D:\\IdVd_csv",
     "export_directory": "C:\\Users\\user\\Desktop\\exported_files",
     "export_format": "png",
     "legend": true,
-    "colors": false,
-    "DPI": 600
+    "colors": true,
+    "DPI": 150
 }

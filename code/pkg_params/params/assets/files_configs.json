@@ -5,7 +5,9 @@
       "Em": "text",
       "Es": "text",
       "Vgf": "text",
-      "file_path": "text"
+      "file_path": "text",
+      "Region": "text",
+      "EmAcc": "text"
     },
     "AllowedCurves": {
       "v0": "(0 V,0 V)",

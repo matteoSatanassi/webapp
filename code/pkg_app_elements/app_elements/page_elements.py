@@ -339,8 +339,12 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
 
         dbc.ModalFooter([
             dbc.Button(
-                "❌ Annulla", id={'page':page, 'item':'button-close-modal'}, color="secondary", class_name="me-auto", n_clicks=0
+                "❌ Annulla", id={'page':page, 'item':'button-close-modal'}, color="secondary", class_name="me-2", n_clicks=0
             ),
+            dbc.Button(
+                "☑️ Seleziona tutti", id={'page':page, 'item':'button-select-all'}, color="info", n_clicks=0
+            ),
+            html.Div(style={'flex':'1'}),
             dbc.Button(
                 "💾 Esporta Selezionati", id={'page':page, 'item':'button-export'}, color="primary", disabled=True, n_clicks=0
             )

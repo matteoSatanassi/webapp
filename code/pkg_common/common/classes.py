@@ -95,8 +95,9 @@ class FilesFeatures(object):
 
         df_data = pd.DataFrame(self._data)
 
-        # tutte le colonne tranne quella di raggruppamento
-        other_cols = [c for c in df_data.columns if c not in (self.grouped_by,"file_path")]
+        # tutte le colonne tranne quella di raggruppamento e quelle vuote
+        other_cols = [c for c in df_data.columns if c not in
+                      (self.grouped_by,"file_path", *df_data.columns[df_data.isna().all()].tolist())]
 
         # ogni colonna deve avere un solo valore distinto
         return all(df_data[col].nunique() == 1 for col in other_cols)
@@ -503,16 +504,26 @@ class FileCurves(FilesFeatures):
 
 
 if __name__ == '__main__':
-    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
-    paths = [Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
-             Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
-             Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
-             Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
-             Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
-    # prova = FileCurves.from_paths(*paths)
-    # prova.calculate_affinities(autosave=True)
-    # print(prova._data)
+    # # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
+    # paths = [Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
+    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
+    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
+    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
+    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
+    # # prova = FileCurves.from_paths(*paths)
+    # # prova.calculate_affinities(autosave=True)
+    # # print(prova._data)
+    #
+    # prova = FilesFeatures().from_paths(*paths)
+    # print(prova.get_grouping_feat())
+    # print(prova.grouped_by)
 
-    prova = FilesFeatures().from_paths(*paths)
-    print(prova.get_grouping_feat())
-    print(prova.grouped_by)
+    paths = [
+        Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_-2.csv"),
+        Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_-1.csv"),
+        Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_0.csv"),
+        Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_1.csv"),
+        Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_2.csv"),
+    ]
+    prova = FilesFeatures().from_paths(*paths, grouping_feature="Vgf")
+    print(prova.get_tab_label())
