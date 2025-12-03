@@ -1,8 +1,9 @@
 from app_elements.page_elements import *
 
 def layout(PAGE:str):
+    from app_resources import GLOBAL_CACHE
     ## PARAMS ##
-    targets_present = load_files_info()[PAGE]["TargetCurves"] == 1
+    targets_present = GLOBAL_CACHE.files_configs[PAGE].targets_presents
 
     ## LAYOUT ELEMS ##
     table_tab = dbc.Tab([
@@ -140,24 +141,9 @@ def layout(PAGE:str):
                                     children=[],
                                 ),
 
-                                # # Contenitore grafico tab selezionato
-                                # html.Div(
-                                #     id={'page': PAGE, 'item': 'graph-tabs-content'},
-                                #     className="p-0 m-0"
-                                # ),
-
                                 # Controlli grafici
                                 html.Div([
                                     dbc.Row([
-                                        dbc.Col([
-                                            dbc.Button(
-                                                "👀 Visualizza target",
-                                                id={'page':PAGE, 'item':'button-target-visualize'},
-                                                color="outline-secondary",
-                                                size="md",
-                                                className="w-100"
-                                            )
-                                        ], width=4, style={'display': 'block' if targets_present else 'none'}),
                                         dbc.Col([
                                             dbc.Button(
                                                 "📥 Scarica Immagine",
@@ -165,7 +151,16 @@ def layout(PAGE:str):
                                                 color="outline-success",
                                                 size="md",
                                                 className="w-100",
-                                            )
+                                            ),
+                                            dbc.Col([
+                                                dbc.Button(
+                                                    "👀 Visualizza target",
+                                                    id={'page': PAGE, 'item': 'button-target-visualize'},
+                                                    color="outline-secondary",
+                                                    size="md",
+                                                    className="w-100"
+                                                )
+                                            ], width=4, style={'display': 'block' if targets_present else 'none'}),
                                         ], width=4)
                                     ], className="d-flex flex-row-reverse")
                                 ],

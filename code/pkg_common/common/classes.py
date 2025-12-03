@@ -2,7 +2,6 @@ from pathlib import Path
 from typing_extensions import Any, Generator
 import numpy as np
 import pandas as pd
-from params import *
 
 ## CLASSES ##
 class FilesFeatures(object):
@@ -57,6 +56,8 @@ class FilesFeatures(object):
             file_path_col = df["file_path"].tolist()
         except KeyError:
             raise KeyError("Colonna file_path inesistente")
+
+        # controllo che la colonna file_type contenga un solo valore
         if len(
                 set([FilesFeatures.extract_features(file_path, only_file_type=True) for file_path in file_path_col])
         ) != 1:
@@ -66,11 +67,11 @@ class FilesFeatures(object):
 
         type_configs = FilesFeatures.get_type_configs(file_type)
 
-        if set(df.columns.tolist()) != set(type_configs["AllowedFeatures"].keys()):
+        if set(df.columns.tolist()) != set(type_configs.allowed_features.keys()):
             raise ValueError(f"""
                 Le feature contenute nel df sono manchevoli o errate
                 Feature presentate: {', '.join(df.columns)} 
-                Feature supportate: {', '.join(type_configs["AllowedFeatures"].keys())} 
+                Feature supportate: {', '.join(type_configs.allowed_features.keys())} 
                 """)
 
         try:
@@ -185,7 +186,9 @@ class FilesFeatures(object):
         return True
 
     @staticmethod
-    def extract_features(file_path:Path|str, only_file_type = False):
+    def extract_features(file_path:Path|str,
+                         only_file_type=False,
+                         only_file_features=False):
         """
         Dato un path, controlla che il file sia di un tipo supportato,
         e in caso positivo estrae le feature contenute nel nome.
@@ -194,19 +197,21 @@ class FilesFeatures(object):
         specificate per il corrispondente file_type. Le feature senza nessun valore
         specificato nel nome, avranno valore None.
 
-        Nel caso only_file_type sia True, ritorna solo la tipologia di file,
-        dopo aver controllato sia supportata.
+        :param only_file_type: Nel caso sia True, ritorna solo la tipologia di file,
+            dopo aver controllato sia supportata.
+        :param only_file_features: Nel caso sia True, ritorna solo il dizionario
+            contenente le feature del file e i loro valori
         """
-        file_name = Path(file_path).stem
-        file_features = file_name.split('_')
+        file_features = Path(file_path).stem.split('_')
         file_type = file_features[0].upper()
 
         type_configs = FilesFeatures.get_type_configs(file_type)
 
         if only_file_type:
             return file_type
-        dict_features = {key:None for key in type_configs["AllowedFeatures"].keys()}
-        for feature,f_type in type_configs["AllowedFeatures"].items():
+
+        dict_features = {key:None for key in type_configs.allowed_features.keys()}
+        for feature,f_type in type_configs.allowed_features.items():
             if feature=='file_path':
                 dict_features[feature] = Path(file_path)
             elif feature in file_features:
@@ -214,16 +219,19 @@ class FilesFeatures(object):
                 dict_features[feature] = feature_val if f_type=='text' else round(
                     pd.to_numeric(feature_val, downcast=f_type, ), 2
                 )
+        if only_file_features:
+            return dict_features
 
         return file_type, dict_features
     @staticmethod
     def get_type_configs(file_type:str):
+        from app_resources import GLOBAL_CACHE as GC
         try:
-            return load_files_info()[file_type]
+            return GC.files_configs[file_type]
         except KeyError:
             raise f"""
             Tipologia di file non supportata {file_type}
-            Tipologie supportate: {', '.join(load_files_info().keys())}
+            Tipologie supportate: {', '.join(GC.file_types)}
             Aggiungere alle specifiche
             """
         except Exception as error:
@@ -360,7 +368,7 @@ class FileCurves(FilesFeatures):
         Ritorna un dizionario delle curve consentite nei file del tipo dell'istanza
         il dizionario ha una struttura del tipo {acronimo:label}
         """
-        return self.get_type_configs["AllowedCurves"]
+        return self.get_type_configs.allowed_curves
     @property
     def get_type_configs(self):
         """Ritorna i file_type config relativi all'istanza corrente"""
@@ -439,7 +447,7 @@ class FileCurves(FilesFeatures):
             appunto quell'attributo
         :return: Dizionario del tipo {file_path:{curve_acronym:curve_affinity}}
         """
-        if self.get_type_configs["TargetCurves"]==0:
+        if not self.get_type_configs.targets_presents:
             print("Questa tipologia di file non supporta il calcolo delle affinità")
             return None
 
@@ -485,9 +493,11 @@ class FileCurves(FilesFeatures):
     @staticmethod
     def find_target_file(file_type, file_features:dict):
         """Trova il file target corretto tra tutti quelli in cartella e ritorna un'istanza FileCurves contenente i dati"""
+        from app_resources import GLOBAL_CACHE as GC
+
         type_configs = FilesFeatures.get_type_configs(file_type)
 
-        target_dir = targets_dir/file_type   # cartella file target
+        target_dir = GC.configs.targets_dirs / file_type   # cartella file target
         if not target_dir.exists():
             raise FileNotFoundError(f"Cartella {str(target_dir)} non trovata")
 
@@ -495,7 +505,7 @@ class FileCurves(FilesFeatures):
 
         # costruisco i token da cercare nel nome del file target
         target_features = [
-            f"{feature}_{file_features[feature]}" for feature in type_configs["TargetFeatures"]
+            f"{feature}_{file_features[feature]}" for feature in type_configs.target_features
         ]
         for t_file in target_files:
             if all(token in t_file.stem for token in target_features):
@@ -517,6 +527,7 @@ if __name__ == '__main__':
     # prova = FilesFeatures().from_paths(*paths)
     # print(prova.get_grouping_feat())
     # print(prova.grouped_by)
+    from pathlib import Path
 
     paths = [
         Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_-2.csv"),

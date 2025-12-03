@@ -1,7 +1,7 @@
 import pandas as pd
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
-from params import *
+from app_resources import GLOBAL_CACHE as GC
 
 
 ## PAGE ELEMENTS ##
@@ -104,17 +104,17 @@ def grouping_selector(selector_id:dict[str,str]):
     except KeyError:
         raise KeyError("Valore di pagina non specificato nell'id")
 
-    type_configs = load_files_info()[page]
+    type_configs = GC.files_configs[page]
 
     try:
-        data = pd.read_excel(indexes_file, sheet_name=page)
+        data = pd.read_excel(GC.configs.indexes_file, sheet_name=page)
     except Exception:
         raise FileNotFoundError(
             f"""Non è stato possibile trovare il file di indicizzazione necessario
             data_type specificato = {page}"""
         )
 
-    features = type_configs["AllowedFeatures"].keys()
+    features = type_configs.allowed_features.keys()
 
     # nasconderò le colonne vuote e la colonna dei file_path
     f_to_pop = data.columns[data.isna().all()].tolist()
@@ -168,13 +168,13 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
     except KeyError:
         raise KeyError("Valore di pagina non specificato nell'id")
 
-    type_configs = load_files_info()[page]
+    type_configs = GC.files_configs[page]
 
     curves_checklist_opt = [
         {
             "value":acronym,
             "label":label
-        } for acronym,label in type_configs["AllowedCurves"].items()
+        } for acronym,label in type_configs.allowed_curves.items()
     ]
 
     return dbc.Modal([
@@ -360,13 +360,17 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
 
 
 ## HELPER FUNC ##
-def get_table(table_id:dict[str,str], only_df=False):
+def get_table(table_id:dict[str,str],
+              only_df=False,
+              grouping_feat:str=None):
     """
     Ritorna i dati per costruire la DataTable specificata dall'id nella visualizzazione normal.
     I valori nulli sono riempiti con "-".
 
-    :param table_id: id della tabella di cui sono richiesti i valori.
-    :param only_df: default False. Se True la funzione ritorna solo il df letto in memoria.
+    :param table_id: ID della tabella di cui sono richiesti i valori.
+    :param only_df: Default False. Se True la funzione ritorna solo il df letto in memoria.
+    :param grouping_feat: Default None. Se diverso la funzione ritorna il df degli indici
+        raggruppato secondo questo parametro.
     :return: In ordine data, il df della tabella, columns, ossia il dizionario con le informazioni di colonna
      da passare a dash, e cols_to_hide, la lista delle colonne da nascondere.
     """
@@ -375,65 +379,24 @@ def get_table(table_id:dict[str,str], only_df=False):
     except KeyError:
         raise KeyError("Valore di pagina non specificato nell'id")
 
-    type_configs = load_files_info()[page]
-    aff_cols = type_configs["TargetCurves"]==1
-
     # page è anche il nome del data_type dei file da visualizzare
-    try:
-        data = pd.read_excel(indexes_file, sheet_name=page)
-        data = add_overall_aff(data)
-        if only_df:
-            return data
-    except Exception:
-        raise FileNotFoundError(
-            f"""Non è stato possibile trovare il file di indicizzazione necessario
-            data_type specificato = {page}"""
-        )
+    type_configs = GC.files_configs[page]
+    columns = type_configs.get_dash_table_cols
 
-    columns = [
-        {"name":f_name,
-         "id":f_name,
-         "type":"numeric" if f_type in ("integer", "float") else None}
-        for f_name,f_type in type_configs["AllowedFeatures"].items()
-    ]
-    aff_cols_ids = []
-    if aff_cols:
-        columns.append({
-            "name":"Aff Overall",
-            "id":"aff_tot",
-            "type":"numeric",
-            "format":dash_table.FormatTemplate.percentage(2)
-        })
-        for curve_id,curve_label in type_configs["AllowedCurves"].items():
-            columns.append({
-                "name":f"Aff {curve_label}",
-                "id":f"aff_{curve_id}",
-                "type":"numeric",
-                "format":dash_table.FormatTemplate.percentage(2)
-            })
-            aff_cols_ids.append(f"aff_{curve_id}")
+    if not grouping_feat:
+        data = GC.indexes[page].copy()
 
-    # nasconderò le colonne vuote e la colonna dei file_path
-    cols_to_hide = ["file_path", *data.columns[data.isna().all()].tolist()]
+        # nasconderò le colonne vuote e la colonna dei file_path
+        cols_to_hide = GC.cols_to_hide(data)
+    else:
+        data, cols_to_hide = GC.group_df(page, grouping_feat)
 
     # riempio le celle vuote con un trattino placeholder
     data.fillna("-")
 
+    if only_df:
+        return data
     return data, columns, cols_to_hide
-
-def add_overall_aff(table_df:pd.DataFrame)->pd.DataFrame:
-    """
-    Se il df contiene delle colonne di affinità, crea una colonna delle loro medie di riga,
-    altrimenti ritorna il df senza modifiche
-    """
-    aff_cols = [col for col in table_df.columns if "aff_" in col]
-
-    if not aff_cols:
-        return table_df
-
-    table_df["aff_tot"] = table_df[aff_cols].mean(axis=1, skipna=True)
-
-    return table_df
 
 if __name__ == '__main__':
     datas, columnss, cols_to_hidee = get_table({'page':'IDVD', 'item':'table', 'location':'dashboard'})

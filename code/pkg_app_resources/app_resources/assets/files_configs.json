@@ -47,6 +47,9 @@
     ]
   },
   "_comments":{
-    "AllowedFeatures": "le feature possono avere come argomento 'text', 'float', 'integer'"
+    "AllowedFeatures": "Le feature possono avere come argomento 'text', 'float', 'integer'",
+    "AllowedCurves": "Acronimi e nomi delle curve, in questo ordine",
+    "TargetCurves": "bool (1 o 0), indica se del file_type specificato ci sono file contenenti curve target",
+    "TargetFeatures": "Lista di stringhe, indica le feature tramite cui individuare le curve target, tra quelle disponibili, di un certo file"
   }
 }
