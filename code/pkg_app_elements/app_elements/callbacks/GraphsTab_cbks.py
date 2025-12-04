@@ -1,8 +1,5 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, State, callback, MATCH, ALL, no_update, callback_context
-from app_elements.callbacks._helper_funcs import find_export_path, explode_group_paths
-from common import FileCurves, plot_tab
-from params import load_configs
 
 
 ## DYNAMIC CALLBACKS ##
@@ -50,6 +47,12 @@ def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab]):
     """Chiude il tab correntemente aperto"""
     if not n_clicks or not tabs or not active_tab:
         return no_update, no_update
+
+    from app_resources.AppCache import GLOBAL_CACHE
+
+    # elimino i dati del tab dalla memoria cache
+    GLOBAL_CACHE.del_tab(active_tab)
+
     if len(tabs) == 1:
         return [], None
 
@@ -92,7 +95,11 @@ def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
                 except IndexError:
                     open_tab = tabs[tab_index-1]['props']['value']
             if 0 <= tab_index < len(tabs):
+                from app_resources.AppCache import GLOBAL_CACHE
+
                 tabs.pop(tab_index)
+                GLOBAL_CACHE.del_tab(tabs[tab_index]['props']['value'])
+
                 return tabs, open_tab
         except (KeyError, IndexError):
             pass
@@ -110,42 +117,21 @@ def export_current(n_clicks:int, curr_tab:str):
     if not n_clicks or not curr_tab:
         return no_update, no_update
 
-    from pathlib import Path
-    import plotly.io as pio
+    from app_resources.AppCache import GLOBAL_CACHE
 
-    paths = explode_group_paths(curr_tab)
-    configs = load_configs()
-    export_dir = find_export_path()
+    out = GLOBAL_CACHE.save_tab(curr_tab)
 
-    tab_data = FileCurves().from_paths(*paths)
-
-    if len(paths)>1:
-        if not tab_data.get_grouping_feat():
-            raise ValueError("Il tab contiene gli indirizzi di più file, ma non sono parte dello stesso gruppo")
-
-    fig = plot_tab(
-        tab_data,
-        colored=bool(configs["colors"]),
-        legend=bool(configs["legend"]),
-    )
-
-    export_path = export_dir / Path(f"{fig.fig_stem}.{configs["export_format"]}")
-
-    pio.write_image(fig, export_path, format=configs["export_format"], scale=configs['DPI']/72)
-
-    return None
+    return out
 
 
 @callback(
-    [Output({'page':MATCH, 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
-     Output({'page':MATCH, 'item':'store-tabs-with-targets'}, 'data')],
+    Output({'page':MATCH, 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
     Input({'page':MATCH, 'item':'button-target-visualize'}, 'n_clicks'),
     [State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
-     State({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
-     State({'page':MATCH, 'item':'store-tabs-with-targets'}, 'data')],
+     State({'page':MATCH, 'item': 'graph-tabs'}, 'children')],
     prevent_initial_call=True
 )
-def plot_targets(n_clicks:int, curr_tab:str, tabs:list[dcc.Tab], tab_with_targets:list[str]):
+def plot_targets(n_clicks:int, curr_tab:str, tabs:list[dcc.Tab]):
     """
     La callback si occupa di stampare le curve target nel tab aperto,
     in caso non siano già presenti, alla pressione dell'apposito pulsante.
@@ -153,26 +139,15 @@ def plot_targets(n_clicks:int, curr_tab:str, tabs:list[dcc.Tab], tab_with_target
     Nel caso fossero già state stampate, le toglie dalla figura.
     """
     if not n_clicks or not tabs or not curr_tab:
-        return no_update, no_update
+        return no_update
+
+    from app_resources.AppCache import GLOBAL_CACHE
 
     tab_values = [tab['props']['value'] for tab in tabs]
     tab_index = tab_values.index(curr_tab)
 
-    paths = explode_group_paths(curr_tab)
-    tab_data = FileCurves().from_paths(*paths)
+    tabs[tab_index] = GLOBAL_CACHE.tab(curr_tab).use_targets(
+        True if n_clicks%2==1 else False
+    ).build_dcc_tab()
 
-    if len(paths)>1:
-        if not tab_data.get_grouping_feat():
-            raise ValueError("Il tab contiene gli indirizzi di più file, ma non sono parte dello stesso gruppo")
-
-    tabs[tab_index] = dcc.Tab(value=tab_values[tab_index],
-                              label=tab_data.get_tab_label(),
-                              children=dcc.Graph(figure=plot_tab(
-                                  tab_data, plot_targets=True if curr_tab not in tab_with_targets else False
-                              )),
-                              style={'fontSize': 8, 'left-margin': '2px'},
-                              )
-
-    tab_with_targets.remove(curr_tab) if curr_tab in tab_with_targets else tab_with_targets.append(curr_tab)
-
-    return tabs, tab_with_targets
+    return tabs

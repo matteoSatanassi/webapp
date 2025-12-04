@@ -21,6 +21,9 @@ class AppConfigs(object):
     def export_dir(self)->Path:
         return Path(self.all["export_directory"])
     @property
+    def export_format(self)->str:
+        return str(self.all["export_format"])
+    @property
     def data_dir(self)->Path:
         return Path(self.all["data_directory"])
     @property
@@ -191,11 +194,8 @@ class FileConfigs(object):
     @staticmethod
     def supported_file_types()->list[str]:
         """Ritorna la lista dei file_type supportati dall'applicazione"""
-        out:list = FileConfigs.load_files_info().keys()
-        out.remove("_comments")
-        return out
+        return list(FileConfigs.load_files_info().keys())
 
 
 if __name__ == '__main__':
-    config = AppConfigs()
-    print(config.dpi)
+    print(FileConfigs.load_files_info())

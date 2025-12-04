@@ -105,6 +105,21 @@ class CustomFigure(go.Figure):
 
         super().__init__(*args, **kwargs)
 
+    def __copy__(self):
+        # creo una nuova istanza, dato che _curves rimane immutato, posso anche solo passare il rif
+        new_fig = self.__class__(self._curves)
+
+        new_fig.update(self.to_dict())  # copio i dati Plotly in modo standard
+
+        # Gli attributi semplici e immutabili (str, bool, list[str] semplice)
+        # possono essere copiati direttamente, bastano anche solo i riferimenti
+        new_fig._c_to_plot = self._c_to_plot
+        new_fig._all_c = self._all_c
+        new_fig._legend = self._legend
+        new_fig._colored = self._colored
+
+        return new_fig
+
     @property
     def c_to_plot(self):
         return self._c_to_plot
@@ -134,6 +149,9 @@ class CustomFigure(go.Figure):
     def _contains_group(self):
         return self._curves.contains_group
     @property
+    def _contains_tab_data(self):
+        return self._curves.contains_tab_data
+    @property
     def grouped_by(self):
         """Ritorna la feature di raggruppamento se ne esiste una"""
         return self._curves.grouped_by if self._contains_group else None
@@ -154,6 +172,14 @@ class CustomFigure(go.Figure):
             return self.get_group_stem
         else:
             raise ValueError("Non è possibile dare un nome ad una figura contenente i grafici di diversi file")
+    @property
+    def get_tab_label(self):
+        """Se i dati contenuti nell'istanza sono visualizzabili in un tab, ritorna la label che avrebbe"""
+        if self._contains_tab_data:
+            return self._curves.get_tab_label()
+        else:
+            return ValueError(f"L'oggetto non è applicabile ad un tab di visualizzazione")
+
 
     def _add_curve(self,
                    curve:Curve,
@@ -517,7 +543,9 @@ if __name__=='__main__':
         Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
     e = FileCurves.from_paths(*paths)
     e.get_grouping_feat()
-    figs = CustomFigure(e).plot_targets().plot_group().show()
+    figs:CustomFigure = CustomFigure(e).plot_group()
 
-    # for f in figs:
-    #     f.show()
+    figs2 = figs.__copy__()
+
+    figs.show()
+    figs2.show()

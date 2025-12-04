@@ -103,6 +103,10 @@ class FilesFeatures(object):
         # ogni colonna deve avere un solo valore distinto
         return all(df_data[col].nunique() == 1 for col in other_cols)
     @property
+    def contains_tab_data(self):
+        """Ritorna True se i dati all'interno dell'istanza possono essere visualizzati in un tab"""
+        return self.contains_group or len(self)==1
+    @property
     def paths(self) -> Generator[Path, None, None]:
         """Ritorna un generator con tutti i path contenuti nell'istanza"""
         for f_features in self._data:
@@ -117,7 +121,7 @@ class FilesFeatures(object):
             return None
 
     def get_tab_label(self):
-        if not len(self)==1 and not self.contains_group:
+        if self.contains_tab_data:
             raise ValueError(f"L'oggetto non è applicabile ad un tab di visualizzazione")
 
         prefix = "GROUP" if self.contains_group else "FILE"
@@ -225,13 +229,13 @@ class FilesFeatures(object):
         return file_type, dict_features
     @staticmethod
     def get_type_configs(file_type:str):
-        from app_resources import GLOBAL_CACHE as GC
+        from app_resources import AppCache
         try:
-            return GC.files_configs[file_type]
+            return AppCache.files_configs[file_type]
         except KeyError:
             raise f"""
             Tipologia di file non supportata {file_type}
-            Tipologie supportate: {', '.join(GC.file_types)}
+            Tipologie supportate: {', '.join(AppCache.file_types)}
             Aggiungere alle specifiche
             """
         except Exception as error:
@@ -253,8 +257,8 @@ class Curve(object):
         return self.name
     def __copy__(self):
         copy = type(self)(self.name)
-        copy.X = self.X
-        copy.Y = self.Y
+        copy.X = self.X.copy() if self.X is not None else None
+        copy.Y = self.Y.copy() if self.Y is not None else None
         return copy
 
     @property
@@ -321,6 +325,39 @@ class FileCurves(FilesFeatures):
     def __init__(self):
         super().__init__()
         self._curves:dict[str,dict[str,Curve]] = {}
+
+    def __deepcopy__(self, memo):
+        import copy
+
+        # creo una nuova istanza della classe FileCurves.
+        new_inst = self.__class__()
+
+        # registro la nuova istanza nel memo per prevenire cicli.
+        memo[id(self)] = new_inst
+
+        # copio gli attributi semplici
+        new_inst.file_type = self.file_type
+        new_inst.grouped_by = self.grouped_by
+
+        # copia profonda attributi complessi
+        new_inst._data = copy.deepcopy(self._data, memo)
+        # il deepcopy qui assicura che anche gli oggetti Curve al suo interno siano copiati (non solo referenziati)
+        new_inst._curves = copy.deepcopy(self._curves, memo)
+
+        return new_inst
+    def __copy__(self):
+        # creo una nuova istanza della classe FileCurves.
+        new_inst = self.__class__()
+
+        # copio gli attributi semplici/immutabili per valore.
+        new_inst.file_type = self.file_type
+        new_inst.grouped_by = self.grouped_by
+
+        # copio gli attributi mutabili (copia i RIFERIMENTI).
+        new_inst._data = self._data
+        new_inst._curves = self._curves
+
+        return new_inst
 
     def _validate(self):
         """
@@ -493,11 +530,11 @@ class FileCurves(FilesFeatures):
     @staticmethod
     def find_target_file(file_type, file_features:dict):
         """Trova il file target corretto tra tutti quelli in cartella e ritorna un'istanza FileCurves contenente i dati"""
-        from app_resources import GLOBAL_CACHE as GC
+        from app_resources import AppCache
 
         type_configs = FilesFeatures.get_type_configs(file_type)
 
-        target_dir = GC.configs.targets_dirs / file_type   # cartella file target
+        target_dir = AppCache.configs.targets_dirs / file_type   # cartella file target
         if not target_dir.exists():
             raise FileNotFoundError(f"Cartella {str(target_dir)} non trovata")
 

@@ -1,5 +1,5 @@
-from .AppCache import GLOBAL_CACHE
+from .AppCache_builder import AppCache
 from .parameters import *
 
 __all__ = ['AppConfigs', 'FileConfigs',
-           'GLOBAL_CACHE']
+           'AppCache']
