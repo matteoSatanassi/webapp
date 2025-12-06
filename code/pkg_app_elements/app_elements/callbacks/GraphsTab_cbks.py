@@ -25,12 +25,13 @@ def reload_tabs(main_tab:str, tabs:list[dcc.Tab], tabs_id:dict[str,str]):
 
     tabs_values = {tab['props']['value'] for tab in tabs}
 
-    cached_tabs_values = set(GLOBAL_CACHE.tabs_values(file_type))
+    cached_tabs_values = set(GLOBAL_CACHE.open_tabs[file_type].tabs_values)
 
     if tabs_values == cached_tabs_values:
         return no_update, no_update
 
-    return ([GLOBAL_CACHE.tab(path_val).build_dcc_tab() for path_val in tabs_values],
+    return ([GLOBAL_CACHE.open_tabs[file_type].tab(path_val).build_dcc_tab()
+             for path_val in cached_tabs_values if path_val not in tabs_values],
             list(cached_tabs_values)[0])
 
 
@@ -71,16 +72,19 @@ def graph_buttons_displayer(tabs :list[dcc.Tab], tabs_id :dict[str ,str]):
     Output({'page':MATCH, 'item': 'graph-tabs'}, 'value', allow_duplicate=True)],
     Input({'page':MATCH, 'item':'button-close-current-tab'}, 'n_clicks'),
     [State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
-    State({'page':MATCH, 'item': 'graph-tabs'}, 'children')],
+     State({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
+     State({'page':MATCH, 'item': 'graph-tabs'}, 'id')],
     prevent_initial_call=True
 )
-def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab]):
+def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab], tabs_id:dict[str,str]):
     """Chiude il tab correntemente aperto"""
     if not n_clicks or not tabs or not active_tab:
         return no_update, no_update
 
+    file_type = tabs_id['page']
+
     # elimino i dati del tab dalla memoria cache
-    GLOBAL_CACHE.del_tab(active_tab)
+    GLOBAL_CACHE.open_tabs[file_type].del_tab(active_tab)
 
     if len(tabs) == 1:
         return [], None
@@ -102,10 +106,11 @@ def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab]):
     Output({'page':MATCH, 'item': 'graph-tabs'}, 'value', allow_duplicate=True)],
     Input({'page':MATCH, 'item':'dd-button', 'tab-index':ALL}, 'n_clicks'),
     [State({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
-    State({'page':MATCH, 'item': 'graph-tabs'}, 'value')],
+     State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
+     State({'page':MATCH, 'item': 'graph-tabs'}, 'id')],
     prevent_initial_call=True
 )
-def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
+def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str, tabs_id:dict[str,str]):
     """Callback che gestisce la chiusura di un tab da parte di un pulsante del dropdown menu"""
     ctx = callback_context
     if not ctx.triggered or not tabs or not open_tab:
@@ -124,9 +129,14 @@ def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
                 except IndexError:
                     open_tab = tabs[tab_index-1]['props']['value']
 
+            # se è presente un solo tab non devo specificare nulla perchè il
+            # menù di chiusura non compare nella schermata
+
             if 0 <= tab_index < len(tabs):
                 tabs.pop(tab_index)
-                GLOBAL_CACHE.del_tab(tabs[tab_index]['props']['value'])
+
+                file_type = tabs_id['page']
+                GLOBAL_CACHE.open_tabs[file_type].del_tab(tabs[tab_index]['props']['value'])
 
                 return tabs, open_tab
 
@@ -138,41 +148,47 @@ def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
 @callback(
     Output({'page':MATCH, 'item': 'store-placeholder-graph-tab'}, 'data'),
     Input({'page': MATCH, 'item': 'button-export-current-graph'}, 'n_clicks'),
-    State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
+    [State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
+     State({'page':MATCH, 'item': 'graph-tabs'}, 'id'), ],
     prevent_initial_call=True
 )
-def export_current(n_clicks:int, curr_tab:str):
+def export_current(n_clicks:int, curr_tab:str, tabs_id:dict[str,str]):
     """Esporta il grafico contenuto nel tab aperto, con parametri di esportazione come da config"""
     if not n_clicks or not curr_tab:
         return no_update, no_update
 
-    out = GLOBAL_CACHE.save_tab(curr_tab)
+    file_type = tabs_id['page']
+    out = GLOBAL_CACHE.open_tabs[file_type].save_tab(curr_tab)
 
     return out
 
 
 @callback(
-    Output({'page':MATCH, 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
+    Output({'page':MATCH, 'item': 'graph-tab', 'tab':ALL}, 'figure'),
     Input({'page':MATCH, 'item':'button-target-visualize'}, 'n_clicks'),
     [State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
-     State({'page':MATCH, 'item': 'graph-tabs'}, 'children')],
+     State({'page':MATCH, 'item': 'graph-tabs'}, 'id'),
+     State({'page':MATCH, 'item': 'graph-tab', 'tab':ALL}, 'id'),
+     State({'page':MATCH, 'item': 'graph-tab', 'tab':ALL}, 'figure')],
     prevent_initial_call=True
 )
-def plot_targets(n_clicks:int, curr_tab:str, tabs:list[dcc.Tab]):
+def plot_targets(n_clicks:int, curr_tab:str, tabs_id:dict[str,str],
+                 graphs_ids:list[dict[str,str]], graphs_figs:list):
     """
     La callback si occupa di stampare le curve target nel tab aperto,
     in caso non siano già presenti, alla pressione dell'apposito pulsante.
 
     Nel caso fossero già state stampate, le toglie dalla figura.
     """
-    if not n_clicks or not tabs or not curr_tab:
+    if not n_clicks or not curr_tab:
         return no_update
 
-    tab_values = [tab['props']['value'] for tab in tabs]
-    tab_index = tab_values.index(curr_tab)
+    file_type = tabs_id['page']
+    tab = GLOBAL_CACHE.open_tabs[file_type].tab(curr_tab)
 
-    tabs[tab_index] = GLOBAL_CACHE.tab(curr_tab).use_targets(
-        n_clicks%2==1   # se n_clicks è dispari vuol dire che vanno plottati anche i target
-    ).build_dcc_tab()
+    for graph_id,fig in zip(graphs_ids, graphs_figs):
+        if graph_id['tab']==curr_tab:
+            graphs_figs[graphs_figs.index(fig)] = tab.switch_fig().figure
+            break
 
-    return tabs
+    return graphs_figs

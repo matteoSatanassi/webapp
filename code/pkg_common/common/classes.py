@@ -99,7 +99,7 @@ class FilesFeatures:
                 """)
 
         try:
-            df["file_path"] = df["file_path"].apply(lambda p: Path(p))
+            df.loc[:,"file_path"] = df["file_path"].apply(lambda p: Path(p))
         except Exception as e:
             raise ValueError(
                 "Non è stato possibile convertire in indirizzi la colonna file_path del dataframe"
@@ -150,8 +150,12 @@ class FilesFeatures:
         Controlla che l'istanza contenga dati visualizzabili in un tab,
         e in caso positivo ritorna la label che avrebbe
         """
-        if self.contains_tab_data:
-            raise ValueError("L'oggetto non è applicabile ad un tab di visualizzazione")
+        if not self.contains_tab_data:
+            raise ValueError(
+                f"""L'oggetto non è applicabile ad un tab di visualizzazione.
+                Dati contenuti: {self._data} 
+                len(FileCurves), contains_group = {len(self)}, {self.contains_group}
+                """)
 
         prefix = "GROUP" if self.contains_group else "FILE"
 

@@ -147,17 +147,17 @@ def layout(PAGE:str):
                                                 color="outline-success",
                                                 size="md",
                                                 className="w-100",
-                                            ),
-                                            dbc.Col([
-                                                dbc.Button(
-                                                    "👀 Visualizza target",
-                                                    id={'page': PAGE, 'item': 'button-target-visualize'},
-                                                    color="outline-secondary",
-                                                    size="md",
-                                                    className="w-100"
-                                                )
-                                            ], width=4, style={'display': 'block' if targets_present else 'none'}),
-                                        ], width=4)
+                                            )
+                                        ], width=4),
+                                        dbc.Col([
+                                            dbc.Button(
+                                                "👀 Visualizza target",
+                                                id={'page': PAGE, 'item': 'button-target-visualize'},
+                                                color="outline-secondary",
+                                                size="md",
+                                                className="w-100"
+                                            )
+                                        ], width=4, style={'display': 'block' if targets_present else 'none'}),
                                     ], className="d-flex flex-row-reverse")
                                 ],
                                     id={'page': PAGE, 'item': 'graph-controls'},

@@ -25,7 +25,7 @@ nav = dbc.Nav(
 
 app.layout = dbc.Container([
     dcc.Location(id='url', refresh=False),
-    dcc.Store(id='store-trigger-indexing', data=False),
+    # dcc.Store(id='store-trigger-indexing', data=False),
 
     dbc.Row(
         dbc.Col([

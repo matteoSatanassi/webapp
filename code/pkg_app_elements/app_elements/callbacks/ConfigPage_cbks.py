@@ -15,7 +15,7 @@ from app_resources.AppCache import GLOBAL_CACHE
 ## CALLBACKS ##
 @callback(
     [Output("config-export-path", "value"),
-    Output("config-data-path", "value"),
+    Output("config-data-path", "value", allow_duplicate=True),
     Output("config-export-format", "value"),
     Output("config-theme", "value"),
     Output("current-theme", "data"),
@@ -24,6 +24,7 @@ from app_resources.AppCache import GLOBAL_CACHE
     Output("config-DPI-selector", "value"),
     Output("initial-config-loaded", "data")],
     Input("initial-config-loaded", "data"),
+    prevent_initial_call=True
 )
 def initialize_config_values(is_loaded):
     """Inizializza i valori della pagina e non permette ulteriori aggiornamenti"""

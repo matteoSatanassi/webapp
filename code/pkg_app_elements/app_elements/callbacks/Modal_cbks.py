@@ -1,3 +1,8 @@
+"""
+Il modulo contiene tutte le funzioni callback che agiscono sugli elementi dei modal,
+all'interno dell'applicazione
+"""
+
 import pandas as pd
 from dash import Input, Output, State, callback, MATCH, no_update, callback_context
 from app_elements.callbacks._helper_funcs import update_table
@@ -12,8 +17,6 @@ callback([
     Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows', allow_duplicate=True),
     Input({'page':MATCH, 'item':'radio-table-mode', 'location':'modal'}, 'value'),
     State({'page':MATCH, 'item':'menu-grouping-features', 'location':'modal'}, 'value'),
-    State({'page':MATCH, 'item':'table', 'location':'modal'}, 'hidden_columns'),
-    State({'page':MATCH, 'item':'table', 'location':'modal'}, 'data'),
     State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'id')],
     prevent_initial_call=True
 )(update_table)
@@ -128,7 +131,7 @@ def export_selected(n_clicks:int, table_id:dict[str,str], selected_rows:list[int
         figs:list[CustomFigure] = []
         for row in selected_rows:
             path_list = GLOBAL_CACHE.explode_group_paths(row['file_path'])
-            group_df = GLOBAL_CACHE.get_table_no_aff(file_type)
+            group_df = GLOBAL_CACHE.tables[file_type].get_table_no_aff()
             group_df = group_df[group_df['file_path'].isin(path_list)]
 
             figs.append(

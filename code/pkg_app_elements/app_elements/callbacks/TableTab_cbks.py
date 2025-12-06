@@ -4,7 +4,7 @@ Il modulo contiene tutte le funzioni callback che agiscono sul tab principale co
 
 from dash import Input, Output, State, callback, MATCH, no_update, dcc
 from app_elements.callbacks._helper_funcs import update_table
-from app_resources.AppCache import GLOBAL_CACHE
+from app_resources.AppCache import GLOBAL_CACHE,TableCache
 
 
 ## DYNAMIC CALLBACKS ##
@@ -16,8 +16,6 @@ callback([
            allow_duplicate=True)],
     Input({'page':MATCH, 'item':'radio-table-mode', 'location':'dashboard'}, 'value'),
     [State({'page':MATCH, 'item':'menu-grouping-features', 'location':'dashboard'}, 'value'),
-    State({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'hidden_columns'),
-    State({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'data'),
     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'id')],
     prevent_initial_call=True
 )(update_table)
@@ -29,12 +27,14 @@ callback([
     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'selected_rows'),
     Output({'page': MATCH, 'item': 'main-tabs'}, 'active_tab')],
     Input({'page': MATCH, 'item': 'button-plot'}, 'n_clicks'),
-    [State({'page': MATCH, 'item': 'table', 'location': 'dashboard'},
+    [State({'page': MATCH, 'item': 'graph-tabs'}, 'children'),
+     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'},
            'derived_virtual_selected_rows'),
-    State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'derived_virtual_data'),
-    State({'page': MATCH, 'item': 'graph-tabs'}, 'children'),
+     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'derived_virtual_data'),
+     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'id')
 ])
-def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, tabs:list[dcc.Tab]):
+def add_tabs(n_clicks:int, tabs:list[dcc.Tab], selected_rows:list[int],
+             table_data:dict, table_id:dict[str,str]):
     """
     Aggiorna la lista dei tab al click del bottone,
     in base agli esperimenti selezionati nella tabella,
@@ -49,8 +49,9 @@ def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, tabs:list[d
     """
     tabs = tabs or []
     if not n_clicks or not selected_rows:
-        return no_update,no_update,no_update,no_update
+        return no_update, no_update, no_update, no_update
 
+    file_type = table_id['page']
     open_tabs = [tab['props']['value'] for tab in tabs]
 
     for selected_index in selected_rows:
@@ -58,7 +59,7 @@ def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, tabs:list[d
 
         if row['file_path'] not in open_tabs:
             # salvo il nuovo valore Tab nella cache e ritorno l'oggetto dcc.Tab di cui ho bisogno
-            tab = GLOBAL_CACHE.tab(row['file_path']).build_dcc_tab()
+            tab = GLOBAL_CACHE.open_tabs[file_type].tab(row['file_path']).build_dcc_tab()
             tabs.append(tab)
 
     return tabs, table_data[selected_rows[0]]['file_path'], [], "tab-graphs"
@@ -87,15 +88,16 @@ def affinity_calc(n_clicks:int, table_id:dict, mode:str, grouping_feature:str):
     from app_resources.AppCache import GLOBAL_CACHE
 
     file_type = table_id['page']
-    page_df_out = GLOBAL_CACHE.calculate_affinities(file_type)
+    page_df_out = GLOBAL_CACHE.tables[file_type].calculate_affinities()
 
     if mode=="normal":
-        cols_to_hide = GLOBAL_CACHE.cols_to_hide(page_df_out)
+        cols_to_hide = TableCache.cols_to_hide(page_df_out)
     elif mode=="grouped":
-        page_df_out, hidden_cols = GLOBAL_CACHE.group_df(file_type,
-                                                         grouping_feature)
+        page_df_out, cols_to_hide = GLOBAL_CACHE.tables[file_type].group_df(grouping_feature)
     else:
         raise ValueError(f"Il valore passato dal radio selector [{mode}], non è tra quelli supportati")
+
+    page_df_out.fillna("-")
 
     # noinspection PyUnboundLocalVariable
     return page_df_out.to_dict('records'), cols_to_hide

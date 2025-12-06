@@ -1,7 +1,7 @@
 import pandas as pd
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
-from app_resources.AppCache import GLOBAL_CACHE as GC
+from app_resources.AppCache import GLOBAL_CACHE, TableCache
 
 
 ## PAGE ELEMENTS ##
@@ -100,19 +100,20 @@ def grouping_selector(selector_id:dict[str,str]):
     La seconda per decidere se visualizzare la tabella secondo i raggruppamenti o esplosa.
     """
     try:
-        page = selector_id['page']
+        file_type = selector_id['page']
     except KeyError:
         raise KeyError("Valore di pagina non specificato nell'id")
 
-    type_configs = GC.files_configs[page]
+    type_configs = GLOBAL_CACHE.files_configs[file_type]
 
     try:
-        data = pd.read_excel(GC.configs.indexes_file, sheet_name=page)
-    except Exception:
-        raise FileNotFoundError(
+        data = pd.read_excel(GLOBAL_CACHE.app_configs.indexes_file, sheet_name=file_type)
+    except Exception as e:
+        raise Exception(
             f"""Non è stato possibile trovare il file di indicizzazione necessario
-            data_type specificato = {page}"""
-        )
+            file degli indici = {GLOBAL_CACHE.app_configs.indexes_file}
+            data_type specificato = {file_type}"""
+        ) from e
 
     features = type_configs.allowed_features.keys()
 
@@ -168,7 +169,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
     except KeyError:
         raise KeyError("Valore di pagina non specificato nell'id")
 
-    type_configs = GC.files_configs[page]
+    type_configs = GLOBAL_CACHE.files_configs[page]
 
     curves_checklist_opt = [
         {
@@ -375,21 +376,21 @@ def get_table(table_id:dict[str,str],
      da passare a dash, e cols_to_hide, la lista delle colonne da nascondere.
     """
     try:
-        page = table_id['page']
+        file_type = table_id['page']
     except KeyError:
         raise KeyError("Valore di pagina non specificato nell'id")
 
     # page è anche il nome del data_type dei file da visualizzare
-    type_configs = GC.files_configs[page]
+    type_configs = GLOBAL_CACHE.files_configs[file_type]
     columns = type_configs.get_dash_table_cols
 
     if not grouping_feat:
-        data = GC.indexes[page].copy()
+        data = GLOBAL_CACHE.tables[file_type].table
 
         # nasconderò le colonne vuote e la colonna dei file_path
-        cols_to_hide = GC.cols_to_hide(data)
+        cols_to_hide = TableCache.cols_to_hide(data)
     else:
-        data, cols_to_hide = GC.group_df(page, grouping_feat)
+        data, cols_to_hide = GLOBAL_CACHE.tables[file_type].group_df(grouping_feat)
 
     # riempio le celle vuote con un trattino placeholder
     data.fillna("-")

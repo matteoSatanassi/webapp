@@ -17,11 +17,6 @@ def update_table(mode:str,
     :param table_id:
     :return:
     """
-    try:
-        page = table_id['page']
-    except KeyError:
-        raise KeyError("Nell'id passato noon è specificata una pagina")
-
     if mode == "grouped":       # se l'impostazione era normal, posso anche usare i dati già caricati nella tabella
         df_out,_,cols_to_hide = get_table(table_id, grouping_feat=grouping_feature)
     elif mode == "normal":
