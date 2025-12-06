@@ -1,8 +1,8 @@
 import pandas as pd
 from dash import Input, Output, State, callback, MATCH, no_update, callback_context
-from app_elements.callbacks._helper_funcs import find_export_path, update_table, explode_group_paths
+from app_elements.callbacks._helper_funcs import update_table
 from common import FileCurves, CustomFigure
-from params import *
+from app_resources.AppCache import GLOBAL_CACHE
 
 
 ## DYNAMIC CALLBACKS ##
@@ -52,11 +52,11 @@ def initialize_values(is_open:bool):
     """All'apertura del modal inizializza i valori dei vari oggetti in base alle impostazioni salvate nei config"""
     if not is_open:
         return no_update, no_update, no_update, no_update
-    config = load_configs()
-    return (['show_legend'] if bool(config['legend']) else [],
-            ['colors'] if bool(config['colors']) else [],
-            int(config['DPI']),
-            config['export_format'])
+    configs = GLOBAL_CACHE.app_configs
+    return (['show_legend'] if configs.legend else [],
+            ['colors'] if configs.colors else [],
+            configs.dpi,
+            configs.export_format)
 
 
 @callback(
@@ -101,7 +101,8 @@ def enable_export_button(selected_rows:list[int]):
     [Output({'page': MATCH, 'item': 'modal'}, 'is_open', allow_duplicate=True),
      Output({'page': MATCH, 'item': 'store-placeholder-modal'}, 'data')],
     Input({'page': MATCH, 'item': 'button-export'}, 'n_clicks'),
-    [State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'derived_virtual_selected_rows'),
+    [State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'id'),
+    State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'derived_virtual_selected_rows'),
     State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'derived_virtual_data'),
     State({'page': MATCH, 'item': 'radio-table-mode', 'location': 'modal'}, 'value'),
     State({'page': MATCH, 'item': 'menu-grouping-features', 'location': 'modal'}, 'value'),
@@ -112,25 +113,29 @@ def enable_export_button(selected_rows:list[int]):
     State({'page': MATCH, 'item': 'selector-format', 'location': 'modal'}, 'value')],
     prevent_initial_call=True
 )
-def export_selected(n_clicks:int, selected_rows:list[int],table_data:list[dict], mode:str, grouping_feature:str,
+def export_selected(n_clicks:int, table_id:dict[str,str], selected_rows:list[int],table_data:list[dict], mode:str, grouping_feature:str,
                     selected_curves:list[str], legend:list, colors:list, dpi_img:int, file_format:str):
     """Esporta le righe selezionate nella tabella del pop-up, premuto il bottone di export, e a fino processo chiude il pop-up"""
     if not n_clicks or not selected_rows:
         return no_update, no_update
 
-    export_path = find_export_path()
+    file_type = table_id['page']
+
+    export_path = GLOBAL_CACHE.find_export_path()
     selected_rows = [table_data[i] for i in selected_rows]
 
     if mode == "grouped":
         figs:list[CustomFigure] = []
         for row in selected_rows:
-            path_list = explode_group_paths(row['file_path'])
+            path_list = GLOBAL_CACHE.explode_group_paths(row['file_path'])
+            group_df = GLOBAL_CACHE.get_table_no_aff(file_type)
+            group_df = group_df[group_df['file_path'].isin(path_list)]
 
             figs.append(
                 CustomFigure(
-                    FileCurves.from_paths(*path_list,
-                                          grouping_feature=grouping_feature if len(path_list) > 1 else None
-                                          ),
+                    FileCurves.from_df(group_df,
+                                       grouped_by=grouping_feature if len(path_list) > 1 else None
+                                       ),
                     curves_to_plot= selected_curves,
                     plot_all_curves=False,
                     legend=legend,

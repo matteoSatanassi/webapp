@@ -1,15 +1,11 @@
 from dash import Dash, page_container,html
 from app_elements.callback_functions import *
-from common import indexer
-from params import data_dir
-
-
-indexer(data_dir)
+from app_resources.AppCache import GLOBAL_CACHE
 
 app = Dash(
     __name__,
     assets_folder='assets',
-    external_stylesheets=[getattr(dbc.themes, load_configs()["theme"])],
+    external_stylesheets=[getattr(dbc.themes, GLOBAL_CACHE.app_configs.theme)],
     use_pages=True,
     # suppress_callback_exceptions=True
 )

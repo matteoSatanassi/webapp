@@ -1,12 +1,18 @@
+"""
+Il modulo implementa la funzione di indexing da utilizzare sulla directory dei dati,
+in modo da creare un file di indicizzazione con i parametri dei vari file supportati
+dall'applicazione
+"""
+
 from pathlib import Path
 import pandas as pd
 from common.classes import FilesFeatures
-from app_resources import AppCache
+from app_resources.parameters import ConfigCache
 
 
 ## HELPER FUNC ##
 def load_or_create_df_data_type(file_type:str, idx_file:Path):
-    type_configs = AppCache.files_configs[file_type]
+    type_configs = ConfigCache.files_configs[file_type]
     expected_df = pd.DataFrame(
         None,
         columns=type_configs.get_table_cols
@@ -21,7 +27,7 @@ def load_or_create_df_data_type(file_type:str, idx_file:Path):
         return expected_df
 
 def add_aff_cols(data_type:str, df:pd.DataFrame):
-    type_configs = AppCache.files_configs[data_type]
+    type_configs = ConfigCache.files_configs[data_type]
     if type_configs.targets_presents:
         df["aff_tot"]=None
         for curve in type_configs.allowed_curves:
@@ -29,7 +35,7 @@ def add_aff_cols(data_type:str, df:pd.DataFrame):
     return df
 
 ## MAIN FUNC ##
-def indexer(data_directory:str|Path)->list[Path]:
+def indexer(data_directory:str|Path):
     """
     La funzione di occupa di indicizzare tutti i file .csv contenuti nella cartella
     specificata, data_directory, creando un corrispondente file nella suddetta.
@@ -58,17 +64,34 @@ def indexer(data_directory:str|Path)->list[Path]:
     excel_indexes_file = data_directory / "indexes.xlsx"
 
     files_set = set(data_directory.glob("*.csv"))
-    df_files = pd.DataFrame([
-        {"file_type": f.stem.split("_")[0].upper(), "file_path": str(f)}
-        for f in files_set
-    ])
+    files_data_list = []
+
+    for file in files_set:
+        try:
+            file_type = FilesFeatures.extract_features(file, only_file_type=True)
+        except KeyError:
+            # ignoro i file con un tipo non supportato
+            pass
+        else:
+            files_data_list.append(
+                {
+                    "file_type": file_type,
+                    "file_path":str(file)
+                }
+            )
+
+    df_files = pd.DataFrame(files_data_list)
+
+    if df_files.empty:
+        return []
+
     present_file_types = set(df_files["file_type"].tolist())
 
     # cache dict to save df before writing them
     df_to_save = {}
 
     # processing one supported data_type per loop
-    for file_type in AppCache.file_types:
+    for file_type in ConfigCache.file_types:
 
         if file_type not in present_file_types:
             continue

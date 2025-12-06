@@ -1,8 +1,39 @@
-import dash_bootstrap_components as dbc
-from dash import dcc, Input, Output, State, callback, MATCH, ALL, no_update, callback_context
+"""
+Questo modulo contiene tutte le funzioni callback che agiscono sugli elementi del tab
+grafici, all'interno dell'applicazione
+"""
 
+from dash import dcc, Input, Output, State, callback, MATCH, ALL, no_update, callback_context
+from app_resources.AppCache import GLOBAL_CACHE
+import dash_bootstrap_components as dbc
 
 ## DYNAMIC CALLBACKS ##
+@callback(
+    [Output({'page':MATCH, 'item':'graph-tabs'}, 'children', allow_duplicate=True),
+    Output({'page': MATCH, 'item': 'graph-tabs'}, 'value', allow_duplicate=True)],
+    Input({'page':MATCH, 'item':'main-tabs'}, 'active_tab'),
+    [State({'page':MATCH, 'item':'graph-tabs'}, 'children'),
+    State({'page':MATCH, 'item':'graph-tabs'}, 'id')],
+    prevent_initial_call=True
+)
+def reload_tabs(main_tab:str, tabs:list[dcc.Tab], tabs_id:dict[str,str]):
+    """Ricarica i tab dalla memoria cache, in caso non siano più visualizzati"""
+    if not main_tab or main_tab == "tab-table":
+        return no_update, no_update
+
+    file_type = tabs_id['page']
+
+    tabs_values = {tab['props']['value'] for tab in tabs}
+
+    cached_tabs_values = set(GLOBAL_CACHE.tabs_values(file_type))
+
+    if tabs_values == cached_tabs_values:
+        return no_update, no_update
+
+    return ([GLOBAL_CACHE.tab(path_val).build_dcc_tab() for path_val in tabs_values],
+            list(cached_tabs_values)[0])
+
+
 @callback([
     Output({'page' :MATCH, 'item' :'button-close-current-tab'}, 'style'),
     Output({'page': MATCH, 'item': 'graph-controls'}, 'style'),
@@ -25,14 +56,14 @@ def graph_buttons_displayer(tabs :list[dcc.Tab], tabs_id :dict[str ,str]):
         return no_update, no_update, no_update, no_update
     if len(tabs) == 1:
         return {'display': 'block'}, {'display': 'block'}, {'display': 'none'}, None
-    else:
-        page = tabs_id['page']
-        dropdown_elems = [
-            dbc.DropdownMenuItem(
-                f"❌ {tab['props']['label']}",
-                id={'page' :page, 'item' :'dd-button', 'tab-index' :i},
-            ) for i, tab in enumerate(tabs)]
-        return {'display': 'block'}, {'display': 'block'}, {'display': 'block'}, dropdown_elems
+
+    page = tabs_id['page']
+    dropdown_elems = [
+        dbc.DropdownMenuItem(
+            f"❌ {tab['props']['label']}",
+            id={'page' :page, 'item' :'dd-button', 'tab-index' :i},
+        ) for i, tab in enumerate(tabs)]
+    return {'display': 'block'}, {'display': 'block'}, {'display': 'block'}, dropdown_elems
 
 
 @callback([
@@ -47,8 +78,6 @@ def close_current_tab(n_clicks:int, active_tab:str, tabs:list[dcc.Tab]):
     """Chiude il tab correntemente aperto"""
     if not n_clicks or not tabs or not active_tab:
         return no_update, no_update
-
-    from app_resources.AppCache import GLOBAL_CACHE
 
     # elimino i dati del tab dalla memoria cache
     GLOBAL_CACHE.del_tab(active_tab)
@@ -94,13 +123,13 @@ def pop_tab(n_clicks_list:list[int], tabs:list[dcc.Tab], open_tab:str):
                     open_tab = tabs[tab_index+1]['props']['value']
                 except IndexError:
                     open_tab = tabs[tab_index-1]['props']['value']
-            if 0 <= tab_index < len(tabs):
-                from app_resources.AppCache import GLOBAL_CACHE
 
+            if 0 <= tab_index < len(tabs):
                 tabs.pop(tab_index)
                 GLOBAL_CACHE.del_tab(tabs[tab_index]['props']['value'])
 
                 return tabs, open_tab
+
         except (KeyError, IndexError):
             pass
     return tabs, open_tab
@@ -116,8 +145,6 @@ def export_current(n_clicks:int, curr_tab:str):
     """Esporta il grafico contenuto nel tab aperto, con parametri di esportazione come da config"""
     if not n_clicks or not curr_tab:
         return no_update, no_update
-
-    from app_resources.AppCache import GLOBAL_CACHE
 
     out = GLOBAL_CACHE.save_tab(curr_tab)
 
@@ -141,13 +168,11 @@ def plot_targets(n_clicks:int, curr_tab:str, tabs:list[dcc.Tab]):
     if not n_clicks or not tabs or not curr_tab:
         return no_update
 
-    from app_resources.AppCache import GLOBAL_CACHE
-
     tab_values = [tab['props']['value'] for tab in tabs]
     tab_index = tab_values.index(curr_tab)
 
     tabs[tab_index] = GLOBAL_CACHE.tab(curr_tab).use_targets(
-        True if n_clicks%2==1 else False
+        n_clicks%2==1   # se n_clicks è dispari vuol dire che vanno plottati anche i target
     ).build_dcc_tab()
 
     return tabs

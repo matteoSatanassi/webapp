@@ -1,19 +1,7 @@
-import time
-from dash import dcc, html, Input, Output, State, callback, register_page, no_update
-from pathlib import Path
-from dash_bootstrap_templates import ThemeChangerAIO
-import dash_bootstrap_components as dbc
-import json
-from app_elements.page_elements import custom_spinner
-from params import *
+from dash import register_page
+from app_elements.callbacks.ConfigPage_cbks import *
 
 register_page(__name__, path='/configs', title='Configs')
-
-## FUNC ##
-def save_config(conf):
-    """Salva la configurazione aggiornata"""
-    with open(config_file, 'w') as f:
-        json.dump(conf, f, indent=4)
 
 ## LAYOUT ##
 layout = dbc.Container([
@@ -141,7 +129,11 @@ layout = dbc.Container([
                                 clearable=False
                             ),
                             html.Div(
-                                ThemeChangerAIO(aio_id="theme", radio_props={"value": getattr(dbc.themes, load_configs()["theme"])}),
+                                ThemeChangerAIO(
+                                    aio_id="theme",
+                                    radio_props={
+                                        "value": getattr(dbc.themes, GLOBAL_CACHE.app_configs.theme)
+                                    }),
                                 style={'display': 'none'}
                             ),
                         ], width=6)
@@ -180,120 +172,3 @@ layout = dbc.Container([
             html.Div(className="mb-4"),
         ])
 ])
-
-
-## CALLBACKS ##
-@callback(
-    Output("config-export-path", "value"),
-    Output("config-data-path", "value"),
-    Output("config-export-format", "value"),
-    Output("config-theme", "value"),
-    Output("current-theme", "data"),
-    Output(ThemeChangerAIO.ids.radio("theme"), "value"),
-    Output("config-legend-colors-checklist", "value"),
-    Output("config-DPI-selector", "value"),
-    Output("initial-config-loaded", "data"),
-    Input("initial-config-loaded", "data"),
-)
-def initialize_config_values(is_loaded):
-    """Inizializza i valori della pagina e non permette ulteriori aggiornamenti"""
-    if is_loaded:
-        return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
-
-    config = load_configs()
-
-    checklist_values = []
-    if bool(config['legend']):
-        checklist_values.append('show_legend')
-    if bool(config['colors']):
-        checklist_values.append('colors')
-
-    return (
-        config["export_directory"],
-        config["data_directory"],
-        config["export_format"],
-        config["theme"],
-        config["theme"],
-        getattr(dbc.themes, config["theme"]),
-        checklist_values,
-        int(config['DPI']),
-        True  # Marca come caricato
-    )
-
-@callback(
-    Output("main-loading", "custom_spinner"),
-    Output("current-theme", "data", allow_duplicate=True),
-    Output(ThemeChangerAIO.ids.radio("theme"), "value", allow_duplicate=True),
-    Input("save-config-button", "n_clicks"),
-    State("config-data-path", "value"),
-    State("config-export-path", "value"),
-    State("config-export-format", "value"),
-    State("config-theme", "value"),
-    State("config-legend-colors-checklist", "value"),
-    State("config-DPI-selector", "value"),
-    prevent_initial_call=True
-)
-def save(n_clicks, data_path, export_path, export_format, theme, legend_colors, dpi):
-    if not n_clicks:
-        return no_update, no_update, no_update
-    try:
-        path = Path(export_path)
-    except (OSError, ValueError):
-        return "L'indirizzo di esportazione fornito non è valido", no_update, no_update
-
-    configs = {
-        "theme": theme,
-        "data_directory":data_path,
-        "export_directory": export_path,
-        "export_format": export_format,
-        "legend": 'show_legend' in legend_colors,
-        "colors": 'colors' in legend_colors,
-        "DPI": dpi,
-    }
-    try:
-        save_config(configs)
-        current_theme = theme
-        return custom_spinner("Impostazioni Salvate!"), current_theme, getattr(dbc.themes, current_theme)
-    except Exception as e:
-        return no_update, no_update, no_update
-
-@callback(
-    Output("config-status-message", "children", allow_duplicate=True),
-    Output("main-loading", "custom_spinner", allow_duplicate=True),
-    Output("current-theme", "data", allow_duplicate=True),
-    Output("config-export-path", "value", allow_duplicate=True),
-    Output("config-export-format", "value", allow_duplicate=True),
-    Output("config-theme", "value", allow_duplicate=True),
-    Output("config-legend-colors-checklist", "value", allow_duplicate=True),
-    Output("config-DPI-selector", "value", allow_duplicate=True),
-    Input("reset-config-button", "n_clicks"),
-    prevent_initial_call=True
-)
-def reset(n_clicks):
-    if not n_clicks:
-        return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
-    try:
-        config_file.unlink(missing_ok=True)
-    except Exception as e:
-        return (f"Errore reset config_file: {e}", no_update, no_update, no_update,
-                no_update, no_update, no_update, no_update)#, no_update)
-    config = load_configs()
-    legend_colors = []
-    if bool(config['legend']):
-        legend_colors.append('show_legend')
-    if bool(config['colors']):
-        legend_colors.append('colors')
-
-    return (no_update, custom_spinner("Impostazioni Resettate!"), config["theme"], config["export_directory"],
-            config["export_format"], config["theme"], legend_colors, config["DPI"])
-
-@callback(
-    Output(ThemeChangerAIO.ids.radio("theme"), "value", allow_duplicate=True),
-    Input("current-theme", "data"),
-    prevent_initial_call=True
-)
-def change_theme(curr_theme):
-    if not curr_theme:
-        return no_update
-    time.sleep(1)
-    return getattr(dbc.themes, curr_theme)

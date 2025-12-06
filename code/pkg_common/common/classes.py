@@ -1,10 +1,17 @@
+"""
+Il modulo contiene le classi principali utilizzate dall'applicazione per la gestione,
+manipolazione e presentazione dei dati
+"""
+
 from pathlib import Path
+import copy
 from typing_extensions import Any, Generator
 import numpy as np
 import pandas as pd
+from app_resources.parameters import ConfigCache
 
 ## CLASSES ##
-class FilesFeatures(object):
+class FilesFeatures:
     """
     Classe preposta a contenere i dati relativi a un file dati o
     a un gruppo di file dati
@@ -18,14 +25,20 @@ class FilesFeatures(object):
     def __str__(self):
         if not self.file_type:
             return ""
-        else:
-            stems = [row["file_path"].stem for row in self._data]
-            return ", ".join(stems)
+
+        stems = [row["file_path"].stem for row in self._data]
+        return ", ".join(stems)
     def __len__(self):
         return len(self._data)
 
     @classmethod
     def from_paths(cls, *args, grouping_feature=None):
+        """
+        Ritorna un'istanza FileFeatures, a partire dagli indirizzi dati come input.
+
+        Viene controllata sia l'esistenza dei file, sia la correttezza delle feature
+        descritte nel nome del file
+        """
         if not all(isinstance(arg,(Path,str)) for arg in args):
             raise TypeError("I valori passati al costruttore non sono tutti stringhe o paths")
 
@@ -39,7 +52,9 @@ class FilesFeatures(object):
             file_type, data = cls.extract_features(arg)
 
             if file_type != inst.file_type:
-                raise ValueError(f"Il file {arg} non è dello stesso tipo dei precedenti ({inst.file_type})")
+                raise ValueError(
+                    f"Il file {arg} non è dello stesso tipo dei precedenti ({inst.file_type})"
+                )
 
             inst._data.append(data)
 
@@ -47,23 +62,32 @@ class FilesFeatures(object):
             inst.grouped_by = grouping_feature
 
             if not inst.contains_group:
-                return ValueError("Il gruppo di file passati non fanno parte dello stesso raggruppamento")
+                return ValueError(
+                    "Il gruppo di file passati non fanno parte dello stesso raggruppamento"
+                )
 
         return inst
     @classmethod
     def from_df(cls, df: pd.DataFrame, grouped_by: str = None):
+        """
+        Crea un'istanza di FileFeatures, dato un df con le adeguate colonne
+
+        Controlla sia la correttezza delle feature definite nel df, sia la
+        correttezza del raggruppamento secondo grouping_feature, nel caso sia
+        specificato
+        """
         try:
             file_path_col = df["file_path"].tolist()
-        except KeyError:
-            raise KeyError("Colonna file_path inesistente")
+        except KeyError as e:
+            raise KeyError("Colonna file_path inesistente") from e
 
         # controllo che la colonna file_type contenga un solo valore
         if len(
-                set([FilesFeatures.extract_features(file_path, only_file_type=True) for file_path in file_path_col])
+                {FilesFeatures.extract_features(file_path, only_file_type=True) for file_path in file_path_col}
         ) != 1:
             raise ValueError("I file passati non sono parte dello stesso file_type")
-        else:
-            file_type = FilesFeatures.extract_features(file_path_col[0], only_file_type=True)
+
+        file_type = FilesFeatures.extract_features(file_path_col[0], only_file_type=True)
 
         type_configs = FilesFeatures.get_type_configs(file_type)
 
@@ -76,16 +100,18 @@ class FilesFeatures(object):
 
         try:
             df["file_path"] = df["file_path"].apply(lambda p: Path(p))
-        except:
-            raise ValueError("Non è stato possibile convertire in indirizzi la colonna file_path del dataframe")
+        except Exception as e:
+            raise ValueError(
+                "Non è stato possibile convertire in indirizzi la colonna file_path del dataframe"
+            ) from e
 
         inst = cls()
         if grouped_by is not None:
             if grouped_by not in df.columns:
-                raise ValueError(f"Feature di raggruppamento non supportata")
+                raise ValueError("Feature di raggruppamento non supportata")
             inst.grouped_by = grouped_by
 
-        inst.file_type, inst._data = file_type, df[type_configs["AllowedFeatures"].keys()].to_dict(orient='records')
+        inst.file_type, inst._data = file_type, df[type_configs.allowed_features.keys()].to_dict(orient='records')
         return inst
 
     @property
@@ -117,12 +143,15 @@ class FilesFeatures(object):
         if self.contains_group:
             return (self._data[0]["file_path"].stem
                     .replace(f"{self.grouped_by}_{self._data[0][self.grouped_by]}_", ""))
-        else:
-            return None
+        return None
 
     def get_tab_label(self):
+        """
+        Controlla che l'istanza contenga dati visualizzabili in un tab,
+        e in caso positivo ritorna la label che avrebbe
+        """
         if self.contains_tab_data:
-            raise ValueError(f"L'oggetto non è applicabile ad un tab di visualizzazione")
+            raise ValueError("L'oggetto non è applicabile ad un tab di visualizzazione")
 
         prefix = "GROUP" if self.contains_group else "FILE"
 
@@ -142,6 +171,7 @@ class FilesFeatures(object):
         NB - con gruppo si intende un dataset in cui i file hanno tutti stesse feature, a meno
         della grouping feature
         """
+        # pylint disable:protected-access
         if (not len(self)>1) or self.contains_group:
             raise ValueError("L'istanza non è divisibile in sottogruppi")
         if grouping_feat not in self._data[0].keys():
@@ -150,7 +180,7 @@ class FilesFeatures(object):
         df = pd.DataFrame(self._data)
 
         # raggruppo il df in gruppi con colonne tutte uguali tranne grouping_feat
-        other_cols = [col for col in df.columns if col!=grouping_feat and col!="file_path"]
+        other_cols = [col for col in df.columns if col not in (grouping_feat, "file_path")]
         grouped = df.groupby(other_cols, dropna=False)
 
         for _, group_df in grouped:
@@ -161,7 +191,8 @@ class FilesFeatures(object):
             inst._data = group_df.to_dict(orient="records")
             yield inst
     def paths_list(self)->list[Path]:
-        return [p for p in self.paths]
+        """Ritorna una lista dei path contenuti nell'istanza"""
+        return list(self.paths)
     def get_grouping_feat(self)->bool:
         """
         Il metodo, data un'istanza contenete i dati di più file, controlla
@@ -209,7 +240,11 @@ class FilesFeatures(object):
         file_features = Path(file_path).stem.split('_')
         file_type = file_features[0].upper()
 
-        type_configs = FilesFeatures.get_type_configs(file_type)
+        try:
+            # carica le configurazioni del tipo e in caso di keyerror, ritorna keyerror
+            type_configs = FilesFeatures.get_type_configs(file_type)
+        except KeyError:
+            raise KeyError(f"{file_type} is not a supported file type")
 
         if only_file_type:
             return file_type
@@ -229,20 +264,20 @@ class FilesFeatures(object):
         return file_type, dict_features
     @staticmethod
     def get_type_configs(file_type:str):
-        from app_resources import AppCache
+        """Ritorna i parametri di configurazione dei file con file_type specificato"""
         try:
-            return AppCache.files_configs[file_type]
-        except KeyError:
-            raise f"""
+            return ConfigCache.files_configs[file_type]
+        except KeyError as e:
+            raise KeyError(f"""
             Tipologia di file non supportata {file_type}
-            Tipologie supportate: {', '.join(AppCache.file_types)}
+            Tipologie supportate: {', '.join(ConfigCache.file_types)}
             Aggiungere alle specifiche
-            """
+            """) from e
         except Exception as error:
-            raise f"Errore nella lettura del file file_params.json: {error}"
+            raise Exception(f"Errore nella lettura del file file_params.json: {error}")
 
 
-class Curve(object):
+class Curve:
     """
     Identifica una singola curva
 
@@ -256,10 +291,10 @@ class Curve(object):
     def __str__(self):
         return self.name
     def __copy__(self):
-        copy = type(self)(self.name)
-        copy.X = self.X.copy() if self.X is not None else None
-        copy.Y = self.Y.copy() if self.Y is not None else None
-        return copy
+        inst_copy = type(self)(self.name)
+        inst_copy.X = self.X.copy() if self.X is not None else None
+        inst_copy.Y = self.Y.copy() if self.Y is not None else None
+        return inst_copy
 
     @property
     def y_scale(self):
@@ -281,7 +316,6 @@ class Curve(object):
         i_sorted = np.argsort(self.X)
         self.X = self.X[i_sorted]
         self.Y = self.Y[i_sorted]
-        return None
     def integral_affinity(self, curve:'Curve')->float:
         """calcola il rapporto di affinità tra l'istanza e un'altra curva"""
         target_area = curve.integral
@@ -292,7 +326,6 @@ class Curve(object):
         Utile per le curve di occupazione delle trappole, per avere la conduction band a 0
         """
         self.X -= self.X[-1]
-        return None
 
     @staticmethod
     def get_data_scale(values:np.ndarray)->float:
@@ -327,8 +360,6 @@ class FileCurves(FilesFeatures):
         self._curves:dict[str,dict[str,Curve]] = {}
 
     def __deepcopy__(self, memo):
-        import copy
-
         # creo una nuova istanza della classe FileCurves.
         new_inst = self.__class__()
 
@@ -371,12 +402,13 @@ class FileCurves(FilesFeatures):
             raise ValueError("I numeri di curve e di file salvati nell'istanza non uguali")
 
         if set(self._curves.keys()) != set(self.paths):
-            raise ValueError(f"Inconsistenza tra dati e curve")
+            raise ValueError("Inconsistenza tra dati e curve")
 
         return self
 
     @classmethod
     def _from_super(cls, data:FilesFeatures)-> "FileCurves":
+        # pylint disable:protected-access
         if not isinstance(data,FilesFeatures):
             return ValueError("L'argomento passato non è del tipo FileFeatures")
         inst = cls()
@@ -425,6 +457,7 @@ class FileCurves(FilesFeatures):
     @property
     def subdivide(self):
         """Ritorna una lista di oggetti FileCurves, ognuno contenente solo i dati di un file"""
+        # pylint disable:protected-access
         self._validate()
         for f in self._data:
             instance = FileCurves()
@@ -467,12 +500,12 @@ class FileCurves(FilesFeatures):
 
             for _,curve in curves.items():
                 curve.sort()
-                if self.file_type == 'TRAPDATA': curve.translate_till_left()
+                if self.file_type == 'TRAPDATA':
+                    curve.translate_till_left()
 
         except Exception as error:
-            raise f"errore leggendo il file {file_path}: \n\t{error}"
-        else:
-            return curves
+            raise Exception(f"errore leggendo il file {file_path}: \n\t{error}") from error
+        return curves
     def calculate_affinities(self, autosave=False):
         """
         Calcola le affinità delle curve contenute nei file definiti nell'istanza.
@@ -488,6 +521,8 @@ class FileCurves(FilesFeatures):
             print("Questa tipologia di file non supporta il calcolo delle affinità")
             return None
 
+        # pylint disable:protected-access
+
         if not autosave:
             affinities = {}
             for file_features,curves in self.expose_all:
@@ -500,16 +535,17 @@ class FileCurves(FilesFeatures):
                     affinities[file_features["file_path"]][name] = curve.integral_affinity(target._curves[target_path][name])
 
             return affinities
-        else:
-            for file_features,curves in self.expose_all:
 
-                target = self.find_target_file(self.file_type, file_features)
+        #else
+        for file_features,curves in self.expose_all:
 
-                for name,curve in curves.items():
-                    target_path = target._data[0]["file_path"]
-                    file_features[f"aff_{name}"] = curve.integral_affinity(target._curves[target_path][name])
+            target = self.find_target_file(self.file_type, file_features)
 
-            return self._data
+            for name,curve in curves.items():
+                target_path = target._data[0]["file_path"]
+                file_features[f"aff_{name}"] = curve.integral_affinity(target._curves[target_path][name])
+
+        return self._data
     def divide_in_groups(self, grouping_feat:str) -> Generator["FileCurves"]:
         """
         Il metodo, dato un oggetto FileCurves contenente i dati di una certa quantità di file,
@@ -519,6 +555,8 @@ class FileCurves(FilesFeatures):
         NB - con gruppo si intende un dataset in cui i file hanno tutti stesse feature, a meno
         della grouping feature
         """
+        # pylint disable:protected-access
+
         # ottengo istanze FileCurves con solo gli attributi file_type, _data e grouped_by
         out:list[FileCurves] = super().divide_in_groups(grouping_feat)
 
@@ -530,11 +568,9 @@ class FileCurves(FilesFeatures):
     @staticmethod
     def find_target_file(file_type, file_features:dict):
         """Trova il file target corretto tra tutti quelli in cartella e ritorna un'istanza FileCurves contenente i dati"""
-        from app_resources import AppCache
-
         type_configs = FilesFeatures.get_type_configs(file_type)
 
-        target_dir = AppCache.configs.targets_dirs / file_type   # cartella file target
+        target_dir = ConfigCache.app_configs.targets_dirs / file_type   # cartella file target
         if not target_dir.exists():
             raise FileNotFoundError(f"Cartella {str(target_dir)} non trovata")
 
@@ -547,10 +583,14 @@ class FileCurves(FilesFeatures):
         for t_file in target_files:
             if all(token in t_file.stem for token in target_features):
                 return FileCurves.from_paths(t_file)
-        raise f"Non è stato possibile trovare il file target per le curve del file {file_features["file_path"].stem}"
+        raise FileNotFoundError(
+            f"Non è stato possibile trovare il file target per le curve del file {file_features["file_path"].stem}"
+        )
 
 
 if __name__ == '__main__':
+    # pylint disable:reimported
+
     # # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
     # paths = [Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
     #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
@@ -564,7 +604,6 @@ if __name__ == '__main__':
     # prova = FilesFeatures().from_paths(*paths)
     # print(prova.get_grouping_feat())
     # print(prova.grouped_by)
-    from pathlib import Path
 
     paths = [
         Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_-2.csv"),

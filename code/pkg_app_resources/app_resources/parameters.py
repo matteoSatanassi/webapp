@@ -1,11 +1,15 @@
-from pathlib import Path
-import json
+"""
+Il modulo contiene due classi contenenti, il cui compito è leggere, memorizzare,
+modificare e salvare i vari parametri di configurazione dell'applicazione
+"""
 
-from dash.dash_table.FormatTemplate import percentage
+import json
+from pathlib import Path
+from dash import dash_table
 
 
 ## CLASSES ##
-class AppConfigs(object):
+class AppConfigs:
     """
     Legge e modifica i parametri di configurazione dell'applicazione
     """
@@ -13,62 +17,83 @@ class AppConfigs(object):
     targets_dirs = assets_dir / 'target_curves'
     config_file = assets_dir / 'config.json'
 
-    def __init__(self):
-        self.all:dict = self.load_configs()
+    defaults = {"theme": "SUPERHERO",
+                "data_directory": str(Path(__file__).parent.parent.parent.parent / 'data'),
+                "export_directory": str(Path.home() / 'Desktop' / 'exported_files'),
+                "export_format": "png",
+                "legend": True,
+                "colors": True,
+                "DPI": 150,}
 
-    # APP CONFIGS
+    def __init__(self):
+        self._all:dict = self.load_configs()
+
+    # APP CONFIGS GETTERS
     @property
     def export_dir(self)->Path:
-        return Path(self.all["export_directory"])
+        """Ritorna l'indirizzo della directory di esportazione"""
+        return Path(self._all["export_directory"])
     @property
     def export_format(self)->str:
-        return str(self.all["export_format"])
+        """Ritorna il formato di esportazione impostato"""
+        return str(self._all["export_format"])
     @property
     def data_dir(self)->Path:
-        return Path(self.all["data_directory"])
+        """Ritorna l'indirizzo della directory contenente i dati .csv"""
+        return Path(self._all["data_directory"])
     @property
     def theme(self)->str:
-        return self.all["theme"]
+        """Ritorna il nome del tema dell'applicazione"""
+        return self._all["theme"]
     @property
     def legend(self)->bool:
-        return bool(self.all["legend"])
+        """Ritorna bool, se la legenda è visualizzata da impostazioni"""
+        return bool(self._all["legend"])
     @property
     def colors(self)->bool:
-        return bool(self.all["colors"])
+        """Ritorna bool, se i grafici sono impostati come colorati"""
+        return bool(self._all["colors"])
     @property
     def dpi(self)->int:
-        return int(self.all["DPI"])
+        """Ritorna la risoluzione impostata per i grafici"""
+        return int(self._all["DPI"])
 
     # derived
     @property
     def indexes_file(self)->Path:
+        """Ritorna l'indirizzo del file di indicizzazione"""
         return self.data_dir / 'indexes.xlsx'
+
+    # APP CONFIGS SETTERS
+    @export_dir.setter
+    def export_dir(self, val):
+        self._all["export_directory"] = str(val)
+    @export_format.setter
+    def export_format(self, val):
+        self._all["export_format"] = str(val)
+    @data_dir.setter
+    def data_dir(self, val):
+        self._all["data_directory"] = str(val)
+    @theme.setter
+    def theme(self, val):
+        self._all["theme"] = str(val)
+    @legend.setter
+    def legend(self, val):
+        self._all["legend"] = str(val)
+    @colors.setter
+    def colors(self, val):
+        self._all["colors"] = str(val)
+    @dpi.setter
+    def dpi(self, val):
+        self._all["DPI"] = str(val)
 
     def save_all(self):
         """Salva la configurazione aggiornata"""
         with open(self.config_file, 'w', encoding="utf-8") as f:
-            json.dump(self.all, f, indent=4)
-    def set_vals(self, **kwargs):
-        """
-        Imposta uno o più parametri di configurazione e salva.
-
-        I parametri accettati sono le chiavi del dizionario di configurazione:
-
-        * theme (str): Il tema dell'interfaccia. Es: "DARKLY"
-        * data_directory (str): Il percorso alla cartella dei dati.
-        * export_directory (str): Il percorso per l'esportazione dei file.
-        * export_format (str): Il formato di esportazione. Es: "png", "svg"
-        * legend (bool): Se mostrare la legenda nei grafici.
-        * colors (bool): Se usare i colori nei grafici.
-        * DPI (int): La risoluzione per l'esportazione dei grafici.
-
-        Qualsiasi altra chiave passata verrà ignorata e segnalata.
-        """
-        for key, value in kwargs.items():
-            if key in self.all:
-                self.all[key] = value
-            else:
-                raise ValueError("Il valore specificato non è parte dei parametri di configurazione supportati")
+            json.dump(self._all, f, indent=4)
+    def reset_all(self):
+        """Resetta i parametri di configurazione dell'applicazione e salvati in memoria"""
+        self._all = self.defaults.copy()
         self.save_all()
 
     @staticmethod
@@ -78,48 +103,43 @@ class AppConfigs(object):
             with open(AppConfigs.config_file, 'r', encoding="utf-8") as f:
                 return json.load(f)
         else:
-            return {
-                "theme": "SUPERHERO",
-                "data_directory": str(Path(__file__).parent.parent.parent.parent / 'data'),
-                "export_directory": str(Path.home() / 'Desktop' / 'exported_files'),
-                "export_format": "png",
-                "legend": True,
-                "colors": True,
-                "DPI": 150,
-            }
+            return AppConfigs.defaults
 
 
-class FileConfigs(object):
+class FileConfigs:
     """
     Si occupa di leggere e modificare i parametri di configurazione di un certo file_type,
     specificato alla creazione
     """
     files_configs_file = AppConfigs.assets_dir / 'files_configs.json'
 
-    def __init__(self, file_type:str):        
+    def __init__(self, file_type:str):
         self._files_configs = self.load_files_info()
 
         if file_type in self._files_configs:
             self._file_type = file_type
-            self.all = self._files_configs[file_type]
+            self._all = self._files_configs[file_type]
         else:
             raise ValueError("Il file type specificato non è tra quelli supportati")
 
     @property
     def allowed_curves(self)->dict[str,str]:
-        return self.all["AllowedCurves"]
+        """Ritorna il dizionario AllowedCurves {acr:label}"""
+        return self._all["AllowedCurves"]
     @property
     def allowed_features(self)->dict[str,str]:
-        return self.all["AllowedFeatures"]
+        """Ritorna il dizionario AllowedFeatures {feat:feature_type}"""
+        return self._all["AllowedFeatures"]
     @property
     def targets_presents(self)->bool:
-        return bool(self.all["TargetCurves"])
+        """Ritorna se il file_type corrente ha delle curve taget o no"""
+        return bool(self._all["TargetCurves"])
     @property
     def target_features(self)->list[str]:
+        """Ritorna le features secondo cui riconoscere le curve target per i vari esperimenti"""
         if self.targets_presents:
-            return self.all["TargetFeatures"]
-        else:
-            return "No targets present"
+            return self._all["TargetFeatures"]
+        return "No targets present"
     @property
     def get_table_cols(self)->list[str]:
         """
@@ -139,7 +159,6 @@ class FileConfigs(object):
         Ritorna la lista delle colonne da passare al parametro columns
         di un oggetto dash_table
         """
-        from dash import dash_table
 
         columns = [
             {"name": f_name,
@@ -166,18 +185,27 @@ class FileConfigs(object):
         return columns
 
     def modify_curves(self, **kwargs):
+        """
+        Date delle coppie chiave, valore, modifica i valori delle rispettive
+        curve nel dizionario delle AllowedCurves, e lo salva in memoria
+        """
         for key, value in kwargs.items():
-            self.all["AllowedCurves"][str(key)] = str(value)
+            self._all["AllowedCurves"][str(key)] = str(value)
         self.save_all()
     def modify_features(self, **kwargs):
+        """
+        Date delle coppie chiave, valore, modifica i valori delle rispettive
+        features nel dizionario delle AllowedCurves, e lo salva in memoria
+        """
         for key, value in kwargs.items():
-            self.all["AllowedFeatures"][str(key)] = str(value)
+            self._all["AllowedFeatures"][str(key)] = str(value)
         self.save_all()
     def save_all(self):
-        self._files_configs[self._file_type] = self.all
+        """Salva in memoria i parametri di configurazione scritti nell'istanza"""
+        self._files_configs[self._file_type] = self._all
         with open(self.files_configs_file, 'w', encoding="utf-8") as f:
             json.dump(self._files_configs, f, indent=4)
-            
+
     @staticmethod
     def load_files_info()->dict:
         """
@@ -196,6 +224,21 @@ class FileConfigs(object):
         """Ritorna la lista dei file_type supportati dall'applicazione"""
         return list(FileConfigs.load_files_info().keys())
 
+
+## CACHE CLASS ##
+
+# pylint: disable=too-few-public-methods
+class ConfigCache:
+    """
+    La classe si occupa di raggruppare i parametri di configurazione dell'applicazione
+    """
+    app_configs = AppConfigs()
+
+    file_types: list[str] = FileConfigs.supported_file_types()
+
+    files_configs: dict[str, FileConfigs] = {}
+    for file_type in file_types:
+        files_configs[file_type] = FileConfigs(file_type)
 
 if __name__ == '__main__':
     print(FileConfigs.load_files_info())

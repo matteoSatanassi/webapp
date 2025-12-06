@@ -1,5 +1,10 @@
+"""
+Il modulo contiene tutte le funzioni callback che agiscono sul tab principale con la tabella
+"""
+
 from dash import Input, Output, State, callback, MATCH, no_update, dcc
 from app_elements.callbacks._helper_funcs import update_table
+from app_resources.AppCache import GLOBAL_CACHE
 
 
 ## DYNAMIC CALLBACKS ##
@@ -7,7 +12,8 @@ from app_elements.callbacks._helper_funcs import update_table
 callback([
     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'data'),
     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'hidden_columns'),
-    Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'selected_rows', allow_duplicate=True)],
+    Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'selected_rows',
+           allow_duplicate=True)],
     Input({'page':MATCH, 'item':'radio-table-mode', 'location':'dashboard'}, 'value'),
     [State({'page':MATCH, 'item':'menu-grouping-features', 'location':'dashboard'}, 'value'),
     State({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'hidden_columns'),
@@ -23,25 +29,27 @@ callback([
     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'selected_rows'),
     Output({'page': MATCH, 'item': 'main-tabs'}, 'active_tab')],
     Input({'page': MATCH, 'item': 'button-plot'}, 'n_clicks'),
-    [State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'derived_virtual_selected_rows'),
+    [State({'page': MATCH, 'item': 'table', 'location': 'dashboard'},
+           'derived_virtual_selected_rows'),
     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'derived_virtual_data'),
     State({'page': MATCH, 'item': 'graph-tabs'}, 'children'),
 ])
 def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, tabs:list[dcc.Tab]):
     """
-    Aggiorna la lista dei tab al click del bottone, in base agli esperimenti selezionati nella tabella,
+    Aggiorna la lista dei tab al click del bottone,
+    in base agli esperimenti selezionati nella tabella,
     e alla modalità di visualizzazione selezionata.
 
-    I nuovi dati dei tab sono salvati nella memoria cache, CACHE_GLOBAL
+    I nuovi dati dei tab sono salvati nella memoria cache,
+    CACHE_GLOBAL
 
-    :return: la lista dei tab aggiornata, azzera la lista delle righe selezionate e imposta il tab da
-    visualizzare dopo la callback
+    :return: la lista dei tab aggiornata, azzera la lista
+        delle righe selezionate e imposta il tab da
+        visualizzare dopo la callback
     """
     tabs = tabs or []
     if not n_clicks or not selected_rows:
         return no_update,no_update,no_update,no_update
-
-    from app_resources.AppCache import GLOBAL_CACHE
 
     open_tabs = [tab['props']['value'] for tab in tabs]
 
@@ -57,8 +65,10 @@ def add_tabs(n_clicks:int, selected_rows:list[int], table_data:dict, tabs:list[d
 
 
 @callback(
-    [Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'data', allow_duplicate=True),
-     Output({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'hidden_columns', allow_duplicate=True)],
+    [Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'data',
+            allow_duplicate=True),
+     Output({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'hidden_columns',
+            allow_duplicate=True)],
     Input({'page': MATCH, 'item': 'button-calculate-affinity'}, 'n_clicks'),
     [State({'page': MATCH, 'item': 'table', 'location':'dashboard'}, 'id'),
      State({'page':MATCH, 'item':'radio-table-mode', 'location':'dashboard'}, 'value'),

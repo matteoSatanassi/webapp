@@ -1,3 +1,6 @@
+from app_elements.page_elements import get_table
+from dash import no_update
+
 ## COMMON CALLBACKS ##
 def update_table(mode:str,
                  grouping_feature:str,
@@ -14,9 +17,6 @@ def update_table(mode:str,
     :param table_id:
     :return:
     """
-    from app_elements.page_elements import get_table
-    from dash import no_update
-
     try:
         page = table_id['page']
     except KeyError:

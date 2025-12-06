@@ -1,7 +1,7 @@
 import pandas as pd
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
-from app_resources import GLOBAL_CACHE as GC
+from app_resources.AppCache import GLOBAL_CACHE as GC
 
 
 ## PAGE ELEMENTS ##

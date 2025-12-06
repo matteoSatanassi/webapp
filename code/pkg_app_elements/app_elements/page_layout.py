@@ -1,7 +1,7 @@
 from app_elements.page_elements import *
+from app_resources.AppCache import GLOBAL_CACHE
 
 def layout(PAGE:str):
-    from app_resources import GLOBAL_CACHE
     ## PARAMS ##
     targets_present = GLOBAL_CACHE.files_configs[PAGE].targets_presents
 

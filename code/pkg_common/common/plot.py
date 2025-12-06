@@ -1,9 +1,14 @@
+"""
+Il modulo implementa la classe principale utilizzata per le funzioni di plotting dei dati,
+nonché la funzione semplificata per il plotting dei dati contenuti nei tab
+"""
+
 from common.classes import FileCurves, Curve
 import plotly.graph_objects as go
 
 
 ## PARAMS ##
-class PlotterConfigs(object):
+class PlotterConfigs:
     default_marker = "square"
     def __init__(self, file_type:str):
         cfg = self.load_plotter_configs()
