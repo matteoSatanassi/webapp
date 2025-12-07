@@ -4,7 +4,7 @@ Il modulo contiene tutte le funzioni callback che agiscono sul tab principale co
 
 from dash import Input, Output, State, callback, MATCH, no_update, dcc
 from app_elements.callbacks._helper_funcs import update_table
-from app_resources.AppCache import GLOBAL_CACHE,TableCache
+from app_resources.AppCache import GLOBAL_CACHE
 
 
 ## DYNAMIC CALLBACKS ##
@@ -85,15 +85,13 @@ def affinity_calc(n_clicks:int, table_id:dict, mode:str, grouping_feature:str):
     if not n_clicks:
         return no_update, no_update
 
-    from app_resources.AppCache import GLOBAL_CACHE
-
     file_type = table_id['page']
-    page_df_out = GLOBAL_CACHE.tables[file_type].calculate_affinities()
+    page_df_out = GLOBAL_CACHE.tables.calculate_affinities(file_type)
 
     if mode=="normal":
-        cols_to_hide = TableCache.cols_to_hide(page_df_out)
+        cols_to_hide = GLOBAL_CACHE.tables.cols_to_hide(page_df_out)
     elif mode=="grouped":
-        page_df_out, cols_to_hide = GLOBAL_CACHE.tables[file_type].group_df(grouping_feature)
+        page_df_out, cols_to_hide = GLOBAL_CACHE.tables.group_df(file_type, grouping_feature)
     else:
         raise ValueError(f"Il valore passato dal radio selector [{mode}], non è tra quelli supportati")
 

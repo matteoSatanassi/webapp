@@ -13,43 +13,46 @@ from common import *  # non è un wildcard import, mi serve tutto
 
 
 ## CLASS ##
-class TableCache:
+class TablesCache:
     """
     La classe contiene tutti i dati e i metodi riguardanti le tabelle di indicizzazione,
     la loro manipolazione e il loro salvataggio in memoria
     """
-    def __init__(self, file_type:str):
-        if not file_type in ConfigCache.file_types:
-            raise ValueError(f"File type {file_type} non riconosciuto")
+    def __init__(self):
 
-        if not ConfigCache.app_configs.indexes_file.exists():
-            self.index_data_dir()
+        self.index_data_dir()
 
-        self.file_type = file_type
-        try:
-            self._table = self.add_overall_aff(
-                pd.read_excel(ConfigCache.app_configs.indexes_file,
-                              sheet_name=file_type)
-            )
-        except Exception as e:
-            raise FileNotFoundError(f"la pagina {file_type} non è compare tra le disponibili") from e
+        self._tables:dict[str,pd.DataFrame] = {}
+        for file_type in ConfigCache.file_types:
+            try:
+                self._tables[file_type] = self.add_overall_aff(
+                    pd.read_excel(ConfigCache.app_configs.indexes_file,
+                                  sheet_name=file_type)
+                )
+            except ValueError:
+                print(f"{file_type} non è compare tra le pagine di indicizzazione")
+                pass
+            except Exception as e:
+                raise Exception("Errore costruzione TablesCache") from e
 
 
-    def _save_table(self):
-        """Salva il df del file_type specificato nel file degli indici"""
+    def _save_tables(self):
+        """Salva i df in memoria nel file di indicizzazione"""
         try:
             with pd.ExcelWriter(ConfigCache.app_configs.indexes_file) as writer:
-                self._table.to_excel(writer, sheet_name=self.file_type, index=False)
+                for file_type, table in self._tables.items():
+                    table.to_excel(writer, sheet_name=file_type, index=False)
         except Exception as e:
-            raise Exception(f"Errore nel salvataggio della tabella {self.file_type}") from e
+            raise Exception("Errore nel salvataggio delle tabelle") from e
         print("Salvataggio riuscito")
 
-    @property
-    def table(self):
-        return self._table.copy()
+    def get(self, file_type:str) -> pd.DataFrame:
+        """Ritorna una copia della tabella del file_type specificato"""
+        return self._tables[file_type].copy()
 
     # noinspection PyIncorrectDocstring
     def group_df(self,
+                 file_type:str,
                  grouping_feature: str,
                  only_df=False) -> tuple[pd.DataFrame, list[str]]:
         """
@@ -61,12 +64,15 @@ class TableCache:
         :param only_df: Boolean, se True ritorna il solo df raggruppato, altrimenti anche
             la lista delle colonne da nascondere
         """
-        if grouping_feature not in self._table.columns:
+        if file_type not in self._tables:
+            raise ValueError(f"File type {file_type} non esistente in memoria")
+
+        if grouping_feature not in self._tables[file_type].columns:
             raise ValueError(
                 f"La feature di raggruppamento {grouping_feature} non appare tra quelle supportate"
             )
 
-        df = self._table.copy()
+        df:pd.DataFrame = self.get(file_type)
 
         # ricavo le colonne da nascondere
         cols_to_hide = set(self.cols_to_hide(df))
@@ -86,8 +92,8 @@ class TableCache:
         df_out["file_path"] = groups["file_path"].agg(lambda x: "#".join(map(str, x))).values
 
         # Calcolo medie delle colonne affinità se presenti
-        if ConfigCache.files_configs[self.file_type].targets_presents:
-            for curve in ConfigCache.files_configs[self.file_type].allowed_curves:
+        if ConfigCache.files_configs[file_type].targets_presents:
+            for curve in ConfigCache.files_configs[file_type].allowed_curves:
                 aff_col = f"aff_{curve}"
                 if aff_col in df.columns:
                     df_out[aff_col] = groups[aff_col].mean().values
@@ -98,11 +104,11 @@ class TableCache:
 
         return df_out, list(cols_to_hide)
 
-    def calculate_affinities(self) -> pd.DataFrame:
+    def calculate_affinities(self, file_type:str) -> pd.DataFrame:
         """Dato un file_type, calcola le affinità delle
         curve indicizzate nella relativa tabella"""
 
-        df = self._table
+        df:pd.DataFrame = self._tables[file_type]
 
         feature_cols = [col for col in df.columns if "aff_" not in col]
 
@@ -115,21 +121,22 @@ class TableCache:
         )
         df.loc[:,'file_path'] = df['file_path'].astype(str)
 
-        self._table = df.copy()
+        self._tables[file_type] = df.copy()
 
         # salvo il nuovo df in memoria
-        self._save_table()
+        self._save_tables()
 
-        return self.table
+        return df
 
-    def get_table_no_aff(self)->pd.DataFrame:
+    def get_table_no_aff(self, file_type:str)->pd.DataFrame:
         """
-        Ritorna la tabella del file_type specificato senza le colonne delle affinità.
+        Ritorna una copia della tabella del file_type specificato
+        senza le colonne delle affinità.
 
         Utile per le operazioni con FileCurves e FileFeatures.
         """
 
-        df = self.table
+        df = self.get(file_type)
         allowed_cols = [col for col in df.columns if "aff_" not in col]
 
         return df[allowed_cols].reset_index(drop=True)
@@ -193,7 +200,7 @@ class SingleTabCache:
         costruisce la corrispondente classe tab
         """
         data = FileCurves().from_paths(
-            *TableCache.explode_group_paths(paths_val)
+            *TablesCache.explode_group_paths(paths_val)
         )
         # controllo che i dati contengano un gruppo,
         # e nel caso aggiungo la feature di raggruppamento
@@ -343,7 +350,7 @@ class AppCache(ConfigCache):
     La classe si occupa di contenere le istanze di tutte le classi di cache mem.
     """
 
-    tables = {file_type:TableCache(file_type) for file_type in ConfigCache.file_types}
+    tables = TablesCache()
 
     open_tabs = {file_type:OpenTabsCache(file_type) for file_type in ConfigCache.file_types}
 
@@ -354,12 +361,12 @@ class AppCache(ConfigCache):
 
         Se la lista contiene un solo elemento ritorna cmq una lista con quell'unico elemento
         """
-        return TableCache.explode_group_paths(string)
+        return TablesCache.explode_group_paths(string)
 
     @staticmethod
     def index_data_dir():
         """Richiama la funzione di indicizzazione sulla directory dei dati"""
-        TableCache.index_data_dir()
+        TablesCache.index_data_dir()
 
     @staticmethod
     def find_export_path() -> Path:

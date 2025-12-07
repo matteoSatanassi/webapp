@@ -1,4 +1,4 @@
-from dash import register_page
+from dash import register_page, dcc, html
 from app_elements.callbacks.ConfigPage_cbks import *
 
 register_page(__name__, path='/configs', title='Configs')

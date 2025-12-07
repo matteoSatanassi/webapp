@@ -131,7 +131,7 @@ def export_selected(n_clicks:int, table_id:dict[str,str], selected_rows:list[int
         figs:list[CustomFigure] = []
         for row in selected_rows:
             path_list = GLOBAL_CACHE.explode_group_paths(row['file_path'])
-            group_df = GLOBAL_CACHE.tables[file_type].get_table_no_aff()
+            group_df = GLOBAL_CACHE.tables.get_table_no_aff(file_type)
             group_df = group_df[group_df['file_path'].isin(path_list)]
 
             figs.append(

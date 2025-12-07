@@ -1,7 +1,7 @@
 import pandas as pd
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
-from app_resources.AppCache import GLOBAL_CACHE, TableCache
+from app_resources.AppCache import GLOBAL_CACHE, TablesCache
 
 
 ## PAGE ELEMENTS ##
@@ -165,11 +165,11 @@ def custom_spinner(message:str=""):
 def export_modal(modal_id:dict[str,str])->dbc.Modal:
     """Crea una finestra pop-up in cui selezionare le curve da esportare e i parametri di esportazione"""
     try:
-        page = modal_id['page']
+        file_type = modal_id['page']
     except KeyError:
         raise KeyError("Valore di pagina non specificato nell'id")
 
-    type_configs = GLOBAL_CACHE.files_configs[page]
+    type_configs = GLOBAL_CACHE.files_configs[file_type]
 
     curves_checklist_opt = [
         {
@@ -184,7 +184,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
 
         dbc.ModalBody(
             dcc.Loading(
-                id={'page': page, 'item': 'modal-loading'},
+                id={'page': file_type, 'item': 'modal-loading'},
                 custom_spinner=custom_spinner("Esportando!"),
                 overlay_style={"visibility": "visible", "filter": "blur(2px)"},
                 delay_show=700,
@@ -192,16 +192,16 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                 children=[
                     # serve come target delle callback, nel caso non ne avessero nel modal, per
                     # attivare il loading
-                    dcc.Store(id={'page': page, 'item': 'store-placeholder-modal'}),
+                    dcc.Store(id={'page': file_type, 'item': 'store-placeholder-modal'}),
 
                     dbc.Container([
                         # Riga 1: Tabella e selezione impostazioni esportazione
                         dbc.Row([
                             # Colonna con tabella, mode selector
                             dbc.Col([
-                                grouping_selector({'page':page, 'item':'radio-mode-toggle', 'location':'modal'}),
+                                grouping_selector({'page':file_type, 'item':'radio-mode-toggle', 'location':'modal'}),
                                 html.Div(
-                                    my_table_template({'page':page, 'item':'table', 'location':'modal'}),
+                                    my_table_template({'page':file_type, 'item':'table', 'location':'modal'}),
                                     style={"overflow-y": "auto"}
                                 )
                             ],
@@ -215,7 +215,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                                     dbc.CardHeader("📈 Curve da Esportare"),
                                     dbc.CardBody(
                                         dbc.Checklist(
-                                            id={'page':page, 'item':'checklist-curves', 'location':'modal'},
+                                            id={'page':file_type, 'item':'checklist-curves', 'location':'modal'},
                                             options=curves_checklist_opt,
                                             value=[curve['value'] for curve in curves_checklist_opt],
                                             inline=False,
@@ -233,7 +233,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                                     dbc.CardBody([
                                         # Legenda
                                         dbc.Checklist(
-                                            id={'page':page, 'item':'check-legend', 'location':'modal'},
+                                            id={'page':file_type, 'item':'check-legend', 'location':'modal'},
                                             options=[
                                                 {"label": "Mostra Legenda", "value": "show_legend"}
                                             ],
@@ -244,13 +244,13 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
 
                                         # Colori
                                         dbc.Checklist(
-                                            id={'page':page, 'item':'check-colors', 'location':'modal'},
+                                            id={'page':file_type, 'item':'check-colors', 'location':'modal'},
                                             options=[
                                                 {"label": "Grafico a Colori", "value": "colors"}
                                             ],
                                             value=["colors"],
                                             switch=True,
-                                            style={"margin-bottom": "15px", 'display': 'none' if page=='TrapData' else 'inline-block'}
+                                            style={"margin-bottom": "15px", 'display': 'none' if file_type=='TRAPDATA' else 'inline-block'}
                                         ),
 
                                         # DPI
@@ -261,7 +261,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                                             ),
                                             dbc.Col(
                                                 dcc.Dropdown(
-                                                    id={'page':page, 'item':'selector-dpi', 'location':'modal'},
+                                                    id={'page':file_type, 'item':'selector-dpi', 'location':'modal'},
                                                     options=[
                                                         {"label": "72 DPI (Bassa)", "value": 72},
                                                         {"label": "150 DPI (Media)", "value": 150},
@@ -287,7 +287,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                                             ),
                                             dbc.Col(
                                                 dcc.Dropdown(
-                                                    id={'page':page, 'item':'selector-format', 'location':'modal'},
+                                                    id={'page':file_type, 'item':'selector-format', 'location':'modal'},
                                                     options=[
                                                         {"label": "PNG", "value": "png"},
                                                         {"label": "SVG", "value": "svg"},
@@ -340,14 +340,14 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
 
         dbc.ModalFooter([
             dbc.Button(
-                "❌ Annulla", id={'page':page, 'item':'button-close-modal'}, color="secondary", class_name="me-2", n_clicks=0
+                "❌ Annulla", id={'page':file_type, 'item':'button-close-modal'}, color="secondary", class_name="me-2", n_clicks=0
             ),
             dbc.Button(
-                "☑️ Seleziona tutti", id={'page':page, 'item':'button-select-all'}, color="info", n_clicks=0
+                "☑️ Seleziona tutti", id={'page':file_type, 'item':'button-select-all'}, color="info", n_clicks=0
             ),
             html.Div(style={'flex':'1'}),
             dbc.Button(
-                "💾 Esporta Selezionati", id={'page':page, 'item':'button-export'}, color="primary", disabled=True, n_clicks=0
+                "💾 Esporta Selezionati", id={'page':file_type, 'item':'button-export'}, color="primary", disabled=True, n_clicks=0
             )
 
         ])
@@ -385,12 +385,12 @@ def get_table(table_id:dict[str,str],
     columns = type_configs.get_dash_table_cols
 
     if not grouping_feat:
-        data = GLOBAL_CACHE.tables[file_type].table
+        data = GLOBAL_CACHE.tables.get(file_type)
 
         # nasconderò le colonne vuote e la colonna dei file_path
-        cols_to_hide = TableCache.cols_to_hide(data)
+        cols_to_hide = TablesCache.cols_to_hide(data)
     else:
-        data, cols_to_hide = GLOBAL_CACHE.tables[file_type].group_df(grouping_feat)
+        data, cols_to_hide = GLOBAL_CACHE.tables.group_df(file_type, grouping_feat)
 
     # riempio le celle vuote con un trattino placeholder
     data.fillna("-")

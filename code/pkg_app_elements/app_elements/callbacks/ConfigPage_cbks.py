@@ -5,7 +5,7 @@ sulla pagina Config dell'applicazione
 
 import time
 from pathlib import Path
-from dash import dcc, html, Input, Output, State, callback, no_update
+from dash import Input, Output, State, callback, no_update
 from dash_bootstrap_templates import ThemeChangerAIO
 import dash_bootstrap_components as dbc
 from app_elements.page_elements import custom_spinner
@@ -15,7 +15,7 @@ from app_resources.AppCache import GLOBAL_CACHE
 ## CALLBACKS ##
 @callback(
     [Output("config-export-path", "value"),
-    Output("config-data-path", "value", allow_duplicate=True),
+    Output("config-data-path", "value"),
     Output("config-export-format", "value"),
     Output("config-theme", "value"),
     Output("current-theme", "data"),
@@ -24,7 +24,6 @@ from app_resources.AppCache import GLOBAL_CACHE
     Output("config-DPI-selector", "value"),
     Output("initial-config-loaded", "data")],
     Input("initial-config-loaded", "data"),
-    prevent_initial_call=True
 )
 def initialize_config_values(is_loaded):
     """Inizializza i valori della pagina e non permette ulteriori aggiornamenti"""
@@ -104,7 +103,7 @@ def save(n_clicks:int, data_path:str, export_path:str, export_format:str,
     [Output("main-loading", "custom_spinner", allow_duplicate=True),
      Output("current-theme", "data", allow_duplicate=True),
      Output("config-export-path", "value", allow_duplicate=True),
-     Output("config-data-path", "value"),
+     Output("config-data-path", "value", allow_duplicate=True),
      Output("config-export-format", "value", allow_duplicate=True),
      Output("config-theme", "value", allow_duplicate=True),
      Output("config-legend-colors-checklist", "value", allow_duplicate=True),
