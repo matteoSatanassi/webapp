@@ -53,28 +53,29 @@ def initialize_config_values(is_loaded):
 
 @callback(
     [Output("main-loading", "custom_spinner"),
-    Output("current-theme", "data", allow_duplicate=True),
-    Output(ThemeChangerAIO.ids.radio("theme"), "value", allow_duplicate=True)],
+     Output("current-theme", "data", allow_duplicate=True),
+     Output(ThemeChangerAIO.ids.radio("theme"), "value", allow_duplicate=True),
+     Output("store-trigger-refresh", "data", allow_duplicate=True),],
     Input("save-config-button", "n_clicks"),
     [State("config-data-path", "value"),
-    State("config-export-path", "value"),
-    State("config-export-format", "value"),
-    State("config-theme", "value"),
-    State("config-legend-colors-checklist", "value"),
-    State("config-DPI-selector", "value")],
+     State("config-export-path", "value"),
+     State("config-export-format", "value"),
+     State("config-theme", "value"),
+     State("config-legend-colors-checklist", "value"),
+     State("config-DPI-selector", "value")],
     prevent_initial_call=True
 )
 def save(n_clicks:int, data_path:str, export_path:str, export_format:str,
          theme:str, legend_colors:list, dpi:int):
     """Salva i parametri di configurazione visualizzata nella pagina ConfigPage"""
     if not n_clicks:
-        return no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update
 
     try:
         export_path = Path(export_path)
     except (OSError, ValueError):
         return (custom_spinner("Export path non valido"),
-                no_update, no_update)
+                no_update, no_update, no_update)
 
     try:
         data_path = Path(data_path)
@@ -82,9 +83,13 @@ def save(n_clicks:int, data_path:str, export_path:str, export_format:str,
             raise ValueError
     except (OSError, ValueError):
         return (custom_spinner("Data path non valido"),
-                no_update, no_update)
+                no_update, no_update, no_update)
 
     configs = GLOBAL_CACHE.app_configs
+
+    refresh_flag = False
+    if configs.data_dir!=data_path:
+        refresh_flag=True
 
     configs.theme = theme
     configs.data_dir = data_path
@@ -97,7 +102,8 @@ def save(n_clicks:int, data_path:str, export_path:str, export_format:str,
     configs.save_all()
 
     return (custom_spinner("Impostazioni Salvate!"),
-            theme, getattr(dbc.themes, theme))
+            theme, getattr(dbc.themes, theme),
+            refresh_flag)
 
 @callback(
     [Output("main-loading", "custom_spinner", allow_duplicate=True),
@@ -107,17 +113,23 @@ def save(n_clicks:int, data_path:str, export_path:str, export_format:str,
      Output("config-export-format", "value", allow_duplicate=True),
      Output("config-theme", "value", allow_duplicate=True),
      Output("config-legend-colors-checklist", "value", allow_duplicate=True),
-     Output("config-DPI-selector", "value", allow_duplicate=True)],
+     Output("config-DPI-selector", "value", allow_duplicate=True),
+     Output("store-trigger-refresh", "data", allow_duplicate=True)],
     Input("reset-config-button", "n_clicks"),
     prevent_initial_call=True
 )
 def reset(n_clicks):
     if not n_clicks:
-        return (no_update, no_update, no_update, no_update,
-                no_update, no_update, no_update)
+        return (no_update, no_update, no_update, no_update, no_update,
+                no_update, no_update, no_update, no_update)
 
     configs = GLOBAL_CACHE.app_configs
+    data_dir = configs.data_dir
     configs.reset_all()
+
+    refresh_flag = False
+    if configs.data_dir!=data_dir:
+        refresh_flag = True
 
     legend_colors = []
     if configs.legend:
@@ -126,8 +138,14 @@ def reset(n_clicks):
         legend_colors.append("colors")
 
     return (custom_spinner("Impostazioni Resettate!"),
-            configs.theme, str(configs.export_dir), str(configs.data_dir),
-            configs.export_format, configs.theme, legend_colors, configs.dpi)
+            configs.theme,
+            str(configs.export_dir),
+            str(configs.data_dir),
+            configs.export_format,
+            configs.theme,
+            legend_colors,
+            configs.dpi,
+            refresh_flag)
 
 
 @callback(

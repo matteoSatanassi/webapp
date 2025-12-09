@@ -1,3 +1,7 @@
+"""
+Il modulo contiene le definizioni di alcuni elementi che compaiono all'interno dell'applicazione
+"""
+
 import pandas as pd
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
@@ -200,6 +204,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                             # Colonna con tabella, mode selector
                             dbc.Col([
                                 grouping_selector({'page':file_type, 'item':'radio-mode-toggle', 'location':'modal'}),
+
                                 html.Div(
                                     my_table_template({'page':file_type, 'item':'table', 'location':'modal'}),
                                     style={"overflow-y": "auto"}

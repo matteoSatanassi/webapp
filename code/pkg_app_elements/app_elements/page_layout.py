@@ -1,12 +1,36 @@
+"""
+Il modulo definisce le funzioni per la creazione automatica
+di layout delle diverse pagine
+"""
+
 from app_elements.page_elements import *
 from app_resources.AppCache import GLOBAL_CACHE
 
-def layout(PAGE:str):
+def layout(file_type:str):
+    """Crea automaticamente il layout delle pagine richieste"""
+    return dbc.Container(
+        children=children_layout(file_type),
+        id={'page':file_type, 'item':'container-ALL'},
+        fluid=True,
+        className='dashboard py-4',
+        style={
+            'backgroundColor': 'var(--bs-light, #f8f9fa)',
+            'minHeight': '100vh'
+        }
+    )
+
+def children_layout(PAGE:str):
+    """La funzione crea il dato children del Container della pagina richiesta"""
+
+    if PAGE not in GLOBAL_CACHE.supported_file_types:
+        return []
+
     ## PARAMS ##
     targets_present = GLOBAL_CACHE.files_configs[PAGE].targets_presents
 
     ## LAYOUT ELEMS ##
-    table_tab = dbc.Tab([
+    table_tab = dbc.Tab(
+        children=[
         dbc.Row([
             dbc.Col([
                 # Card per la tabella
@@ -14,7 +38,7 @@ def layout(PAGE:str):
                     dbc.CardHeader([
                         html.H5("📋 Esperimenti Disponibili", className="mb-0"),
                         html.Small("Seleziona gli esperimenti da analizzare",
-                                    style={'color': '#6c757d'})
+                                   style={'color': '#6c757d'})
                     ], className="py-2 bg-info"),
                     dbc.CardBody([
                         # Opzioni di visualizzazione
@@ -28,7 +52,8 @@ def layout(PAGE:str):
                                 children=my_table_template({'page':PAGE, 'item':'table', 'location':'dashboard'}),
                                 custom_spinner=custom_spinner(),
                                 overlay_style={"visibility": "visible", "filter": "blur(2px)"},
-                                delay_show=500,  # aspetta mezzo secondo prima di mostrare lo spinner
+                                delay_show=800,  # aspetta mezzo secondo prima di mostrare lo spinner
+                                delay_hide=200
                             ),
                             style={
                                 'overflowY': 'auto',
@@ -81,13 +106,15 @@ def layout(PAGE:str):
         label="📋 Tabella Esperimenti", tab_id="tab-table"
     )
 
-    graphs_tab = dbc.Tab([
+    graphs_tab = dbc.Tab(
+        children=[
         dcc.Loading(
             id={'page':PAGE, 'item':'loading-graph-tab'},
             fullscreen=True,
             custom_spinner=custom_spinner("Esportando!"),
             overlay_style={"visibility": "visible", "filter": "blur(2px)"},
-            delay_show=500, # aspetta mezzo secondo prima di mostrare lo spinner
+            delay_show=800,
+            delay_hide=200,
             children=[
                 # Questo store serve da output per callback che non ne hanno,
                 # in modo da attivare lo spinner di loading (es. Quando esporto il grafico corrente)
@@ -173,27 +200,19 @@ def layout(PAGE:str):
         label="📈 Grafici", tab_id="tab-graphs"
     )
 
-    ## LAYOUT ##
-    page_layout = dbc.Container(
-        [
-        # TABS PRINCIPALI
-        dbc.Tabs([
-            # TAB 1: VISUALIZZAZIONE TABELLA
-            table_tab,
+    ## CHILDREAN LAYOUT ##
+    children = [
+            # TABS PRINCIPALI
+            dbc.Tabs([
+                # TAB 1: VISUALIZZAZIONE TABELLA
+                table_tab,
 
-            # TAB 2: VISUALIZZAZIONE GRAFICI
-            graphs_tab,
-        ], id={'page':PAGE, 'item':'main-tabs'}, active_tab="tab-table",),
+                # TAB 2: VISUALIZZAZIONE GRAFICI
+                graphs_tab,
+            ], id={'page':PAGE, 'item':'main-tabs'}, active_tab="tab-table",),
 
-        # MODAL ESPORTAZIONE
-        export_modal({'page':PAGE, 'item':'modal'}),
-        ],
-        fluid=True,
-        className='dashboard py-4',
-        style={
-            'backgroundColor': 'var(--bs-light, #f8f9fa)',
-            'minHeight': '100vh'
-        }
-    )
+            # MODAL ESPORTAZIONE
+            export_modal({'page':PAGE, 'item':'modal'}),
+        ]
 
-    return page_layout
+    return children
