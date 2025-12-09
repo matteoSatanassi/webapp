@@ -14,7 +14,7 @@ class AppConfigs:
     Legge e modifica i parametri di configurazione dell'applicazione
     """
     assets_dir = Path(__file__).resolve().parent / 'assets'
-    targets_dirs = assets_dir / 'target_curves'
+    targets_dirs = assets_dir.parent.parent.parent.parent / 'target_curves'
     config_file = assets_dir / 'config.json'
 
     defaults = {"theme": "SUPERHERO",
@@ -243,4 +243,4 @@ class ConfigCache:
         files_configs[file_type] = FileConfigs(file_type)
 
 if __name__ == '__main__':
-    print(FileConfigs.load_files_info())
+    print(AppConfigs.targets_dirs.exists())

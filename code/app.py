@@ -6,7 +6,7 @@ from app_resources.AppCache import GLOBAL_CACHE
 
 app = Dash(
     __name__,
-    assets_folder='assets',
+    assets_folder='_assets',
     external_stylesheets=[getattr(dbc.themes, GLOBAL_CACHE.app_configs.theme)],
     use_pages=True,
     # suppress_callback_exceptions=True
