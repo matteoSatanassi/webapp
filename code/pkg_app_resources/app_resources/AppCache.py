@@ -23,18 +23,25 @@ class TablesCache:
         self.index_data_dir()
 
         self._tables:dict[str,pd.DataFrame] = {}
+        self._not_presents:set[str] = set()
         for file_type in ConfigCache.file_types:
             try:
-                self._tables[file_type] = self.add_overall_aff(
-                    pd.read_excel(ConfigCache.app_configs.indexes_file,
-                                  sheet_name=file_type)
-                )
-            except ValueError:
-                print(f"{file_type} non è compare tra le pagine di indicizzazione")
-                pass
+                self._tables[file_type] = pd.read_excel(
+                    ConfigCache.app_configs.indexes_file,
+                    sheet_name=file_type)
             except Exception as e:
-                raise Exception("Errore costruzione TablesCache") from e
+                print(
+                    f"""
+                    Errore costruzione TablesCache
+                    file_type: {file_type}
+                    error: {e}
+                """)
+                self._not_presents.add(file_type)
 
+    @property
+    def not_presents(self):
+        """Ritorna un set dei file_type non indicizzati"""
+        return self._not_presents
 
     def _save_tables(self):
         """Salva i df in memoria nel file di indicizzazione"""
@@ -334,6 +341,11 @@ class OpenTabsCache:
             raise ValueError(f"Il tab {paths_val} non compare tra quelli aperti")
         return self._tabs[paths_val].save_figure()
 
+    def close_all_tabs(self):
+        """Elimina tutti i tab aperti dalla memoria"""
+        for paths_val in self.tabs_values:
+            self.del_tab(paths_val)
+
     @property
     def tabs_values(self):
         """
@@ -353,6 +365,19 @@ class AppCache(ConfigCache):
     tables = TablesCache()
 
     open_tabs = {file_type:OpenTabsCache(file_type) for file_type in ConfigCache.file_types}
+
+    @property
+    def supported_file_types(self):
+        """Ritorna un set contenenti file_types per cui è stato possibile leggere i dati"""
+        return self.file_types - self.tables.not_presents
+
+    def refresh(self):
+        """Richiama le operazioni di aggiornamento sugli attributi della classe"""
+
+        self.tables = TablesCache()
+
+        for tabs in self.open_tabs.values():
+            tabs.close_all_tabs()
 
     @staticmethod
     def explode_group_paths(string: str):
@@ -387,6 +412,8 @@ class AppCache(ConfigCache):
 # L'istanza è immediatamente disponibile per chiunque importi 'app_resources'.
 # Nota: La classe AppCache contiene l'istanza di AppConfigs e le istanze di FileConfigs.
 GLOBAL_CACHE = AppCache()
+
+# print(GLOBAL_CACHE.tables.get("TRAPDATA"))
 
 
 ## HELPER FUNCS ##

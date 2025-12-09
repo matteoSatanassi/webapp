@@ -94,6 +94,8 @@ class AppConfigs:
     def reset_all(self):
         """Resetta i parametri di configurazione dell'applicazione e salvati in memoria"""
         self._all = self.defaults.copy()
+        if not self.data_dir.exists():
+            self.data_dir.mkdir(parents=True)
         self.save_all()
 
     @staticmethod
@@ -220,9 +222,9 @@ class FileConfigs:
         else:
             return {}
     @staticmethod
-    def supported_file_types()->list[str]:
+    def supported_file_types()->set[str]:
         """Ritorna la lista dei file_type supportati dall'applicazione"""
-        return list(FileConfigs.load_files_info().keys())
+        return set(FileConfigs.load_files_info().keys())
 
 
 ## CACHE CLASS ##
@@ -234,7 +236,7 @@ class ConfigCache:
     """
     app_configs = AppConfigs()
 
-    file_types: list[str] = FileConfigs.supported_file_types()
+    file_types: set[str] = FileConfigs.supported_file_types()
 
     files_configs: dict[str, FileConfigs] = {}
     for file_type in file_types:

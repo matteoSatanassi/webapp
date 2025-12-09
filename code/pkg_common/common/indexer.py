@@ -56,16 +56,13 @@ def indexer(data_directory:str|Path):
     :param data_directory:
     :return:
     """
-    # config params
-    # files_configs = load_files_info()
-
     # params
     data_directory = Path(data_directory)
     excel_indexes_file = data_directory / "indexes.xlsx"
 
-    files_set = set(data_directory.glob("*.csv"))
-    files_data_list = []
+    files_set = set(str(p) for p in data_directory.glob("*.csv"))
 
+    files_data_list = []
     for file in files_set:
         try:
             file_type = FilesFeatures.extract_features(file, only_file_type=True)
@@ -99,15 +96,21 @@ def indexer(data_directory:str|Path):
         # controlla che esista il file degli indici e in caso negativo crea un df vuoto
         df_data_type = load_or_create_df_data_type(file_type, excel_indexes_file)
 
+        df_to_save[file_type] = df_data_type
+
         # rimuove le righe con file non esistenti
         df_data_type = df_data_type[df_data_type['file_path'].isin(files_set)]
 
         # add not indexed files to a list
-        indexed_files = set(df_data_type['file_path'])
+        indexed_files:set[str] = set(df_data_type['file_path'].tolist())
         rows = []   # vi aggiungerò le features dei file non indicizzati
-        for f in df_files.loc[df_files["file_type"]==file_type]["file_path"]:
-            if f not in indexed_files:
-                rows.append(FilesFeatures.extract_features(f, only_file_features=True))
+
+        # gli indirizzi da controllare sono tutti quelli con lo stesso data_type di df_data_type
+        df_paths_to_check = df_files.loc[df_files["file_type"] == file_type, "file_path"]
+        # creo una maschera con i file presenti in indice, che poi negherò per trovare i non presenti
+        mask_indexed =df_paths_to_check.isin(indexed_files)
+        for f in df_paths_to_check[~mask_indexed]:
+            rows.append(FilesFeatures.extract_features(f, only_file_features=True))
 
         if rows:
             df_to_concat = add_aff_cols(file_type, pd.DataFrame(data=rows))
@@ -120,5 +123,8 @@ def indexer(data_directory:str|Path):
             df.to_excel(writer, sheet_name=key, index=False)
 
 if __name__ == "__main__":
-    from app_resources.parameters import AppConfigs
-    indexer(AppConfigs.data_dir)
+    data_dir = Path(
+        r'C:\Users\user\Documents\Uni\Tirocinio\webapp\data'
+    )
+
+    indexer(data_dir)

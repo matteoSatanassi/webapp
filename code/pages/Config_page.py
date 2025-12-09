@@ -13,7 +13,7 @@ layout = dbc.Container([
         fullscreen=True,
         custom_spinner=custom_spinner("Config Page"),
         overlay_style={"visibility": "visible", "filter": "blur(2px)"},
-        delay_show=500,
+        delay_show=800,
         children=[
             html.H1("Configurazione Applicazione", className="mb-4 mt-3"),
 

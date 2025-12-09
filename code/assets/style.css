@@ -122,3 +122,24 @@
     height: 100%;
     min-height: 80px;
 }
+
+.dotted-bkg {
+  --dot-bg: var(--bs-light);
+  --dot-color: var(--bs-info);
+  --dot-size: 3px;
+  --dot-space: 22px;
+	background:
+        radial-gradient(circle at center,
+        var(--dot-color) var(--dot-size),
+        var(--dot-bg) var(--dot-size)
+        );
+        background-size: var(--dot-space) var(--dot-space);
+        background-color: var(--dot-bg);
+		/*linear-gradient(90deg, var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),*/
+		/*linear-gradient(var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),*/
+		/*var(--dot-color);*/
+}
+
+#h1-home{
+    color: var(--bs-secondary)
+}
