@@ -9,6 +9,7 @@ app = Dash(
     assets_folder='_assets',
     external_stylesheets=[getattr(dbc.themes, GLOBAL_CACHE.app_configs.theme)],
     use_pages=True,
+    pages_folder='_pages'
     # suppress_callback_exceptions=True
 )
 

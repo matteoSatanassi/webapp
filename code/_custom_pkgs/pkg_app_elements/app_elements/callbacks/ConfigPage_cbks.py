@@ -52,7 +52,7 @@ def initialize_config_values(is_loaded):
     )
 
 @callback(
-    [Output("main-loading", "custom_spinner"),
+    [Output("loading-main-configs", "custom_spinner"),
      Output("current-theme", "data", allow_duplicate=True),
      Output(ThemeChangerAIO.ids.radio("theme"), "value", allow_duplicate=True),
      Output("store-trigger-refresh", "data", allow_duplicate=True),],
@@ -106,7 +106,7 @@ def save(n_clicks:int, data_path:str, export_path:str, export_format:str,
             refresh_flag)
 
 @callback(
-    [Output("main-loading", "custom_spinner", allow_duplicate=True),
+    [Output("loading-main-configs", "custom_spinner", allow_duplicate=True),
      Output("current-theme", "data", allow_duplicate=True),
      Output("config-export-path", "value", allow_duplicate=True),
      Output("config-data-path", "value", allow_duplicate=True),
