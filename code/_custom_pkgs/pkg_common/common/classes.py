@@ -236,6 +236,7 @@ class FilesFeatures:
         specificate per il corrispondente file_type. Le feature senza nessun valore
         specificato nel nome, avranno valore None.
 
+        :param file_path: Indirizzo del file
         :param only_file_type: Nel caso sia True, ritorna solo la tipologia di file,
             dopo aver controllato sia supportata.
         :param only_file_features: Nel caso sia True, ritorna solo il dizionario
@@ -279,6 +280,13 @@ class FilesFeatures:
             """) from e
         except Exception as error:
             raise Exception(f"Errore nella lettura del file file_params.json: {error}")
+    @staticmethod
+    def get_tab_label_info(file_type:str):
+        """Ritorna la descrizione dei dati contenuti nei label dei tab"""
+        features = list(ConfigCache.files_configs[file_type].allowed_features.keys())
+        features.remove("file_path")
+        return "/".join(features)
+
 
 
 class Curve:
@@ -434,7 +442,19 @@ class FileCurves(FilesFeatures):
         return cls._from_super(
             super().from_df(df, grouped_by)
         )
-
+    @classmethod
+    def subdivide(cls, data:"FileCurves")-> list["FileCurves"]:
+        """
+        Dato un oggetto FileCurves, ritorna una lista di istanze FileCurves, ognuna contenente
+        i dati di un solo esperimento di quelli contenuti nell'oggetto iniziale
+        """
+        data._validate()
+        for f in data._data:
+            instance = cls()
+            instance.file_type = data.file_type
+            instance._data = [f]
+            instance._curves = {f["file_path"]: data._curves[f["file_path"]]}
+            yield instance
     @property
     def allowed_curves(self):
         """
@@ -450,25 +470,14 @@ class FileCurves(FilesFeatures):
     def expose_all(self):
         """
         Ritorna dati e curve contenute nell'istanza di classe
+
         :return: generator function che ritorna {file_features_dict, file_curves_dict}
-        per ogni dato salvato nell'istanza
+            per ogni dato salvato nell'istanza
         """
         self._validate()
         for f in self._data:
             curves = self._curves.get(f["file_path"])
             yield f, curves
-    # noinspection PyUnboundLocalVariable
-    @property
-    def subdivide(self):
-        """Ritorna una lista di oggetti FileCurves, ognuno contenente solo i dati di un file"""
-        # pylint disable:protected-access
-        self._validate()
-        for f in self._data:
-            instance = FileCurves()
-            instance.file_type = self.file_type
-            instance._data = [f]
-            instance._curves = {f["file_path"]: self._curves[f["file_path"]]}
-            yield instance
 
     def import_all(self):
         """importa i dati dei file contenuti nell'istanza, salvandoli nell'attributo curves"""
@@ -609,12 +618,14 @@ if __name__ == '__main__':
     # print(prova.get_grouping_feat())
     # print(prova.grouped_by)
 
-    paths = [
-        Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_-2.csv"),
-        Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_-1.csv"),
-        Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_0.csv"),
-        Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_1.csv"),
-        Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_2.csv"),
-    ]
-    prova = FilesFeatures().from_paths(*paths, grouping_feature="Vgf")
-    print(prova.get_tab_label())
+    # paths = [
+    #     Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_-2.csv"),
+    #     Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_-1.csv"),
+    #     Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_0.csv"),
+    #     Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_1.csv"),
+    #     Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_2.csv"),
+    # ]
+    # prova = FilesFeatures().from_paths(*paths, grouping_feature="Vgf")
+    # print(prova.get_tab_label())
+
+    print(FilesFeatures.get_tab_label_info("IDVD"))

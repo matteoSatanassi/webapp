@@ -255,7 +255,7 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
                                             ],
                                             value=["colors"],
                                             switch=True,
-                                            style={"margin-bottom": "15px", 'display': 'none' if file_type=='TRAPDATA' else 'inline-block'}
+                                            style={"margin-bottom": "15px", 'display': 'none' if file_type!="IDVD" else 'inline-block'}
                                         ),
 
                                         # DPI

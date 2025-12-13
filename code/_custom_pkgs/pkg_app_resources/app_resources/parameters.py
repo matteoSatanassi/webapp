@@ -211,8 +211,8 @@ class FileConfigs:
     @staticmethod
     def load_files_info()->dict:
         """
-            Carica i tipi di file da analizzare nella run,
-            i parametri a loro associati e le curve contenute
+        Carica i tipi di file da analizzare nella run,
+        i parametri a loro associati e le curve contenute
         """
         if FileConfigs.files_configs_file.exists():
             with open(FileConfigs.files_configs_file, 'r', encoding="utf-8") as f:

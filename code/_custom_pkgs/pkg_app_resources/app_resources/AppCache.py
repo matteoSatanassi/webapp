@@ -229,12 +229,10 @@ class SingleTabCache:
     def label(self):
         """Ritorna la label del tab"""
         return self._figure.get_tab_label
-
     @property
     def value(self):
         """Ritorna il valore da dare al tab"""
         return self.paths
-
     @property
     def figure_with_targets(self):
         """Ritorna la figura caricata nell'istanza con le relative curve target"""
@@ -247,7 +245,6 @@ class SingleTabCache:
             self._figure_targets = copy(self._figure).plot_targets()
 
         return self._figure_targets
-
     @property
     def figure(self):
         """Ritorna la figura del tab"""
@@ -317,6 +314,16 @@ class OpenTabsCache:
         self.file_type: str = file_type
         self._tabs: dict[str,SingleTabCache] = {}
 
+    @property
+    def tabs_values(self):
+        """
+        Generator function.
+
+        Ritorna i valori dei tab con file_type specificato tra quelli salvati in memoria.
+        """
+        for tab_val in self._tabs.keys():
+            yield tab_val
+
     def tab(self, paths_val: str) -> "SingleTabCache":
         """
         Dato un valore contenuto nella colonna path di una tabella dell'applicazione,
@@ -346,16 +353,6 @@ class OpenTabsCache:
         for paths_val in self.tabs_values:
             self.del_tab(paths_val)
 
-    @property
-    def tabs_values(self):
-        """
-        Generator function.
-
-        Ritorna i valori dei tab con file_type specificato tra quelli salvati in memoria.
-        """
-        for tab_val in self._tabs.keys():
-            yield tab_val
-
 
 class AppCache(ConfigCache):
     """
@@ -367,7 +364,7 @@ class AppCache(ConfigCache):
     open_tabs = {file_type:OpenTabsCache(file_type) for file_type in ConfigCache.file_types}
 
     @property
-    def supported_file_types(self):
+    def present_file_types(self):
         """Ritorna un set contenenti file_types per cui è stato possibile leggere i dati"""
         return self.file_types - self.tables.not_presents
 

@@ -35,28 +35,36 @@ def reload_tabs(main_tab:str, tabs:list[dcc.Tab], tabs_id:dict[str,str]):
             list(cached_tabs_values)[0])
 
 
-@callback([
-    Output({'page' :MATCH, 'item' :'button-close-current-tab'}, 'style'),
-    Output({'page': MATCH, 'item': 'graph-controls'}, 'style'),
-    Output({'page' :MATCH, 'item' :'menu-tab-management'}, 'style'),
-    Output({'page' :MATCH, 'item' :'menu-tab-management'}, 'children')],
+@callback(
+    [Output({'page': MATCH, 'item': 'graph-controls'}, 'style'),
+     Output({'page' :MATCH, 'item' :'button-close-current-tab'}, 'style'),
+     Output({'page': MATCH, 'item': 'button-info-placeholder'}, 'style'),
+     Output({'page' :MATCH, 'item' :'menu-tab-management'}, 'style'),
+     Output({'page' :MATCH, 'item' :'menu-tab-management'}, 'children')],
     Input({'page' :MATCH, 'item': 'graph-tabs'}, 'children'),
     State({'page' :MATCH, 'item': 'graph-tabs'}, 'id'),
+    State({'page' :MATCH, 'item' :'button-close-current-tab'}, 'style')
 )
-def graph_buttons_displayer(tabs :list[dcc.Tab], tabs_id :dict[str ,str]):
+def graph_buttons_displayer(tabs :list[dcc.Tab],
+                            tabs_id :dict[str ,str],
+                            info_placeholder_style:dict[str, str]):
     """
     Callback che permette di visualizzare i pulsanti di gestione dei tab.
 
     Quando è presente un unico tab viene visualizzato il pulsante di
-    chiusura del tab corrente.
+    chiusura del tab corrente e il placeholder delle informazioni sulle
+    etichette dei tab.
 
     Quando sono presenti più tab viene visualizzato anche il menù di
     chiusura a tendina con tutti i tab presenti al momento.
     """
+    info_placeholder_style['display'] = 'none'
     if not tabs:
-        return no_update, no_update, no_update, no_update
+        return {'display': 'none'}, {'display': 'none'}, info_placeholder_style, {'display': 'none'}, None
+
+    info_placeholder_style['display'] = 'block'
     if len(tabs) == 1:
-        return {'display': 'block'}, {'display': 'block'}, {'display': 'none'}, None
+        return {'display': 'block'}, {'display': 'block'}, info_placeholder_style, {'display': 'none'}, None
 
     page = tabs_id['page']
     dropdown_elems = [
@@ -64,7 +72,8 @@ def graph_buttons_displayer(tabs :list[dcc.Tab], tabs_id :dict[str ,str]):
             f"❌ {tab['props']['label']}",
             id={'page' :page, 'item' :'dd-button', 'tab-index' :i},
         ) for i, tab in enumerate(tabs)]
-    return {'display': 'block'}, {'display': 'block'}, {'display': 'block'}, dropdown_elems
+
+    return {'display': 'block'}, {'display': 'block'}, info_placeholder_style, {'display': 'block'}, dropdown_elems
 
 
 @callback([

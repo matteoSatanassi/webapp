@@ -2,9 +2,11 @@
 Il modulo definisce le funzioni per la creazione automatica
 di layout delle diverse pagine
 """
+from pydoc import classname
 
 from app_elements.page_elements import *
 from app_resources.AppCache import GLOBAL_CACHE
+from common import FileCurves
 
 def layout(file_type:str):
     """Crea automaticamente il layout delle pagine richieste"""
@@ -22,7 +24,7 @@ def layout(file_type:str):
 def children_layout(PAGE:str):
     """La funzione crea il dato children del Container della pagina richiesta"""
 
-    if PAGE not in GLOBAL_CACHE.supported_file_types:
+    if PAGE not in GLOBAL_CACHE.present_file_types:
         return []
 
     ## PARAMS ##
@@ -135,6 +137,32 @@ def children_layout(PAGE:str):
 
                                     # Pulsanti allineati a destra
                                     html.Div([
+                                        dbc.Button(
+                                            html.I("info",
+                                                   className="fa-solid fa-info-circle"
+                                                   ),
+                                            id={'page': PAGE, 'item': 'button-info-placeholder'},
+                                            color="dark",
+                                            size="sm",
+                                            className="p-1 me-2",
+                                            style={'display':'none', 'aspect-ratio': '1/1', 'width': '30px'}
+                                        ),
+                                        dbc.Tooltip(
+                                            children=html.Div([
+                                                html.P(
+                                                    "Etichette dei tab",
+                                                    className="mb-1 text-center"
+                                                ),
+                                                html.Hr(className="my-1"),
+                                                html.P(
+                                                    FileCurves.get_tab_label_info(PAGE),
+                                                    className="mt-1 text-center font-italic"
+                                                )
+                                            ]),
+                                            id={'page': PAGE, 'item': 'tooltip-info-placeholder'},
+                                            target={'page': PAGE, 'item': 'button-info-placeholder'},
+                                            is_open=False,
+                                        ),
                                         dbc.Button(
                                             "❌ Chiudi corrente",
                                             id={'page': PAGE, 'item': 'button-close-current-tab'},
