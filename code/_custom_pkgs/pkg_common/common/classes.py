@@ -9,6 +9,7 @@ from typing_extensions import Any, Generator
 import numpy as np
 import pandas as pd
 from app_resources.parameters import ConfigCache
+from common.PlotterConfigs import PlotterConfigs
 
 ## CLASSES ##
 class FilesFeatures:
@@ -288,7 +289,6 @@ class FilesFeatures:
         return "/".join(features)
 
 
-
 class Curve:
     """
     Identifica una singola curva
@@ -369,7 +369,7 @@ class FileCurves(FilesFeatures):
     __slots__ = ('file_type', '_data', 'grouped_by', '_curves')
     def __init__(self):
         super().__init__()
-        self._curves:dict[str,dict[str,Curve]] = {}
+        self._curves:dict[str,dict[str,Curve]] = {} #{'file_path':{'curva_name':Curve}}
 
     def __deepcopy__(self, memo):
         # creo una nuova istanza della classe FileCurves.
@@ -489,35 +489,42 @@ class FileCurves(FilesFeatures):
         Importa i dati del file passato come variabile al metodo
         I dati sono presentati in seguito come un dizionario di oggetti Curve
         """
-        allowed_curves = self.allowed_curves
-        curves = {}
+        allowed_curves = set(self.allowed_curves.keys())
+        curves:dict[str,Curve] = {}
         try:
             data = pd.read_csv(file_path)
             data.replace("-", "0", inplace=True)
-
-            for col in data.columns:
-                name, axis = col.split(' ')  # [curve_name X/Y]
-
-                if self.file_type == 'TRAPDATA' and name != 'trap_density':
-                    _, _, _, name = name.split('_')  # ['trapped', 'charge', 'density', str_pos]
-
-                if name in allowed_curves:
-                    if name not in curves:
-                        curves[name] = Curve(allowed_curves[name])
-
-                    match axis:
-                        case 'X':
-                            curves[name].X = data[col].to_numpy(dtype=float)
-                        case 'Y':
-                            curves[name].Y = data[col].to_numpy(dtype=float)
-
-            for _,curve in curves.items():
-                curve.sort()
-                if self.file_type == 'TRAPDATA':
-                    curve.translate_till_left()
-
+            curves_file: set[str] = {
+                col.split(' ')[0] for col in data.columns
+            }  # [curve_name X/Y]
         except Exception as error:
             raise Exception(f"errore leggendo il file {file_path}: \n\t{error}") from error
+
+        for curve_name in curves_file:
+            if curve_name in allowed_curves:
+
+                # aggiungo la curva a curves per poi popolarne i dati
+                curves[curve_name] = Curve(curve_name)
+                for axis in ('X', 'Y'):
+                    col = f"{curve_name} {axis}"
+                    if col in data.columns:
+                        match axis:
+                            case 'X':
+                                curves[curve_name].X = data[col].to_numpy(dtype=float)
+                            case 'Y':
+                                curves[curve_name].Y = data[col].to_numpy(dtype=float)
+                    else:
+                        print(f"Errore: non è stata trovata la colonna {col} all'interno del file {file_path}")
+                        del curves[curve_name]
+            else:
+                print(f"Errore: la curva {curve_name} non risulta contenuta nel file {file_path}")
+
+        translate = PlotterConfigs.files_configs[self.file_type].plot_finishes_at_0
+        for curve in curves.values():
+            curve.sort()
+            if translate:
+                curve.translate_till_left()
+
         return curves
     def calculate_affinities(self, autosave=False):
         """
@@ -628,4 +635,8 @@ if __name__ == '__main__':
     # prova = FilesFeatures().from_paths(*paths, grouping_feature="Vgf")
     # print(prova.get_tab_label())
 
-    print(FilesFeatures.get_tab_label_info("IDVD"))
+    # print(FilesFeatures.get_tab_label_info("IDVD"))
+
+    prova = FileCurves.from_paths(
+        r"C:\Users\user\Desktop\doped_region_idvd\IDVD_Region_2_EmAcc_0.93_Vgf_2.csv"
+    )

@@ -30,12 +30,10 @@ class TablesCache:
                     ConfigCache.app_configs.indexes_file,
                     sheet_name=file_type)
             except Exception as e:
-                print(
-                    f"""
-                    Errore costruzione TablesCache
-                    file_type: {file_type}
-                    error: {e}
-                """)
+                print("\tErrore costruzione TablesCache\n"
+                      f"\tfile_type: {file_type}\n"
+                      f"\terror: {e}\n"
+                )
                 self._not_presents.add(file_type)
 
     @property
@@ -201,7 +199,7 @@ class SingleTabCache:
         self._used = self._figure
 
     @classmethod
-    def from_path_col(cls, paths_val: FileCurves):
+    def from_path_col(cls, paths_val:str):
         """
         Dato un valore dalla colonna path della tabella di indexing,
         costruisce la corrispondente classe tab

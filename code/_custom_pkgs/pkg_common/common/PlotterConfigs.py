@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from pypalettes import load_palette
-from app_resources.AppCache import ConfigCache
+from app_resources.parameters import ConfigCache
 
 
 ## CLASSES ##
@@ -30,7 +30,8 @@ class ConfigFileManager:
     @staticmethod
     def template_file_configs():
         return {
-            "Colors":{}, "Linestyles":{}, "GroupsMarkers":{}, "AxisProps": {"X":{}, "Y":{}}
+            "Colors":{}, "Linestyles":{}, "GroupsMarkers":{},
+            "AxisProps": {"X":{}, "Y":{}}, "FinishAt0": "False"
         }
     @staticmethod
     def generate_palette(num_colors:int):
@@ -91,7 +92,6 @@ class PlotFileTypeConfigs:
     @property
     def _get_axis_props(self) -> dict[str, dict]:
         return self._data["AxisProps"]
-
     @property
     def colors(self)->dict[str,str]:
         """Ritorna il dizionario dei colori {curve_name:color}"""
@@ -120,6 +120,14 @@ class PlotFileTypeConfigs:
         if self._groups_markers_dict:
             return self._groups_markers_dict.values
         return False
+    @property
+    def plot_finishes_at_0(self):
+        """
+        Il parametro dice se il grafico della curva
+        deve essere traslato in modo da finire in corrispondenza
+        di x=0
+        """
+        return bool(self._data["FinishAt0"])
 
     def get_group_markers(self, grouping_feat:str)->dict[str,str]|None:
         """

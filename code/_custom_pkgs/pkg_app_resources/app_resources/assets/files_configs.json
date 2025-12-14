@@ -31,16 +31,16 @@
     },
     "AllowedCurves": {
       "trap_density": "Trap Density",
-      "0.5000": "x=0.5µm",
-      "0.6160": "x=0.616µm",
-      "0.7660": "x=0.766µm",
-      "0.7830": "x=0.783µm",
-      "0.9500": "x=0.95µm",
-      "0.9670": "x=0.967µm",
-      "0.9840": "x=0.984µm",
-      "1.1840": "x=1.184µm",
-      "1.3340": "x=1.334µm",
-      "1.8340": "x=1.834µm"
+      "trapped_charge_density_0.5000": "x=0.5µm",
+      "trapped_charge_density_0.6160": "x=0.616µm",
+      "trapped_charge_density_0.7660": "x=0.766µm",
+      "trapped_charge_density_0.7830": "x=0.783µm",
+      "trapped_charge_density_0.9500": "x=0.95µm",
+      "trapped_charge_density_0.9670": "x=0.967µm",
+      "trapped_charge_density_0.9840": "x=0.984µm",
+      "trapped_charge_density_1.1840": "x=1.184µm",
+      "trapped_charge_density_1.3340": "x=1.334µm",
+      "trapped_charge_density_1.8340": "x=1.834µm"
     },
     "TargetCurves": 0,
     "TargetFeatures":[
@@ -48,7 +48,7 @@
   },
   "_comments":{
     "AllowedFeatures": "Le feature possono avere come argomento 'text', 'float', 'integer'",
-    "AllowedCurves": "Acronimi e nomi delle curve, in questo ordine",
+    "AllowedCurves": "Acronimi (quelli dati nei file csv) e nomi delle curve, in questo ordine",
     "TargetCurves": "bool (1 o 0), indica se del file_type specificato ci sono file contenenti curve target",
     "TargetFeatures": "Lista di stringhe, indica le feature tramite cui individuare le curve target, tra quelle disponibili, di un certo file"
   }

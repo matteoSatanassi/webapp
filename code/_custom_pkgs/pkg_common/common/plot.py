@@ -3,9 +3,10 @@ Il modulo implementa la classe principale utilizzata per le funzioni di plotting
 nonché la funzione semplificata per il plotting dei dati contenuti nei tab
 """
 
-from common.classes import FileCurves, Curve
+
 import plotly.graph_objects as go
 from common.PlotterConfigs import PlotterConfigs
+from common.classes import FileCurves, Curve
 
 
 ## MAIN FUNC ##
