@@ -39,6 +39,7 @@ class ConfigFileManager:
         out = []
         while len(out) < num_colors:
             out.extend(load_palette())
+        out = [color[:7] for color in out]
         return out[:num_colors-1]
     @staticmethod
     def load_plotter_configs():
@@ -115,10 +116,9 @@ class PlotFileTypeConfigs:
         """
         Se sono definiti dei possibili raggruppamenti per il file_type,
         ritorna le feature di raggruppamento definite, altrimenti False
-        :return:
         """
         if self._groups_markers_dict:
-            return self._groups_markers_dict.values
+            return self._groups_markers_dict.keys()
         return False
     @property
     def plot_finishes_at_0(self):
@@ -172,3 +172,6 @@ class PlotterConfigs(ConfigFileManager):
 
         with open(self.plotter_configs_file, 'w', encoding="utf-8") as f:
             json.dump(cfgs, f, indent=4)
+
+if __name__ == "__main__":
+    print(ConfigFileManager.generate_palette(10))

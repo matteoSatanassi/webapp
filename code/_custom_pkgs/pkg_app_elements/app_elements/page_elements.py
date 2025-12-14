@@ -5,6 +5,7 @@ Il modulo contiene le definizioni di alcuni elementi che compaiono all'interno d
 import pandas as pd
 from dash import  dcc, dash_table, html
 import dash_bootstrap_components as dbc
+from common.PlotterConfigs import PlotterConfigs
 from app_resources.AppCache import GLOBAL_CACHE, TablesCache
 
 
@@ -108,21 +109,16 @@ def grouping_selector(selector_id:dict[str,str]):
     except KeyError:
         raise KeyError("Valore di pagina non specificato nell'id")
 
-    type_configs = GLOBAL_CACHE.files_configs[file_type]
-
-    try:
-        data = pd.read_excel(GLOBAL_CACHE.app_configs.indexes_file, sheet_name=file_type)
-    except Exception as e:
-        raise Exception(
-            f"""Non è stato possibile trovare il file di indicizzazione necessario
-            file degli indici = {GLOBAL_CACHE.app_configs.indexes_file}
-            data_type specificato = {file_type}"""
-        ) from e
-
-    features = type_configs.allowed_features.keys()
+    features = PlotterConfigs.files_configs[file_type].has_grouping_configuration
+    if not features:
+        # se non è supportata nemmeno una feature di raggruppamento,
+        # non ritorno nulla
+        return None
 
     # nasconderò le colonne vuote e la colonna dei file_path
-    f_to_pop = data.columns[data.isna().all()].tolist()
+    f_to_pop = TablesCache.cols_to_hide(
+        GLOBAL_CACHE.tables.get(file_type)
+    )
     f_to_pop.append("file_path")
 
     features = [f for f in features if f not in f_to_pop]

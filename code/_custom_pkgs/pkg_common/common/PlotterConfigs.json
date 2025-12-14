@@ -34,19 +34,19 @@
     },
     "FinishAt0": "False"
   },
-  "TRAPDATA": {
+  "PassDon": {
     "Colors": {
       "trap_density": "black",
-      "0.5000": "#1f77b4",
-      "0.6160": "#ff7f0e",
-      "0.7660": "#2ca02c",
-      "0.7830": "#d62728",
-      "0.9500": "#17e3bc",
-      "0.9670": "#9467bd",
-      "0.9840": "#8c564b",
-      "1.1840": "#e377c2",
-      "1.3340": "#17becf",
-      "1.8340": "#bcbd22"
+      "trapped_charge_density_0.5000": "#1f77b4",
+      "trapped_charge_density_0.6160": "#ff7f0e",
+      "trapped_charge_density_0.7660": "#2ca02c",
+      "trapped_charge_density_0.7830": "#d62728",
+      "trapped_charge_density_0.9500": "#17e3bc",
+      "trapped_charge_density_0.9670": "#9467bd",
+      "trapped_charge_density_0.9840": "#8c564b",
+      "trapped_charge_density_1.1840": "#e377c2",
+      "trapped_charge_density_1.3340": "#17becf",
+      "trapped_charge_density_1.8340": "#bcbd22"
     },
     "Linestyles": {},
     "GroupsMarkers": {},

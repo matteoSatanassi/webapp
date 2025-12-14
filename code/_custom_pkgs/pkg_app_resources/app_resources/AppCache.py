@@ -23,6 +23,7 @@ class TablesCache:
         self.index_data_dir()
 
         self._tables:dict[str,pd.DataFrame] = {}
+        # file types non indicizzati nella data_dir corrente
         self._not_presents:set[str] = set()
         for file_type in ConfigCache.file_types:
             try:
@@ -397,9 +398,6 @@ class AppCache(ConfigCache):
         """
         return SingleTabCache.find_export_path()
 
-# classe PlotCache oppure plotConfigs in AppCache
-# se la figura non ha targets modificare Tab
-
 
 ## INST ##
 
@@ -407,8 +405,6 @@ class AppCache(ConfigCache):
 # L'istanza è immediatamente disponibile per chiunque importi 'app_resources'.
 # Nota: La classe AppCache contiene l'istanza di AppConfigs e le istanze di FileConfigs.
 GLOBAL_CACHE = AppCache()
-
-# print(GLOBAL_CACHE.tables.get("TRAPDATA"))
 
 
 ## HELPER FUNCS ##

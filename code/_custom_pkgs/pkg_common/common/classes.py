@@ -244,7 +244,7 @@ class FilesFeatures:
             contenente le feature del file e i loro valori
         """
         file_features = Path(file_path).stem.split('_')
-        file_type = file_features[0].upper()
+        file_type = file_features[0]
 
         try:
             # carica le configurazioni del tipo e in caso di keyerror, ritorna keyerror
@@ -489,7 +489,7 @@ class FileCurves(FilesFeatures):
         Importa i dati del file passato come variabile al metodo
         I dati sono presentati in seguito come un dizionario di oggetti Curve
         """
-        allowed_curves = set(self.allowed_curves.keys())
+        allowed_curves = self.allowed_curves
         curves:dict[str,Curve] = {}
         try:
             data = pd.read_csv(file_path)
@@ -504,7 +504,7 @@ class FileCurves(FilesFeatures):
             if curve_name in allowed_curves:
 
                 # aggiungo la curva a curves per poi popolarne i dati
-                curves[curve_name] = Curve(curve_name)
+                curves[curve_name] = Curve(allowed_curves[curve_name])
                 for axis in ('X', 'Y'):
                     col = f"{curve_name} {axis}"
                     if col in data.columns:
