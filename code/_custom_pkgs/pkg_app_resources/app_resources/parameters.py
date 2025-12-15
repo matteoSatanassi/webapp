@@ -217,7 +217,8 @@ class FileConfigs:
         if FileConfigs.files_configs_file.exists():
             with open(FileConfigs.files_configs_file, 'r', encoding="utf-8") as f:
                 out = json.load(f)
-                out.pop("_comments")
+                if "_comments" in out:
+                    out.pop("_comments")
                 return out
         else:
             return {}

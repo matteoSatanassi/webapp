@@ -31,7 +31,7 @@ class ConfigFileManager:
     def template_file_configs():
         return {
             "Colors":{}, "Linestyles":{}, "GroupsMarkers":{},
-            "AxisProps": {"X":{}, "Y":{}}, "FinishAt0": "False"
+            "AxisProps": {"X":{}, "Y":{}}, "FinishAt0": 0
         }
     @staticmethod
     def generate_palette(num_colors:int):
@@ -40,7 +40,7 @@ class ConfigFileManager:
         while len(out) < num_colors:
             out.extend(load_palette())
         out = [color[:7] for color in out]
-        return out[:num_colors-1]
+        return out[:num_colors]
     @staticmethod
     def load_plotter_configs():
         """
@@ -48,7 +48,10 @@ class ConfigFileManager:
         """
         if ConfigFileManager.plotter_configs_file.exists():
             with open(ConfigFileManager.plotter_configs_file, 'r', encoding="utf-8") as f:
-                return json.load(f)
+                out = json.load(f)
+                if "_comments" in out:
+                    out.pop("_comments")
+                return out
         else:
             raise FileNotFoundError("Non è stato possibile trovare il file di configurazione")
 
@@ -174,4 +177,4 @@ class PlotterConfigs(ConfigFileManager):
             json.dump(cfgs, f, indent=4)
 
 if __name__ == "__main__":
-    print(ConfigFileManager.generate_palette(10))
+    print(ConfigFileManager.generate_palette(4))

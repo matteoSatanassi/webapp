@@ -46,6 +46,23 @@
     "TargetFeatures":[
     ]
   },
+  "BarrAccOccupation": {
+    "AllowedFeatures": {
+      "Region": "text",
+      "EmAcc": "text",
+      "Vgf": "text",
+      "file_path": "text"
+    },
+    "AllowedCurves": {
+      "TrapOccupation_BarrAcc_v0": "(0 V,0 V)",
+      "TrapOccupation_BarrAcc_0": "(-7 V,0 V)",
+      "TrapOccupation_BarrAcc_15":  "(-7 V,15 V)",
+      "TrapOccupation_BarrAcc_30": "(-7 V,30 V)"
+    },
+    "TargetCurves": 0,
+    "TargetFeatures":[
+    ]
+  },
   "_comments":{
     "AllowedFeatures": "Le feature possono avere come argomento 'text', 'float', 'integer'",
     "AllowedCurves": "Acronimi (quelli dati nei file csv) e nomi delle curve, in questo ordine",

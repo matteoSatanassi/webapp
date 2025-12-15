@@ -32,7 +32,7 @@
         "Title": "I<sub>D</sub> [A/mm]"
       }
     },
-    "FinishAt0": "False"
+    "FinishAt0": 0
   },
   "PassDon": {
     "Colors": {
@@ -58,7 +58,33 @@
         "Title": "Charged Traps density [1/<sub>cm<sup>3</sup>·eV</sub>]"
       }
     },
-    "FinishAt0": "True"
+    "FinishAt0": 1
+  },
+  "BarrAccOccupation": {
+    "Colors": {
+      "TrapOccupation_BarrAcc_v0": "#5BD998",
+      "TrapOccupation_BarrAcc_0": "#D9C75B",
+      "TrapOccupation_BarrAcc_15": "#685BD9",
+      "TrapOccupation_BarrAcc_30": "#D9685B"
+    },
+    "Linestyles": {},
+    "GroupsMarkers": {},
+    "AxisProps": {
+      "X":{
+        "Title": "Y [µm]"
+      },
+      "Y": {
+        "Title": "Barrier Acceptor Occupation"
+      }
+    },
+    "FinishAt0": 0
+  },
+  "_comments": {
+    "Colors": "dizionario dei colori da utilizzare per le curve del file, generato automaticamente in caso non sia presente: {curve_acr:color[hex]}",
+    "Linestyles": "dizionario degli stili di linea da utilizzare in caso di visualizzazione in bianco e nero, o in caso di visualizzazione delle curve target: {curve_acr:dash_linestyle}",
+    "GroupMarkers": "dizionario dei possibili raggruppamenti definiti per le curve di più file, un raggruppamento è definito da una feature che sarà l'unica a variare tra le feature del gruppo di file: {feature_name:{size:feature_physical_size, values:{feature_val:marker_type}}",
+    "AxisProps": "definite le proprietà uniche degli assi del fine, per ora supportati solo i titoli degli assi: {X:{Title:title_str}, Y:{Title:title_str}}",
+    "FinishAt0": "0 o 1, verrà convertito in bool. Definisce se le curve contenute nei file del tal file_type debbano essere traslate in modo da finire a 0 o no (utile per le densità di carica intrappolata, per avere banda di conduzione a 0)"
   }
 }
 

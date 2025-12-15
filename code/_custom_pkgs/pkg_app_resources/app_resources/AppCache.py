@@ -264,6 +264,18 @@ class SingleTabCache:
 
     def build_dcc_tab(self):
         """Costruisce l'oggetto dcc.Tab da utilizzare nell'applicazione"""
+        if self.file_type == "BarrAccOccupation":
+            self._used.update_layout(
+                xaxis=dict(
+                    range=[-0.004, 0.02],    # Imposto l'intervallo iniziale per l'asse X
+                    # Opzionale: disattiva il pulsante di autoscale (utile se vuoi bloccare lo zoom)
+                    autorange=False
+                ),
+                yaxis=dict(
+                    range=[-0.05, 1.05],   # Intervallo iniziale per l'asse Y
+                    autorange=False
+                )
+            )
         return dcc.Tab(
             value=self.value,
             label=self.label,
@@ -349,8 +361,7 @@ class OpenTabsCache:
 
     def close_all_tabs(self):
         """Elimina tutti i tab aperti dalla memoria"""
-        for paths_val in self.tabs_values:
-            self.del_tab(paths_val)
+        self._tabs = {}
 
 
 class AppCache(ConfigCache):

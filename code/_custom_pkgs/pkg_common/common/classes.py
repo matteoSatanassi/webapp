@@ -637,6 +637,8 @@ if __name__ == '__main__':
 
     # print(FilesFeatures.get_tab_label_info("IDVD"))
 
-    prova = FileCurves.from_paths(
-        r"C:\Users\user\Desktop\doped_region_idvd\IDVD_Region_2_EmAcc_0.93_Vgf_2.csv"
-    )
+    # prova = FileCurves.from_paths(
+    #     r"C:\Users\user\Desktop\doped_region_idvd\IDVD_Region_2_EmAcc_0.93_Vgf_2.csv"
+    # )
+
+    print(PlotterConfigs.files_configs["IDVD"].plot_finishes_at_0)
