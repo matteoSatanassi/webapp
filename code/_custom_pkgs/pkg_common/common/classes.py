@@ -6,6 +6,7 @@ manipolazione e presentazione dei dati
 from pathlib import Path
 import copy
 from typing_extensions import Any, Generator
+from scipy.interpolate import interp1d
 import numpy as np
 import pandas as pd
 from app_resources.parameters import ConfigCache
@@ -300,6 +301,7 @@ class Curve:
         self.name:str = name
         self.X: np.ndarray = None
         self.Y: np.ndarray = None
+        self._f_cubic = None
     def __str__(self):
         return self.name
     def __copy__(self):
@@ -307,6 +309,20 @@ class Curve:
         inst_copy.X = self.X.copy() if self.X is not None else None
         inst_copy.Y = self.Y.copy() if self.Y is not None else None
         return inst_copy
+
+    @classmethod
+    def create(cls, name:str,
+               X:np.ndarray[float],
+               Y:np.ndarray[float],
+               interp_func=True):
+        if len(X) != len(Y):
+            raise ValueError("Le liste delle coordinate X e Y devono avere la stessa lunghezza")
+
+        out = cls(name)
+        out.X, out.Y = X, Y
+        out._sort(interp_func=interp_func)
+
+        return out
 
     @property
     def y_scale(self):
@@ -320,14 +336,23 @@ class Curve:
     def integral(self)->float:
         """Integra la curva caricata nell'istanza"""
         return np.trapezoid(self.Y, self.X)
+    @property
+    def x_limits(self):
+        """Ritorna la tupla x_min,x_max"""
+        return min(self.X),max(self.X)
 
-    def sort(self)->None:   #
+    def _sort(self, interp_func=True)->None:   #
         """
         Ordina gli array delle coordinate in modo crescente, rispetto alle ordinate
+
+        Crea in più l'attributo _f_cubic, ossia la funzione di interpolazione usata
+        per calcolare ordinate della curva.
         """
         i_sorted = np.argsort(self.X)
         self.X = self.X[i_sorted]
         self.Y = self.Y[i_sorted]
+        if interp_func:
+            self._f_cubic = interp1d(self.X, self.Y, kind='cubic')
     def integral_affinity(self, curve:'Curve')->float:
         """calcola il rapporto di affinità tra l'istanza e un'altra curva"""
         target_area = curve.integral
@@ -338,6 +363,28 @@ class Curve:
         Utile per le curve di occupazione delle trappole, per avere la conduction band a 0
         """
         self.X -= self.X[-1]
+    def create_sub_sample(self, *x_vals:float)->"Curve":
+        """
+        Crea una nuova istanza di classe contenente i punti, relativi alle ascisse
+        richieste, generati tramite interpolazione
+        """
+        if not x_vals:
+            raise ValueError("Immettere dei valori per le ascisse")
+
+        if not self._f_cubic:
+            raise AttributeError(f"Non è stata creata una funzione di interpolazione per la curva {self.name}")
+
+        x_min, x_max = self.x_limits
+        for x in x_vals:
+            if not x_min <= x <= x_max:
+                raise ValueError(f"Immettere solo valori compresi tra {x_min} e {x_max} per la curva {self.name}")
+
+        y_vals = self._f_cubic(x_vals)
+
+        return self.create(
+            self.name,
+            np.asarray(x_vals, dtype=float), self._f_cubic(x_vals), interp_func=False
+        )
 
     @staticmethod
     def get_data_scale(values:np.ndarray)->float:
@@ -366,10 +413,10 @@ class FileCurves(FilesFeatures):
     """
     Classe contenete i dati e le curve di un file dati o di un gruppo di file dati
     """
-    __slots__ = ('file_type', '_data', 'grouped_by', '_curves')
+    __slots__ = ('file_type', '_data', 'grouped_by', '_curves', '_sub_samples')
     def __init__(self):
         super().__init__()
-        self._curves:dict[str,dict[str,Curve]] = {} #{'file_path':{'curva_name':Curve}}
+        self._curves:dict[str,dict[str,Curve]] = {}     #{'file_path':{'curva_name':Curve}}
 
     def __deepcopy__(self, memo):
         # creo una nuova istanza della classe FileCurves.
@@ -455,6 +502,7 @@ class FileCurves(FilesFeatures):
             instance._data = [f]
             instance._curves = {f["file_path"]: data._curves[f["file_path"]]}
             yield instance
+
     @property
     def allowed_curves(self):
         """
@@ -492,8 +540,8 @@ class FileCurves(FilesFeatures):
         allowed_curves = self.allowed_curves
         curves:dict[str,Curve] = {}
         try:
-            data = pd.read_csv(file_path)
-            data.replace("-", "0", inplace=True)
+            data = pd.read_csv(file_path, na_values="-")
+            # data.replace("-", np.nan, inplace=True)
             curves_file: set[str] = {
                 col.split(' ')[0] for col in data.columns
             }  # [curve_name X/Y]
@@ -502,27 +550,23 @@ class FileCurves(FilesFeatures):
 
         for curve_name in curves_file:
             if curve_name in allowed_curves:
-
-                # aggiungo la curva a curves per poi popolarne i dati
-                curves[curve_name] = Curve(allowed_curves[curve_name])
-                for axis in ('X', 'Y'):
-                    col = f"{curve_name} {axis}"
-                    if col in data.columns:
-                        match axis:
-                            case 'X':
-                                curves[curve_name].X = data[col].to_numpy(dtype=float)
-                            case 'Y':
-                                curves[curve_name].Y = data[col].to_numpy(dtype=float)
-                    else:
-                        print(f"Errore: non è stata trovata la colonna {col} all'interno del file {file_path}")
-                        del curves[curve_name]
+                x_col, y_col = f"{curve_name} X", f"{curve_name} Y"
+                if x_col in data.columns and y_col in data.columns:
+                    cleaned_coordinates = data[[x_col, y_col]].dropna()
+                    # creo e aggiungo la curva a curves
+                    curves[curve_name] = Curve.create(
+                        allowed_curves[curve_name],
+                        cleaned_coordinates[x_col].to_numpy(dtype=float),
+                        cleaned_coordinates[y_col].to_numpy(dtype=float)
+                    )
+                else:
+                    print(f"Errore: non sono state trovate entrambe le colonne {x_col}, {y_col} all'interno del file {file_path}")
             else:
                 print(f"Errore: la curva {curve_name} non risulta contenuta nel file {file_path}")
 
-        translate = PlotterConfigs.files_configs[self.file_type].plot_finishes_at_0
-        for curve in curves.values():
-            curve.sort()
-            if translate:
+        # controllo se le curve debbano essere traslate a sinistra dell'asse y
+        if PlotterConfigs.files_configs[self.file_type].plot_finishes_at_0:
+            for curve in curves.values():
                 curve.translate_till_left()
 
         return curves
@@ -609,36 +653,4 @@ class FileCurves(FilesFeatures):
 
 
 if __name__ == '__main__':
-    # pylint disable:reimported
-
-    # # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
-    # paths = [Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
-    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
-    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
-    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
-    #          Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
-    # # prova = FileCurves.from_paths(*paths)
-    # # prova.calculate_affinities(autosave=True)
-    # # print(prova._data)
-    #
-    # prova = FilesFeatures().from_paths(*paths)
-    # print(prova.get_grouping_feat())
-    # print(prova.grouped_by)
-
-    # paths = [
-    #     Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_-2.csv"),
-    #     Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_-1.csv"),
-    #     Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_0.csv"),
-    #     Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_1.csv"),
-    #     Path(r"D:\IdVd_csv\IDVD_Region_1_EmAcc_0.93_Vgf_2.csv"),
-    # ]
-    # prova = FilesFeatures().from_paths(*paths, grouping_feature="Vgf")
-    # print(prova.get_tab_label())
-
-    # print(FilesFeatures.get_tab_label_info("IDVD"))
-
-    # prova = FileCurves.from_paths(
-    #     r"C:\Users\user\Desktop\doped_region_idvd\IDVD_Region_2_EmAcc_0.93_Vgf_2.csv"
-    # )
-
     print(PlotterConfigs.files_configs["IDVD"].plot_finishes_at_0)

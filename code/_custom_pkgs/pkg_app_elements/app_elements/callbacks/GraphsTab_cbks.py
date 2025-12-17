@@ -75,7 +75,6 @@ def graph_buttons_displayer(tabs :list[dcc.Tab],
 
     return {'display': 'block'}, {'display': 'block'}, info_placeholder_style, {'display': 'block'}, dropdown_elems
 
-
 @callback([
     Output({'page':MATCH, 'item': 'graph-tabs'}, 'children', allow_duplicate=True),
     Output({'page':MATCH, 'item': 'graph-tabs'}, 'value', allow_duplicate=True)],

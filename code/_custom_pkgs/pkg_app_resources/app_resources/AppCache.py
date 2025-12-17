@@ -196,7 +196,10 @@ class SingleTabCache:
         self.file_type: str = file_type
         self.paths: str = None
         self._figure: CustomFigure = None
+        self._subsamples: CustomFigure = None
         self._figure_targets: CustomFigure = None
+        self._subsample_targets: CustomFigure = None
+        self._x_vals: tuple = None
         self._used = self._figure
 
     @classmethod
@@ -233,6 +236,24 @@ class SingleTabCache:
         """Ritorna il valore da dare al tab"""
         return self.paths
     @property
+    def x_vals(self):
+        """Ritorna le ascisse per cui voglio stampare i valori in figura"""
+        return self._x_vals
+    @property
+    def subsamples_fig(self):
+        """
+        Ritorna la figura contenente i punti alle sole ascisse richieste,
+        caricate nell'istanza, e la rende la figura utilizzata
+        """
+        if not self._x_vals:
+            raise ValueError("Non sono state specificate ascisse nell'istanza")
+
+        if not self._subsamples:
+            self._subsamples = CustomFigure.sub_samples_plot(self._figure, *self._x_vals)
+
+        self._used = self._subsamples
+        return self._used
+    @property
     def figure_with_targets(self):
         """Ritorna la figura caricata nell'istanza con le relative curve target"""
         if not ConfigCache.files_configs[self.file_type].targets_presents:
@@ -245,21 +266,54 @@ class SingleTabCache:
 
         return self._figure_targets
     @property
+    def subsamples_with_targets(self):
+        """Ritorna la figura caricata in subsamples con i relativi punti target"""
+        if not ConfigCache.files_configs[self.file_type].targets_presents:
+            print("I dati all'interno del tab non hanno dei valori target da visualizzare")
+            return self.subsamples_fig
+
+        if not self._subsample_targets:
+            print("costruendo la figura dei subsamples target")
+            self._subsample_targets = copy(self.subsamples_fig).plot_targets_subsamples(*self._x_vals)
+
+        return self._subsample_targets
+    @property
     def figure(self):
         """Ritorna la figura del tab"""
         return self._used
+
+    @x_vals.setter
+    def x_vals(self, *vals:float):
+        """Setter per modificare i valori delle ascisse"""
+        if not vals:
+            raise ValueError("Non sono state settate ascisse")
+
+        if not all(isinstance(val, float) for val in vals):
+            raise ValueError("I valori delle ascisse immesse non sono tutti float")
+
+        if set(vals)==set(self._x_vals):
+            return
+
+        self._x_vals = vals
+        self._subsamples = None
+        self._subsample_targets = None
 
     def switch_fig(self):
         """
         Metodo per modificare la figura visualizzata dal tab; se senza target, li stampa,
         altrimenti il contrario.
 
-        L'attributo self._used punta alla figura utilizzata dall'istanza.
+        L'attributo self._used, ritornato dalla proprietà figure,
+        punta alla figura utilizzata dall'istanza.
         """
-        if self._used != self._figure:
-            self._used = self._figure
-        else:
+        if self._used == self._figure:
             self._used = self.figure_with_targets
+        if self._used == self.figure_with_targets:
+            self._used = self._figure
+        if self._used == self.subsamples_fig:
+            self._used = self.subsamples_with_targets
+        if self._used == self.subsamples_with_targets:
+            self._used = self.subsamples_fig
         return self
 
     def build_dcc_tab(self):

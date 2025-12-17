@@ -27,15 +27,9 @@ def plot_tab(curves:FileCurves,
 
     # controllo se curves contiene un gruppo di curve
     if curves.contains_group:
-        if plot_targets:
-            return custom_fig.plot_targets().plot_group()
-        else:
-            return custom_fig.plot_group()
+        return custom_fig.plot_group(target_curves=plot_targets)
     else:
-        if plot_targets:
-            return custom_fig.plot_targets().plot_all()[0]
-        else:
-            return custom_fig.plot_all()[0]
+        return custom_fig.plot_all(target_curves=plot_targets)[0]
 
 ## CLASS ##
 class CustomFigure(go.Figure):
@@ -75,6 +69,30 @@ class CustomFigure(go.Figure):
         new_fig._colored = self._colored
 
         return new_fig
+
+    @classmethod
+    def sub_samples_plot(cls, fig:"CustomFigure", *x_vals:float):
+        """
+        Data una figura, crea la figura dei suoi sub samples alle ascisse desiderate
+
+        La figura deve contenere un gruppo o un singolo file
+        """
+
+        if not fig._contains_tab_data:
+            raise ValueError("La figura passata non è applicable ad un tab di visualizzazione")
+
+        out = cls(
+            fig._curves,
+            curves_to_plot=fig._c_to_plot,
+            plot_all_curves=fig._all_c,
+            legend=fig._legend,
+            colored=fig._colored
+        )
+
+        if fig._contains_group:
+            return out.plot_group_subsamples(*x_vals)
+
+        return out.plot_all_subsamples(*x_vals)[0]
 
     @property
     def _get_group_markers(self):
@@ -168,6 +186,58 @@ class CustomFigure(go.Figure):
             )
         except AttributeError:
             raise f"Non definiti gli attributi necessari nell'oggetto {curve}"
+        return self
+
+    def _add_scatter(self,
+                     curve:Curve,
+                     scales:dict[str,float] = None,
+                     mode = "markers",
+                     marker_size:int = 6) -> "CustomFigure":
+        """
+        Aggiunge all'istanza i punti specificati nell'oggetto curve,
+        con colore, stile di linea, marker e nome come impostati
+        all'interno di quest'ultimo
+
+        :param mode: "markers", "lines+markers
+        """
+        if not scales: scales = {"X":0, "Y":0}
+        try:
+            self.add_scatter(
+                x=curve.X / (10**scales["X"] if scales["X"]>1 else 1),
+                y=curve.Y / (10**scales["Y"] if scales["Y"]>1 else 1),
+                name=curve.name,
+                mode=mode,
+                line=dict(
+                    color=curve.color,
+                    dash=curve.linestyle,
+                    width=curve.width,
+                ),
+                marker=dict(
+                    color=curve.color,
+                    symbol=curve.markers,
+                    size=marker_size,
+                ),
+                visible=True,
+                showlegend=True if (self._legend and not self._contains_group) else False
+            )
+        except AttributeError:
+            raise f"Non definiti gli attributi necessari nell'oggetto {curve}"
+        return self
+
+    def _send_to_back(self, N:int):
+        """
+        Sposta le ultime N tracce aggiunte sullo sfondo
+        """
+        all_traces = list(self.data)
+
+        if not all_traces:
+            return self
+
+        to_back = all_traces[-N:]
+        remaining = all_traces[:-N]
+
+        # Sovrascrive la tupla data della figura
+        self.data = to_back + remaining
         return self
 
     def _add_summary_legend(self) -> "CustomFigure":
@@ -294,7 +364,114 @@ class CustomFigure(go.Figure):
             )
         return self
 
-    def plot_group(self) -> "CustomFigure":
+    def plot_targets(self) -> "CustomFigure":
+        """
+        Il metodo aggiunge alla figura le curve target delle curve contenute nell'istanza
+
+        La funzione non si occupa di stampare le curve contenute nell'istanza o aggiungere le grafiche,
+        quindi l'operazione deve essere fatta in precedenza o in seguito a queste ultime
+        """
+        if not self._contains_tab_data:
+            raise ValueError("L'oggetto non è applicabile ad un tab di visualizzazione")
+
+        group_markers_dict = self._get_group_markers
+        grouping_feat_size = self._get_group_feature_size
+
+        linestyles_dict = self._configs.linestyles
+
+        # numero di curve target stampate
+        N = 0
+
+        for f_features,_ in self._curves.expose_all:
+            target = FileCurves.find_target_file(self._curves.file_type, f_features)
+            for t_features,t_curves in target.expose_all:
+                t_scales = Curve.get_curves_scales(*t_curves.values())
+                for key,curve in t_curves.items():
+                    N += 1
+                    curve.color = "gray"
+                    curve.linestyle = linestyles_dict[key] if linestyles_dict else None
+                    if self._contains_group:
+                        curve.name = (
+                            f"{curve.name}, {self._grouped_by}={t_features[self._grouped_by]} {grouping_feat_size}"
+                        )
+                        curve.markers = group_markers_dict[f_features[self._grouped_by]]
+                        curve.width = 0.6
+
+                        self._add_curve(curve, marker_size=3)
+                    else:
+                        curve.name = f"{curve.name}"
+                        curve.markers = self._configs.default_marker
+                        curve.width = 0.75
+
+                        self._add_curve(curve,t_scales, marker_size=3)
+
+        return self._send_to_back(N)
+
+    def plot_targets_subsamples(self, *x_vals) -> "CustomFigure":
+        """
+        Il metodo aggiunge alla figura le subsamples delle curve target
+        delle curve contenute nell'istanza
+
+        La funzione non si occupa di stampare le curve contenute
+        nell'istanza o aggiungere le grafiche, quindi l'operazione
+        deve essere fatta in precedenza o in seguito a queste ultime
+        """
+        contains_group = self._contains_group
+        if not self._contains_tab_data:
+            raise ValueError(f"L'oggetto non è applicabile ad un tab di visualizzazione")
+
+        if contains_group:
+            group_markers_dict = self._get_group_markers
+            grouping_feat_size = self._get_group_feature_size
+            if not group_markers_dict:
+                raise ValueError(f"non sono stati definiti dei marker "
+                             f"per il raggruppamento di file {self._file_type} "
+                             f"sotto la feature {self._grouped_by}")
+
+        colors_dict = self._configs.colors
+
+        for f_features,_ in self._curves.expose_all:
+            target = FileCurves.find_target_file(self._curves.file_type, f_features)
+            for t_features,t_curves in target.expose_all:
+                t_scales = Curve.get_curves_scales(*t_curves.values())
+                sub_samples = {
+                    t_id:t.create_sub_sample(*x_vals) for t_id,t in t_curves.items()
+                }
+                for key,curve in sub_samples.items():
+                    curve.color = colors_dict[key]
+                    curve.linestyle = None
+                    if contains_group:
+                        # entra solo se deve stampare un gruppo
+                        # noinspection PyUnboundLocalVariable
+                        curve.name = (
+                            f"{curve.name}, {self._grouped_by}={t_features[self._grouped_by]} {grouping_feat_size}"
+                        )
+                        # noinspection PyUnboundLocalVariable
+                        curve.markers = group_markers_dict[t_features[self._grouped_by]]
+                        curve.width = 0.6
+
+                        self._add_scatter(curve, mode="markers")
+                    else:
+                        curve.name = f"{curve.name}"
+                        curve.markers = self._configs.default_marker
+                        curve.width = 0.75
+
+                        self._add_scatter(curve,t_scales, mode="markers")
+
+        self.update_traces(
+            selector=dict(mode='markers'),  # Applica solo alle tracce che sono puramente scatter di punti
+            marker=dict(
+                line=dict(
+                    width=1 if self._contains_group else 2,
+                    color='DarkSlateGrey'  # Colore del contorno
+                ),
+            )
+        )
+
+        return self
+
+    def plot_group(self, target_curves=False) -> "CustomFigure":
+        """Controlla che l'istanza contenga i dati di un gruppo di esperimenti, e in caso ne stampa il grafico"""
         if not self._contains_group:
             raise ValueError(f"{self._curves} non contiene un gruppo")
 
@@ -310,14 +487,18 @@ class CustomFigure(go.Figure):
         if self._colored: colors_dict = self._configs.colors
         else: linestyles_dict = self._configs.linestyles
 
+        if target_curves:
+            self.plot_targets()
+
         for f_features, f_curves in self._curves.expose_all:
             # f_features: dizionario delle features del file correntemente considerato
             # f_curves: dizionario delle curve contenute nel file
 
             for key, curve in f_curves.items():
-                curve = curve.__copy__()
+
                 if key in self._c_to_plot or self._all_c:
 
+                    curve = curve.__copy__()
                     # per ogni curva salviamo colore, linestyle, width e marker utilizzato e modifichiamo il nome
                     curve.color = colors_dict[key] if self._colored else "black"
                     curve.linestyle = None if self._colored else linestyles_dict[key]
@@ -337,13 +518,15 @@ class CustomFigure(go.Figure):
 
         return self._add_graphics()
 
-    def plot_all(self) -> "list[CustomFigure]":
+    def plot_all(self, target_curves=False) -> "list[CustomFigure]":
         """
         Ritorna le figure di tutti i file contenuti nell'istanza
         """
 
         # caso 1 solo file -> ritorna una CustomFigure
         if len(self._curves) == 1:
+            if target_curves:
+                self.plot_targets()
             for f_features, f_curves in self._curves.expose_all:
                 scales = Curve.get_curves_scales(*f_curves.values())
                 for key, curve in f_curves.items():
@@ -371,57 +554,115 @@ class CustomFigure(go.Figure):
             out.extend(fig.plot_all())
         return out
 
-    def plot_targets(self) -> "CustomFigure":
+    def plot_group_subsamples(self, *x_vals, target_subsamples=False) -> "CustomFigure":
         """
-        Il metodo aggiunge alla figura le curve target delle curve contenute nell'istanza
+        Controlla che l'istanza contenga ai dati di un gruppo, e nel caso
+        ritorna la figura dei sub-samples di tutte le curve,
+        per le ascisse richieste
 
-        La funzione non si occupa di stampare le curve contenute nell'istanza o aggiungere le grafiche,
-        quindi l'operazione deve essere fatta in precedenza o in seguito a queste ultime
+        Ritorna solo figure a colori
         """
-        if not len(self._curves)==1 and not self._contains_group:
-            raise ValueError(f"L'oggetto non è applicabile ad un tab di visualizzazione")
+        if not self._contains_group:
+            raise ValueError(f"{self._curves} non contiene un gruppo")
 
-        for f_features,_ in self._curves.expose_all:
-            target = FileCurves.find_target_file(self._curves.file_type, f_features)
-            for t_features,t_curves in target.expose_all:
-                t_scales = Curve.get_curves_scales(*t_curves.values())
-                for key,curve in t_curves.items():
-                    curve.color = "gray"
-                    curve.linestyle = self._configs.linestyles[key] if self._configs.linestyles else 'solid'
-                    if self._contains_group:
-                        curve.name = (
-                            f"{curve.name}, {self._grouped_by}={t_features[self._grouped_by]} {self._get_group_feature_size}"
-                        )
-                        curve.markers = self._get_group_markers[t_features[self._grouped_by]]
-                        curve.width = 0.6
+        group_markers_dict = self._get_group_markers
+        grouping_feat_size = self._get_group_feature_size
+        if not group_markers_dict:
+            raise ValueError(f"non sono stati definiti dei marker "
+                             f"per il raggruppamento di file {self._file_type} "
+                             f"sotto la feature {self._grouped_by}")
 
-                        self._add_curve(curve, marker_size=3)
-                    else:
-                        curve.name = f"{curve.name}"
-                        curve.markers = self._configs.default_marker
-                        curve.width = 0.75
+        colors_dict = self._configs.colors
 
-                        self._add_curve(curve,t_scales, marker_size=3)
+        for f_features, f_curves in self._curves.expose_all:
+            # f_features: dizionario delle features del file correntemente considerato
+            # f_curves: dizionario delle curve contenute nel file
 
-        return self
+            for key, curve in f_curves.items():
+                if key in self._c_to_plot or self._all_c:
 
+                    sub_samples = curve.create_sub_sample(*x_vals)
+                    # per ogni curva salviamo colore, linestyle, width e marker utilizzato e modifichiamo il nome
+                    sub_samples.color = colors_dict[key]
+                    sub_samples.linestyle = None
+                    sub_samples.width = 0.75
+                    # Prendo i marker dal dizionario dei config {feature_group:{feature_group_file:marker_value}}
+                    # Es. {Vgf:{2:square}}
+                    sub_samples.markers = group_markers_dict[f_features[self._grouped_by]]
+                    sub_samples.name = (
+                        f"{curve.name}, {self._grouped_by}={f_features[self._grouped_by]} {grouping_feat_size}"
+                    )
+
+                    # dato che devo stampare diverse curve nella stessa figura, non specifico una scala
+                    self._add_scatter(sub_samples, mode="lines+markers", marker_size=3)
+
+        if self._legend:
+            self._add_summary_legend()
+
+        if target_subsamples:
+            self.plot_targets_subsamples(*x_vals)
+
+        return self._add_graphics()
+
+    def plot_all_subsamples(self, *x_vals, target_subsamples=False) -> "list[CustomFigure]":
+        """
+        Ritorna le figure dei sub-samples di tutti i file contenuti nell'istanza,
+        per le ascisse richieste
+
+        Ritorna solo figure a colori
+        """
+        # caso 1 solo file -> ritorna una CustomFigure
+        if len(self._curves) == 1:
+            colors_dict = self._configs.colors
+
+            for f_features, f_curves in self._curves.expose_all:
+                scales = Curve.get_curves_scales(*f_curves.values())
+                sub_samples = {
+                    c_id:c.create_sub_sample(*x_vals) for c_id,c in f_curves.items()
+                }
+                for key, curve in sub_samples.items():
+                    curve = curve.__copy__()
+                    curve.color = colors_dict[key]
+                    curve.linestyle = None
+                    curve.width = 1
+                    curve.markers = None
+                    # il nome rimane quello già salvato nella curva
+                    self._add_scatter(curve, scales=scales, mode="lines")
+
+                if target_subsamples:
+                    self.plot_targets_subsamples(*x_vals)
+
+                return [self._add_graphics(scales)]
+
+        # caso più file -> lista di figure
+        out = []
+        for file_data in FileCurves.subdivide(self._curves):
+            # creo istanze CustomFigure contenenti i dati di singoli file
+            fig = CustomFigure(
+                file_data,
+                curves_to_plot=self._c_to_plot,
+                plot_all_curves=self._all_c,
+                legend=self._legend,
+                colored=self._colored
+            )
+            if target_subsamples:
+                fig.plot_targets()
+            out.extend(fig.plot_all())
+        return out
 
 if __name__=='__main__':
     from pathlib import Path
-
-    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IdVd_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"
-    # path = r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\TrapData_TrapDistr_exponential_Vgf_1_Es_1.72_Em_1.31_state_v0.csv"
-    paths = [
-        Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-1_Es_1.72_Em_0.18.csv'),
-        Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_0_Es_1.72_Em_0.18.csv'),
-        Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_1_Es_1.72_Em_0.18.csv'),
-        Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_2_Es_1.72_Em_0.18.csv'),
-        Path('C:/Users/user/Documents/Uni/Tirocinio/webapp/data/IdVd_TrapDistr_exponential_Vgf_-2_Es_1.72_Em_0.18.csv')]
-    e = FileCurves.from_paths(*paths)
+    e = FileCurves.from_paths(
+        Path(r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IDVD_TrapDistr_exponential_Vgf_-2_Es_0.2_Em_0.2.csv"),
+        Path(r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IDVD_TrapDistr_exponential_Vgf_-1_Es_0.2_Em_0.2.csv"),
+        Path(r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IDVD_TrapDistr_exponential_Vgf_0_Es_0.2_Em_0.2.csv"),
+        Path(r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IDVD_TrapDistr_exponential_Vgf_1_Es_0.2_Em_0.2.csv"),
+        Path(r"C:\Users\user\Documents\Uni\Tirocinio\webapp\data\IDVD_TrapDistr_exponential_Vgf_2_Es_0.2_Em_0.2.csv")
+    )
     e.get_grouping_feat()
-    figs:CustomFigure = CustomFigure(e).plot_targets().plot_group()
 
-    figs2 = figs.__copy__()
-
-    figs.show()
-    figs2.show()
+    if e:
+        prova_fig = CustomFigure(e)
+        # prova_fig.plot_group_subsamples(0.4,3,10, target_subsamples=True)
+        prova_fig.plot_group(target_curves=True)
+        prova_fig.show()
