@@ -1,7 +1,7 @@
 {
     "theme": "MINTY",
-    "data_directory": "C:\\Users\\user\\Desktop\\TrapData",
-    "export_directory": "C:\\Users\\user\\Desktop\\exported_files",
+    "data_directory": "C:\\Users\\user\\Desktop\\doped_region_idvd",
+    "export_directory": "C:\\Users\\user\\Desktop\\export_dir",
     "export_format": "png",
     "legend": "True",
     "colors": "True",

@@ -3,7 +3,7 @@ Questo modulo contiene tutte le funzioni callback che agiscono sugli elementi de
 grafici, all'interno dell'applicazione
 """
 
-from dash import dcc, Input, Output, State, callback, MATCH, ALL, no_update, callback_context
+from dash import dcc, Input, Output, State, callback, MATCH, ALL, no_update, callback_context, html
 from app_resources.AppCache import GLOBAL_CACHE
 import dash_bootstrap_components as dbc
 
@@ -172,31 +172,120 @@ def export_current(n_clicks:int, curr_tab:str, tabs_id:dict[str,str]):
 
 
 @callback(
-    Output({'page':MATCH, 'item': 'graph-tab', 'tab':ALL}, 'figure'),
+    [Output({'page':MATCH, 'item': 'graph-tab', 'tab':ALL}, 'figure'),
+     Output({'page': MATCH, 'item': 'store-placeholder-graph-tab'}, 'data', allow_duplicate=True)],
     Input({'page':MATCH, 'item':'button-target-visualize'}, 'n_clicks'),
     [State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
-     State({'page':MATCH, 'item': 'graph-tabs'}, 'id'),
      State({'page':MATCH, 'item': 'graph-tab', 'tab':ALL}, 'id'),
      State({'page':MATCH, 'item': 'graph-tab', 'tab':ALL}, 'figure')],
     prevent_initial_call=True
 )
-def plot_targets(n_clicks:int, curr_tab:str, tabs_id:dict[str,str],
-                 graphs_ids:list[dict[str,str]], graphs_figs:list):
+def plot_targets(n_clicks:int, curr_tab:str,
+                 graphs_ids:list[dict[str,str]],
+                 graphs_figs:list):
     """
     La callback si occupa di stampare le curve target nel tab aperto,
     in caso non siano già presenti, alla pressione dell'apposito pulsante.
 
     Nel caso fossero già state stampate, le toglie dalla figura.
     """
-    if not n_clicks or not curr_tab:
-        return no_update
+    if not any([n_clicks, curr_tab, graphs_ids]):
+        return no_update, no_update
 
-    file_type = tabs_id['page']
+    file_type = graphs_ids[0]['page']
     tab = GLOBAL_CACHE.open_tabs[file_type].tab(curr_tab)
 
     for graph_id,fig in zip(graphs_ids, graphs_figs):
         if graph_id['tab']==curr_tab:
-            graphs_figs[graphs_figs.index(fig)] = tab.switch_fig().figure
+            graphs_figs[graphs_figs.index(fig)] = tab.switch_target().used
             break
 
-    return graphs_figs
+    return graphs_figs, no_update
+
+
+@callback(
+    [Output({'page': MATCH, 'item': 'store-sample-points'}, 'data', allow_duplicate=True),
+     Output({'page': MATCH, 'item': 'input-sample-point'}, 'value')],
+    [Input({'page': MATCH, 'item': 'button-add-sample-point'}, 'n_clicks'),
+     Input({'page': MATCH, 'item': 'remove-sample-point', 'val': ALL}, 'n_clicks')],
+    [State({'page': MATCH, 'item': 'input-sample-point'}, 'value'),
+     State({'page': MATCH, 'item': 'store-sample-points'}, 'data')],
+    prevent_initial_call=True
+)
+def update_list(n_add: int, n_remove: list[int], val_input, current_list):
+    """Callback che si occupa di modificare la lista dei punti, aggiungendoli o rimuovendone"""
+    ctx = callback_context
+    if not ctx.triggered or not any((n_add, *n_remove)):
+        return current_list, no_update
+
+    triggered_id = ctx.triggered_id
+
+    # Logica Aggiunta
+    if triggered_id['item']=="button-add-sample-point" and val_input is not None:
+        if val_input not in current_list:
+            current_list.append(val_input)
+            current_list.sort()
+        return current_list, None
+
+    # Logica Rimozione
+    if triggered_id['item']=="remove-sample-point":
+        val_to_delete = triggered_id['val']
+        current_list.remove(val_to_delete)
+        return current_list, no_update
+
+    return current_list, no_update
+
+
+@callback(
+    Output({'page': MATCH, 'item': 'container-badges'}, 'children'),
+    Input({'page': MATCH, 'item': 'store-sample-points'}, 'data'),
+    State({'page': MATCH, 'item': 'store-sample-points'}, 'id')
+)
+def render_badges(punti:list[float], store_id:dict[str,str]):
+    """Visualizza i punti di sample salvati nello store"""
+    if not punti:
+        return html.Small("Nessun punto inserito", className="text-muted")
+
+    return [
+        dbc.Badge([
+            f"{p} ",
+            html.Span("×", id={'page':store_id['page'], 'item':'remove-sample-point', 'val':p},
+                      style={"cursor": "pointer", "marginLeft": "5px", "fontSize": "1.2em"})
+        ], color="info", className="me-1", pill=True) for p in punti
+    ]
+
+
+@callback(
+    [Output({'page':MATCH, 'item': 'graph-tab', 'tab':ALL}, 'figure', allow_duplicate=True),
+     Output({'page':MATCH, 'item':'store-placeholder-graph-tab'}, 'data', allow_duplicate=True)],
+    Input({'page':MATCH, 'item':'button-sample-chart'}, 'n_clicks'),
+    [State({'page': MATCH, 'item': 'store-sample-points'}, 'data'),
+     State({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
+     State({'page':MATCH, 'item': 'graph-tab', 'tab':ALL}, 'id'),
+     State({'page':MATCH, 'item': 'graph-tab', 'tab':ALL}, 'figure')],
+    prevent_initial_call=True
+)
+def sample_chart_switcher(n_clicks:int, samples_points:list[float],
+                          curr_tab:str, graphs_ids:list[dict[str,str]],
+                          graphs_figs:list):
+    """
+    La callback si occupa di stampare i subsamples del grafico attualmente
+    visualizzato, alla pressione del pulsante.
+
+    Se già visualizzati, ristampa la figura con le curve.
+    """
+    if not any([n_clicks, curr_tab, graphs_ids, samples_points]):
+        return no_update,no_update
+
+    file_type = graphs_ids[0]['page']
+    tab = GLOBAL_CACHE.open_tabs[file_type].tab(curr_tab)
+
+    for graph_id,fig in zip(graphs_ids, graphs_figs):
+        if graph_id['tab']==curr_tab:
+            # carico i punti attuali, poi la classe si occuperà della modifica
+            tab.x_vals = samples_points
+            # scambio la figura utilizzata e la ritorno in visualizzazione
+            graphs_figs[graphs_figs.index(fig)] = tab.switch_char().used
+            break
+
+    return graphs_figs, no_update

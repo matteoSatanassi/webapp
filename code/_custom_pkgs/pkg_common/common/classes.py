@@ -552,7 +552,11 @@ class FileCurves(FilesFeatures):
             if curve_name in allowed_curves:
                 x_col, y_col = f"{curve_name} X", f"{curve_name} Y"
                 if x_col in data.columns and y_col in data.columns:
+                    # elimino i valori vuoti
                     cleaned_coordinates = data[[x_col, y_col]].dropna()
+                    # 'subset' indica di guardare solo i duplicati in x_col
+                    # 'keep=first' mantiene la prima riga trovata e cancella le altre
+                    cleaned_coordinates = cleaned_coordinates.drop_duplicates(subset=[x_col], keep='first')
                     # creo e aggiungo la curva a curves
                     curves[curve_name] = Curve.create(
                         allowed_curves[curve_name],

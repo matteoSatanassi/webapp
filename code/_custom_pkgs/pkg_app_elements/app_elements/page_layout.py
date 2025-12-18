@@ -2,7 +2,6 @@
 Il modulo definisce le funzioni per la creazione automatica
 di layout delle diverse pagine
 """
-from pydoc import classname
 
 from app_elements.page_elements import *
 from app_resources.AppCache import GLOBAL_CACHE
@@ -195,25 +194,59 @@ def children_layout(PAGE:str):
                                 # Controlli grafici
                                 html.Div([
                                     dbc.Row([
-                                        dbc.Col([
-                                            dbc.Button(
-                                                "📥 Scarica Immagine",
-                                                id={'page': PAGE, 'item': 'button-export-current-graph'},
-                                                color="outline-success",
-                                                size="md",
-                                                className="w-100",
+                                        dbc.Col(
+                                            dbc.Row(
+                                                html.Div([
+                                                    dbc.InputGroup([
+                                                            dbc.Input(id={'page': PAGE, 'item': 'input-sample-point'},
+                                                                      type="number", placeholder="Valore X..."),
+                                                            dbc.Button("Add", color="primary",
+                                                                       id={'page': PAGE, 'item': 'button-add-sample-point'}),
+                                                        ], className="mb-3 w-80"
+                                                    ),
+
+                                                    # Container dinamico per i Badge
+                                                    html.Div(id={'page': PAGE, 'item': 'container-badges'},
+                                                             className="d-flex flex-wrap gap-2 mb-4"),
+
+                                                    # Memoria locale del browser per la lista dei punti
+                                                    dcc.Store(id={'page': PAGE, 'item': 'store-sample-points'},
+                                                              data=[0.4, 3, 10] if PAGE == "IDVD" else [])
+                                                ])
                                             )
-                                        ], width=4),
-                                        dbc.Col([
-                                            dbc.Button(
-                                                "👀 Visualizza target",
-                                                id={'page': PAGE, 'item': 'button-target-visualize'},
-                                                color="outline-secondary",
-                                                size="md",
-                                                className="w-100"
-                                            )
-                                        ], width=4, style={'display': 'block' if targets_present else 'none'}),
-                                    ], className="d-flex flex-row-reverse")
+                                        ),  # colonna abscissa selector
+                                        dbc.Col(
+                                            dbc.Row([
+                                                dbc.Col([
+                                                    dbc.Button(
+                                                        "📥 Scarica Immagine",
+                                                        id={'page': PAGE, 'item': 'button-export-current-graph'},
+                                                        color="outline-success",
+                                                        size="md",
+                                                        className="w-100",
+                                                    )
+                                                ], width=4),
+                                                dbc.Col([
+                                                    dbc.Button(
+                                                        "👀 Visualizza target",
+                                                        id={'page': PAGE, 'item': 'button-target-visualize'},
+                                                        color="outline-secondary",
+                                                        size="md",
+                                                        className="w-100"
+                                                    )
+                                                ], width=4, style={'display': 'block' if targets_present else 'none'}),
+                                                dbc.Col([
+                                                    dbc.Button(
+                                                        "📊 Samples Chart",
+                                                        id={'page': PAGE, 'item': 'button-sample-chart'},
+                                                        color="outline-warning",
+                                                        size="md",
+                                                        className="w-100"
+                                                    ),
+                                                ], width=4),
+                                            ], className="d-flex flex-row-reverse")
+                                        )   # colonna bottoni export e target_plotter
+                                    ])
                                 ],
                                     id={'page': PAGE, 'item': 'graph-controls'},
                                     style={'display': 'none'}

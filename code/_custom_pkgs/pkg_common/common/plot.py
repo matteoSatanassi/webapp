@@ -627,7 +627,7 @@ class CustomFigure(go.Figure):
                     curve.width = 1
                     curve.markers = None
                     # il nome rimane quello già salvato nella curva
-                    self._add_scatter(curve, scales=scales, mode="lines")
+                    self._add_scatter(curve, scales=scales, mode="lines+markers", marker_size=5)
 
                 if target_subsamples:
                     self.plot_targets_subsamples(*x_vals)
