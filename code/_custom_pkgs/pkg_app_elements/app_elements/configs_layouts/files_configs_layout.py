@@ -4,7 +4,7 @@ from dash import html
 import dash_bootstrap_components as dbc
 
 layout = dbc.Container([
-    html.P("Modifica la struttura AllowedFeatures e AllowedCurves per ogni tecnologia.",
+    html.P("Aggiungi e modifica le strutture dei file letti dall'applicazione.",
                                className="text-muted mt-3"),
 
     html.Div(id="container-files-configs"), # Popolato dalla callback
