@@ -11,13 +11,14 @@ from app_resources.AppCache import GLOBAL_CACHE
 
 
 ## DYNAMIC CALLBACKS ##
-callback([
-    Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'data'),
-    Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'hidden_columns'),
-    Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows', allow_duplicate=True),
+callback(
+    [Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'rowData'),
+     Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'columnDefs'),
+     Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'selectedRows', allow_duplicate=True),
+     Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'columnState')],
     Input({'page':MATCH, 'item':'radio-table-mode', 'location':'modal'}, 'value'),
-    State({'page':MATCH, 'item':'menu-grouping-features', 'location':'modal'}, 'value'),
-    State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'id')],
+    [State({'page':MATCH, 'item':'menu-grouping-features', 'location':'modal'}, 'value'),
+     State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'id')],
     prevent_initial_call=True
 )(update_table)
 
@@ -63,34 +64,20 @@ def initialize_values(is_open:bool):
 
 
 @callback(
-    Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows', allow_duplicate=True),
-    Input({'page':MATCH, 'item':'button-select-all'}, 'n_clicks'),
-    State({'page':MATCH, 'item':'table', 'location':'modal'}, 'data'),
-    prevent_initial_call=True
-)
-def select_all_rows(n_clicks, table_data):
-    if not n_clicks:
-        return no_update
-
-    return [i for i in range(len(table_data))]
-
-
-@callback(
-    Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows', allow_duplicate=True),
+    Output({'page':MATCH, 'item':'table', 'location':'modal'}, 'selectedRows', allow_duplicate=True),
     Input({'page':MATCH, 'item':'modal'}, 'is_open'),
-    State({'page':MATCH, 'item':'table', 'location':'modal'}, 'selected_rows'),
     prevent_initial_call=True
 )
-def unselect_rows_modal(is_open:bool, selected_rows:list[int]):
+def unselect_rows_modal(is_open:bool):
     """Deseleziona le righe quando viene chiuso il pop-up"""
     if not is_open:
         return []
-    return selected_rows
+    return no_update
 
 
 @callback(
-    Output({'page':MATCH, 'item':'button-export'}, "disabled"),
-    Input({'page':MATCH, 'item':'table', 'location':'modal'}, "derived_virtual_selected_rows"),
+    Output({'page':MATCH, 'item':'button-export'}, 'disabled'),
+    Input({'page':MATCH, 'item':'table', 'location':'modal'}, 'selectedRows'),
     prevent_initial_call=True
 )
 def enable_export_button(selected_rows:list[int]):
@@ -105,8 +92,7 @@ def enable_export_button(selected_rows:list[int]):
      Output({'page': MATCH, 'item': 'store-placeholder-modal'}, 'data')],
     Input({'page': MATCH, 'item': 'button-export'}, 'n_clicks'),
     [State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'id'),
-    State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'derived_virtual_selected_rows'),
-    State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'derived_virtual_data'),
+    State({'page': MATCH, 'item': 'table', 'location': 'modal'}, 'selectedRows'),
     State({'page': MATCH, 'item': 'radio-table-mode', 'location': 'modal'}, 'value'),
     State({'page': MATCH, 'item': 'menu-grouping-features', 'location': 'modal'}, 'value'),
     State({'page': MATCH, 'item': 'checklist-curves', 'location': 'modal'}, 'value'),
@@ -116,7 +102,7 @@ def enable_export_button(selected_rows:list[int]):
     State({'page': MATCH, 'item': 'selector-format', 'location': 'modal'}, 'value')],
     prevent_initial_call=True
 )
-def export_selected(n_clicks:int, table_id:dict[str,str], selected_rows:list[int],table_data:list[dict], mode:str, grouping_feature:str,
+def export_selected(n_clicks:int, table_id:dict[str,str], selected_rows:list[dict], mode:str, grouping_feature:str,
                     selected_curves:list[str], legend:list, colors:list, dpi_img:int, file_format:str):
     """Esporta le righe selezionate nella tabella del pop-up, premuto il bottone di export, e a fino processo chiude il pop-up"""
     if not n_clicks or not selected_rows:
@@ -125,7 +111,6 @@ def export_selected(n_clicks:int, table_id:dict[str,str], selected_rows:list[int
     file_type = table_id['page']
 
     export_path = GLOBAL_CACHE.find_export_path()
-    selected_rows = [table_data[i] for i in selected_rows]
 
     if mode == "grouped":
         figs:list[CustomFigure] = []
@@ -172,4 +157,4 @@ def export_selected(n_clicks:int, table_id:dict[str,str], selected_rows:list[int
 
 ## DEBUGGING ##
 if __name__ == "__main__":
-    print(select_all_rows(1,[1,2,3,4,5,6]))
+    pass

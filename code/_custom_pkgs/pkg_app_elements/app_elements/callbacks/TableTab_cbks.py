@@ -10,31 +10,28 @@ from app_resources.AppCache import GLOBAL_CACHE
 ## DYNAMIC CALLBACKS ##
 
 callback([
-    Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'data'),
-    Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'hidden_columns'),
-    Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'selected_rows',
-           allow_duplicate=True)],
+    Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'rowData'),
+    Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'columnDefs'),
+    Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'selectedRows', allow_duplicate=True),
+    Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'columnState', allow_duplicate=True),],
     Input({'page':MATCH, 'item':'radio-table-mode', 'location':'dashboard'}, 'value'),
     [State({'page':MATCH, 'item':'menu-grouping-features', 'location':'dashboard'}, 'value'),
-    State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'id')],
+     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'id'),],
     prevent_initial_call=True
 )(update_table)
 
 
-@callback([
-    Output({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
-    Output({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
-    Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'selected_rows'),
-    Output({'page': MATCH, 'item': 'main-tabs'}, 'active_tab')],
+@callback(
+    [Output({'page':MATCH, 'item': 'graph-tabs'}, 'children'),
+     Output({'page':MATCH, 'item': 'graph-tabs'}, 'value'),
+     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'selectedRows'),
+     Output({'page': MATCH, 'item': 'main-tabs'}, 'active_tab')],
     Input({'page': MATCH, 'item': 'button-plot'}, 'n_clicks'),
     [State({'page': MATCH, 'item': 'graph-tabs'}, 'children'),
-     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'},
-           'derived_virtual_selected_rows'),
-     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'derived_virtual_data'),
-     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'id')
-])
-def add_tabs(n_clicks:int, tabs:list[dcc.Tab], selected_rows:list[int],
-             table_data:dict, table_id:dict[str,str]):
+     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'},'selectedRows'),
+     State({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'id')]
+)
+def add_tabs(n_clicks:int, tabs:list[dcc.Tab], selected_rows:list, table_id:dict[str,str]):
     """
     Aggiorna la lista dei tab al click del bottone,
     in base agli esperimenti selezionati nella tabella,
@@ -54,36 +51,34 @@ def add_tabs(n_clicks:int, tabs:list[dcc.Tab], selected_rows:list[int],
     file_type = table_id['page']
     open_tabs = [tab['props']['value'] for tab in tabs]
 
-    for selected_index in selected_rows:
-        row = table_data[selected_index]
-
+    for row in selected_rows:
         if row['file_path'] not in open_tabs:
             # salvo il nuovo valore Tab nella cache e ritorno l'oggetto dcc.Tab di cui ho bisogno
             tab = GLOBAL_CACHE.open_tabs[file_type].tab(row['file_path']).build_dcc_tab()
             tabs.append(tab)
 
-    return tabs, table_data[selected_rows[0]]['file_path'], [], "tab-graphs"
+    return tabs, selected_rows[0]['file_path'], [], "tab-graphs"
 
 
 @callback(
-    [Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'data',
-            allow_duplicate=True),
-     Output({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'hidden_columns',
-            allow_duplicate=True)],
+    [Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'rowData', allow_duplicate=True),
+     Output({'page': MATCH, 'item': 'table', 'location': 'dashboard'}, 'columnDefs', allow_duplicate=True),
+     Output({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'columnState', allow_duplicate=True),],
     Input({'page': MATCH, 'item': 'button-calculate-affinity'}, 'n_clicks'),
     [State({'page': MATCH, 'item': 'table', 'location':'dashboard'}, 'id'),
      State({'page':MATCH, 'item':'radio-table-mode', 'location':'dashboard'}, 'value'),
-     State({'page':MATCH, 'item':'menu-grouping-features', 'location':'dashboard'}, 'value')],
+     State({'page':MATCH, 'item':'menu-grouping-features', 'location':'dashboard'}, 'value'),
+     State({'page':MATCH, 'item':'table', 'location':'dashboard'}, 'columnDefs'),],
     prevent_initial_call=True
 )
-def affinity_calc(n_clicks:int, table_id:dict, mode:str, grouping_feature:str):
+def affinity_calc(n_clicks:int, table_id:dict, mode:str, grouping_feature:str, column_defs:list[dict]):
     """
     Calcola le percentuali di affinità di ogni esperimento presente nei dati, salva i dati ricavati
     nel file preposto e li visualizza direttamente nella tabella di pagina,
     in base alla modalità di visualizzazione attuale.
     """
     if not n_clicks:
-        return no_update, no_update
+        return no_update, no_update, no_update
 
     file_type = table_id['page']
     page_df_out = GLOBAL_CACHE.tables.calculate_affinities(file_type)
@@ -95,10 +90,11 @@ def affinity_calc(n_clicks:int, table_id:dict, mode:str, grouping_feature:str):
     else:
         raise ValueError(f"Il valore passato dal radio selector [{mode}], non è tra quelli supportati")
 
-    page_df_out.fillna("-")
+    for col_def in column_defs:
+        col_def['hide'] = True if col_def['field'] in cols_to_hide else False
 
     # noinspection PyUnboundLocalVariable
-    return page_df_out.to_dict('records'), cols_to_hide
+    return page_df_out.to_dict('records'), column_defs, None
 
 
 ## DEBUG ##

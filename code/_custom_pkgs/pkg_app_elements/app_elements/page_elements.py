@@ -2,100 +2,130 @@
 Il modulo contiene le definizioni di alcuni elementi che compaiono all'interno dell'applicazione
 """
 
-import pandas as pd
-from dash import  dcc, dash_table, html
+from dash import  dcc, html
+import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from common.PlotterConfigs import PlotterConfigs
 from app_resources.AppCache import GLOBAL_CACHE, TablesCache
 
 
 ## PAGE ELEMENTS ##
-def my_table_template(table_id:dict[str,str]) -> dash_table.DataTable:
+def my_table_template(table_id:dict[str,str]) -> dag.AgGrid:
     """
     Template custom per la visualizzazione dei file.
 
-    I dati sono presi automaticamente a partire dal file di indicizzazione nella cartella dei dati,
-    in base al data_type passato all'interno dell'id.
+    I dati sono presi automaticamente a partire dal file di indicizzazione
+    nella cartella dei dati, in base al data_type passato all'interno dell'id.
 
-    Vengono nascoste le colonne vuote e la colonna degli indirizzi. Le celle vuote vengono riempite con "-".
+    Vengono nascoste le colonne vuote e la colonna degli indirizzi.
+    Le celle vuote vengono riempite con "-".
     :param table_id:
     :return:
     """
 
-    data, columns, cols_to_hide = get_table(table_id)
+    data, columns_defs, _ = get_table(table_id)
 
-    data = data.to_dict('records')
-
-    return dash_table.DataTable(
+    return dag.AgGrid(
         id=table_id,
-        data=data,
-        columns=columns,
-        sort_action='native',
-        filter_action='native',
-        filter_options={"placeholder_text": "Filter column..."},
-        row_selectable='multi',
-        selected_rows=[],
-        hidden_columns=cols_to_hide,
-        page_size=10,
-        style_cell={
-            'textAlign': 'right',
-            'padding': '8px 12px',
-            'fontFamily': 'Arial, sans-serif',
-            'fontSize': '13px',
-            'minWidth': '80px',
-            'maxWidth': '150px',
-            'whiteSpace': 'normal'
+        rowData=data.to_dict('records'),
+        columnDefs=columns_defs,
+        resetColumnState=False,
+        defaultColDef={
+            "resizable": True,
+            "sortable": True,
+            "filter": True,
+            "minWidth": 100,
+            # "headerClass": "center-header",  # CSS custom per allineamento header
+            "cellStyle": {"display": "flex", "alignItems": "center", "justifyContent": "right"},
+            "valueFormatter": {"function": "params.value == null || params.value === '' ? '-' : params.value"}
         },
-        style_cell_conditional=[
-            {
-                'if': {'column_id': 'trap_distr'},
-                'textAlign': 'left',
-                'minWidth': '120px',
-                'fontWeight': '500'
-            },
-            {
-                'if': {'column_id': 'e_mid'},
-                'minWidth': '90px'
-            },
-            {
-                'if': {'column_id': 'e_sigma'},
-                'minWidth': '90px'
-            },
-            {
-                'if': {'column_id': 'v_gf'},
-                'minWidth': '80px'
-            }
-        ],
-        style_data={
-            'color': 'black',
-            'backgroundColor': 'white',
-            'border': '1px solid #f0f0f0'
+        dashGridOptions={
+            "rowSelection": "multiple",
+            "suppressRowClickSelection": True,  # Seleziona solo tramite checkbox
+            "pagination": True,
+            "paginationPageSize": 20,
+            "suppressCellFocus": True,
+            "animateRows": True,
+            "domLayout": "autoHeight",
+            "suppressColumnVirtualisation": True,
         },
-        style_data_conditional=[
-            {
-                'if': {'row_index': 'odd'},
-                'backgroundColor': 'rgb(240, 240, 240)',
-            }
-        ],
-        style_header={
-            'backgroundColor': 'rgb(100, 100, 100)',
-            'color': 'white',
-            'fontWeight': 'bold',
-            'fontSize': '14px',
-            'padding': '12px 15px',
-            'textAlign': 'center',
-            'whiteSpace': 'normal',
-            'height': 'auto'
+        columnSize="sizeToFit",
+        className="ag-theme-alpine",
+        style={
+            "height": "auto",
+            "width": "100%",
+            "fontSize": "13px",
+            "fontFamily": "Arial, sans-serif"
         },
-        css=[{"selector": ".show-hide", "rule": "display: none"}],
-        fixed_rows={'headers': True},
-        tooltip_data=[],
-        tooltip_duration=None,
-        style_table={
-            'minWidth': '100%',
-            'overflowX': 'auto'
-        }
     )
+
+    # return dash_table.DataTable(
+    #     sort_action='native',
+    #     filter_action='native',
+    #     filter_options={"placeholder_text": "Filter column..."},
+    #     row_selectable='multi',
+    #     selected_rows=[],
+    #     hidden_columns=cols_to_hide,
+    #     page_size=10,
+    #     style_cell={
+    #         'textAlign': 'right',
+    #         'padding': '8px 12px',
+    #         'fontFamily': 'Arial, sans-serif',
+    #         'fontSize': '13px',
+    #         'minWidth': '80px',
+    #         'maxWidth': '150px',
+    #         'whiteSpace': 'normal'
+    #     },
+    #     style_cell_conditional=[
+    #         {
+    #             'if': {'column_id': 'trap_distr'},
+    #             'textAlign': 'left',
+    #             'minWidth': '120px',
+    #             'fontWeight': '500'
+    #         },
+    #         {
+    #             'if': {'column_id': 'e_mid'},
+    #             'minWidth': '90px'
+    #         },
+    #         {
+    #             'if': {'column_id': 'e_sigma'},
+    #             'minWidth': '90px'
+    #         },
+    #         {
+    #             'if': {'column_id': 'v_gf'},
+    #             'minWidth': '80px'
+    #         }
+    #     ],
+    #     style_data={
+    #         'color': 'black',
+    #         'backgroundColor': 'white',
+    #         'border': '1px solid #f0f0f0'
+    #     },
+    #     style_data_conditional=[
+    #         {
+    #             'if': {'row_index': 'odd'},
+    #             'backgroundColor': 'rgb(240, 240, 240)',
+    #         }
+    #     ],
+    #     style_header={
+    #         'backgroundColor': 'rgb(100, 100, 100)',
+    #         'color': 'white',
+    #         'fontWeight': 'bold',
+    #         'fontSize': '14px',
+    #         'padding': '12px 15px',
+    #         'textAlign': 'center',
+    #         'whiteSpace': 'normal',
+    #         'height': 'auto'
+    #     },
+    #     css=[{"selector": ".show-hide", "rule": "display: none"}],
+    #     fixed_rows={'headers': True},
+    #     tooltip_data=[],
+    #     tooltip_duration=None,
+    #     style_table={
+    #         'minWidth': '100%',
+    #         'overflowX': 'auto'
+    #     }
+    # )
 
 def grouping_selector(selector_id:dict[str,str]):
     """
@@ -143,14 +173,16 @@ def grouping_selector(selector_id:dict[str,str]):
                     inline=True,
                     className='d-flex justify-content-around',
                     labelStyle={'margin-bottom': '15px'},
-                )
+                ),
+                width=5
             ),
             dbc.Col(
                 dcc.Dropdown(
                     options=features,
                     value="Vgf" if "Vgf" in features else features[0],
                     id=menu_id,
-                )
+                ),
+                width=3,
             )
         ])
     ])
@@ -343,9 +375,6 @@ def export_modal(modal_id:dict[str,str])->dbc.Modal:
             dbc.Button(
                 "❌ Annulla", id={'page':file_type, 'item':'button-close-modal'}, color="secondary", class_name="me-2", n_clicks=0
             ),
-            dbc.Button(
-                "☑️ Seleziona tutti", id={'page':file_type, 'item':'button-select-all'}, color="info", n_clicks=0
-            ),
             html.Div(style={'flex':'1'}),
             dbc.Button(
                 "💾 Esporta Selezionati", id={'page':file_type, 'item':'button-export'}, color="primary", disabled=True, n_clicks=0
@@ -366,7 +395,7 @@ def get_table(table_id:dict[str,str],
               only_df=False,
               grouping_feat:str=None):
     """
-    Ritorna i dati per costruire la DataTable specificata dall'id nella visualizzazione normal.
+    Ritorna i dati per costruire la AgGrid specificata dall'id nella visualizzazione normal.
     I valori nulli sono riempiti con "-".
 
     :param table_id: ID della tabella di cui sono richiesti i valori.
@@ -382,26 +411,27 @@ def get_table(table_id:dict[str,str],
         raise KeyError("Valore di pagina non specificato nell'id")
 
     # page è anche il nome del data_type dei file da visualizzare
-    type_configs = GLOBAL_CACHE.files_configs[file_type]
-    columns = type_configs.get_dash_table_cols
 
     if not grouping_feat:
         data = GLOBAL_CACHE.tables.get(file_type)
-
         # nasconderò le colonne vuote e la colonna dei file_path
         cols_to_hide = TablesCache.cols_to_hide(data)
     else:
         data, cols_to_hide = GLOBAL_CACHE.tables.group_df(file_type, grouping_feat)
 
-    # riempio le celle vuote con un trattino placeholder
-    data.fillna("-")
-
     if only_df:
         return data
-    return data, columns, cols_to_hide
 
-if __name__ == '__main__':
-    datas, columnss, cols_to_hidee = get_table({'page':'IDVD', 'item':'table', 'location':'dashboard'})
+    type_configs = GLOBAL_CACHE.files_configs[file_type]
+    columns_defs = type_configs.get_dash_table_cols
 
-    print(columnss)
-    print(cols_to_hidee)
+    for col in columns_defs:
+        col["hide"] = True if col["field"] in cols_to_hide else False
+
+    return data, columns_defs, cols_to_hide
+
+# if __name__ == '__main__':
+#     datas, columnss, cols_to_hidee = get_table({'page':'IDVD', 'item':'table', 'location':'dashboard'})
+#
+#     print(columnss)
+#     print(cols_to_hidee)

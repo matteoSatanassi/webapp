@@ -5,7 +5,6 @@ modificare e salvare i vari parametri di configurazione dell'applicazione
 
 import json
 from pathlib import Path
-from dash import dash_table
 
 
 ## CLASSES ##
@@ -158,30 +157,54 @@ class FileConfigs:
     @property
     def get_dash_table_cols(self)->list[dict]:
         """
-        Ritorna la lista delle colonne da passare al parametro columns
-        di un oggetto dash_table
+        Ritorna la lista delle colonne da passare al parametro columnDefs
+        di un oggetto dash_ag_grid.AgGrid
         """
-
         columns = [
-            {"name": f_name,
-             "id": f_name,
-             "type": "numeric" if f_type in ("integer", "float") else None}
-            for f_name, f_type in self.allowed_features.items()
+            {
+                "headerName": "",
+                "field": "selection",
+                "checkboxSelection": True,
+                "headerCheckboxSelection": True,
+                "width": 40,
+                "maxWidth": 40,
+                "suppressSizeToFit": True,
+                "pinned": "left",
+                "lockPinned": True,
+                "lockPosition": "left",
+                "sortable": False,
+                "filter": False,
+                "headerClass": "center-header",
+                "suppressMenu": True,
+                "valueFormatter": {"function": "return null"},
+            }
         ]
+
+        columns.extend([
+            {"headerName": f_name,
+             "field": f_name,
+             "type": "numericColumn" if f_type in ("integer", "float") else None,
+             "filter": "agNumberColumnFilter" if f_type in ("integer", "float") else "agTextColumnFilter",
+             "hide":False,}
+            for f_name, f_type in self.allowed_features.items()
+        ])
+
         if self.targets_presents:
-            percentage_format = dash_table.FormatTemplate.percentage(2)
+            # Formattatore per le percentuali (es. 0.85 -> 85.00%)
+            percentage_formatter = {"function": "d3.format('.2%')(params.value)"}
+
             columns.append({
-                "name": "Aff Overall",
-                "id": "aff_tot",
-                "type": "numeric",
-                "format": percentage_format
+                "headerName": "Aff Overall",
+                "field": "aff_tot",
+                "type": "numericColumn",
+                "valueFormatter": percentage_formatter
             })
             for curve_id, curve_label in self.allowed_curves.items():
                 columns.append({
-                    "name": f"Aff {curve_label}",
-                    "id": f"aff_{curve_id}",
-                    "type": "numeric",
-                    "format": percentage_format
+                    "headerName": f"Aff {curve_label}",
+                    "field": f"aff_{curve_id}",
+                    "type": "numericColumn",
+                    "valueFormatter": percentage_formatter
                 })
 
         return columns

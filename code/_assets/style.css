@@ -14,12 +14,6 @@
     font-weight: 500;
 }
 
-/* Tabella migliorata */
-.dash-table-container .dash-spreadsheet-container {
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-}
-
 /* Responsive design */
 @media (max-width: 992px) {
     .dashboard .row {
@@ -29,75 +23,6 @@
     .dashboard .col {
         width: 100% !important;
         margin-bottom: 20px;
-    }
-}
-
-/* Miglioramenti specifici per la tabella */
-.dash-table-container {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.dash-table-container .dash-spreadsheet-container {
-    border: 1px solid #ced4da;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Header della tabella più leggibile */
-.dash-table-container .dash-header {
-    background: linear-gradient(135deg, #495057 0%, #6c757d 100%) !important;
-    font-weight: 600;
-}
-
-/* Hover sulle righe */
-.dash-table-container .dash-row:hover {
-    background-color: #e9ecef !important;
-    transition: background-color 0.2s ease;
-}
-
-/* Scrollbar personalizzata */
-.dash-table-container ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-.dash-table-container ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-.dash-table-container ::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-.dash-table-container ::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-/* Responsive per tabelle */
-@media (max-width: 1200px) {
-    .dashboard .col-md-4 {
-        width: 40% !important;
-    }
-
-    .dashboard .col-md-8 {
-        width: 60% !important;
-    }
-}
-
-@media (max-width: 992px) {
-    .dashboard .row {
-        flex-direction: column;
-    }
-
-    .dashboard .col {
-        width: 100% !important;
-        margin-bottom: 20px;
-    }
-
-    .dash-table-container {
-        font-size: 12px;
     }
 }
 
@@ -123,6 +48,7 @@
     min-height: 80px;
 }
 
+/*noinspection ALL*/
 .dotted-bkg {
   --dot-bg: var(--bs-light);
   --dot-color: var(--bs-info);
@@ -131,8 +57,7 @@
 	background:
         radial-gradient(circle at center,
         var(--dot-color) var(--dot-size),
-        var(--dot-bg) var(--dot-size)
-        );
+        var(--dot-bg) var(--dot-size));
         background-size: var(--dot-space) var(--dot-space);
         background-color: var(--dot-bg);
 		/*linear-gradient(90deg, var(--dot-bg) calc(var(--dot-space) - var(--dot-size)), transparent 1%) center / var(--dot-space) var(--dot-space),*/
@@ -140,6 +65,31 @@
 		/*var(--dot-color);*/
 }
 
+/*noinspection CssUnresolvedCustomProperty*/
 #h1-home{
     color: var(--bs-secondary)
+}
+
+/* Centra la checkbox nell'header delle tabelle */
+.center-header .ag-header-cell-label {
+    justify-content: center !important;
+}
+
+/* Centra la checkbox nell'header forzando il layout flex */
+.ag-header-cell.center-header .ag-header-cell-label {
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+/* Rimuove il padding extra che potrebbe spostare la checkbox */
+.ag-header-cell.center-header .ag-header-cell-comp-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+/* Centra la checkbox nelle celle della colonna selection */
+.ag-cell[col-id="selection"] {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
 }

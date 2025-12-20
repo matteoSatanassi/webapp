@@ -5,7 +5,6 @@ Il modulo raccorda tutte le callback definite in altri moduli, e definisce le ca
 from app_elements.callbacks.Modal_cbks import *
 from app_elements.callbacks.GraphsTab_cbks import *
 from app_elements.callbacks.TableTab_cbks import *
-from app_elements.page_elements import my_table_template
 from app_elements.page_layout import children_layout
 from app_elements.builders import nav_builder
 
