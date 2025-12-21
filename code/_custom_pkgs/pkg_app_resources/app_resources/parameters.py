@@ -107,21 +107,52 @@ class AppConfigs:
             return AppConfigs.defaults
 
 
-class FileConfigs:
-    """
-    Si occupa di leggere e modificare i parametri di configurazione di un certo file_type,
-    specificato alla creazione
-    """
+class FilesConfigsManager:
+    """Classe preposta a interventi generici sul file di configurazione"""
+
     files_configs_file = AppConfigs.assets_dir / 'files_configs.json'
 
-    def __init__(self, file_type:str):
-        self._files_configs = self.load_files_info()
-
-        if file_type in self._files_configs:
-            self._file_type = file_type
-            self._all = self._files_configs[file_type]
+    @staticmethod
+    def load_files_info() -> dict:
+        """
+        Carica i tipi di file da analizzare nella run,
+        i parametri a loro associati e le curve contenute
+        """
+        files_configs_file = FilesConfigsManager.files_configs_file
+        if files_configs_file.exists():
+            with open(files_configs_file, 'r', encoding="utf-8") as f:
+                out = json.load(f)
+                if "_comments" in out:
+                    out.pop("_comments")
+                return out
         else:
-            raise ValueError("Il file type specificato non è tra quelli supportati")
+            return {}
+
+
+class FileConfigs:
+    """
+    Si occupa di memorizzare e presentare i parametri di configurazione
+    di un certo file_type, specificato alla creazione
+    """
+    def __init__(self, file_type:str):
+        self.file_type = file_type
+        self._all:dict = None
+
+    @classmethod
+    def from_mem(cls):
+        """
+        Crea una lista di istanze FileConfigs, contenenti i dati contenuti
+        nel file di configurazione files_configs.json
+        """
+        cfgs = FilesConfigsManager.load_files_info()
+
+        out:list[FileConfigs] = []
+        for file_type in cfgs.keys():
+            inst = cls(file_type)
+            inst._all = cfgs[file_type]
+            out.append(inst)
+
+        return out
 
     @property
     def allowed_curves(self)->dict[str,str]:
@@ -209,62 +240,68 @@ class FileConfigs:
 
         return columns
 
-    def modify_curves(self, **kwargs):
-        """
-        Date delle coppie chiave, valore, modifica i valori delle rispettive
-        curve nel dizionario delle AllowedCurves, e lo salva in memoria
-        """
-        for key, value in kwargs.items():
-            self._all["AllowedCurves"][str(key)] = str(value)
-        self.save_all()
-    def modify_features(self, **kwargs):
-        """
-        Date delle coppie chiave, valore, modifica i valori delle rispettive
-        features nel dizionario delle AllowedCurves, e lo salva in memoria
-        """
-        for key, value in kwargs.items():
-            self._all["AllowedFeatures"][str(key)] = str(value)
-        self.save_all()
-    def save_all(self):
-        """Salva in memoria i parametri di configurazione scritti nell'istanza"""
-        self._files_configs[self._file_type] = self._all
-        with open(self.files_configs_file, 'w', encoding="utf-8") as f:
-            json.dump(self._files_configs, f, indent=4)
+    # def modify_curves(self, **kwargs):
+    #     """
+    #     Date delle coppie chiave, valore, modifica i valori delle rispettive
+    #     curve nel dizionario delle AllowedCurves, e lo salva in memoria
+    #     """
+    #     for key, value in kwargs.items():
+    #         self._all["AllowedCurves"][str(key)] = str(value)
+    #     self.save_all()
+    # def modify_features(self, **kwargs):
+    #     """
+    #     Date delle coppie chiave, valore, modifica i valori delle rispettive
+    #     features nel dizionario delle AllowedCurves, e lo salva in memoria
+    #     """
+    #     for key, value in kwargs.items():
+    #         self._all["AllowedFeatures"][str(key)] = str(value)
+    #     self.save_all()
 
-    @staticmethod
-    def load_files_info()->dict:
-        """
-        Carica i tipi di file da analizzare nella run,
-        i parametri a loro associati e le curve contenute
-        """
-        if FileConfigs.files_configs_file.exists():
-            with open(FileConfigs.files_configs_file, 'r', encoding="utf-8") as f:
-                out = json.load(f)
-                if "_comments" in out:
-                    out.pop("_comments")
-                return out
-        else:
-            return {}
-    @staticmethod
-    def supported_file_types()->set[str]:
-        """Ritorna la lista dei file_type supportati dall'applicazione"""
-        return set(FileConfigs.load_files_info().keys())
+
+class FilesConfigs(FilesConfigsManager):
+    """
+    La classe contiene tutti i metodi per la
+    lettura e la modifica dei dati contenuti in
+    files_configs.json
+    """
+
+    file_data = FilesConfigsManager.load_files_info()
+
+    data = {f_configs.file_type:f_configs for f_configs in FileConfigs.from_mem()}
+
+    @property
+    def supported_file_types(self) -> set[str]:
+        """Ritorna la lista dei file_type salvati nella classe"""
+        return set(self.file_data.keys())
+
+    def save_all(self):
+        """Salva in memoria i parametri di configurazione scritti nella classe"""
+        for file_type in self.data:
+            self.file_data[file_type] = self.data[file_type]._all
+
+        with open(self.files_configs_file, 'w', encoding="utf-8") as f:
+            json.dump(self.file_data, f, indent=4)
 
 
 ## CACHE CLASS ##
 
-# pylint: disable=too-few-public-methods
 class ConfigCache:
     """
     La classe si occupa di raggruppare i parametri di configurazione dell'applicazione
     """
     app_configs = AppConfigs()
 
-    file_types: set[str] = FileConfigs.supported_file_types()
+    _files_configs = FilesConfigs()
 
-    files_configs: dict[str, FileConfigs] = {}
-    for file_type in file_types:
-        files_configs[file_type] = FileConfigs(file_type)
+    @property
+    def file_types(self) -> set[str]:
+        return self._files_configs.supported_file_types
+
+    def get_f_configs(self, file_type:str) -> FileConfigs:
+        if file_type not in self.file_types:
+            raise ValueError(f"Il file_type {file_type} non compare tra i presenti nell'applicazione")
+
+        return self._files_configs.data[file_type]
 
 if __name__ == '__main__':
     print(AppConfigs.targets_dirs.exists())

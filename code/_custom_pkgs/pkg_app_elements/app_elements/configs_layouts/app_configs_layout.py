@@ -1,14 +1,14 @@
 """Il modulo contiene il layout del tab App Configs"""
 
 from dash import dcc, html
-from configs_callbacks.AppConfigPage_cbks import *
+from configs_callbacks.AppConfigTab_cbks import *
 from app_elements.page_elements import custom_spinner
 from app_resources.AppCache import GLOBAL_CACHE
 
 
 layout = dbc.Container([
     dcc.Store(id="current-theme", data=None),
-    dcc.Store(id="initial-config-loaded", data=False),
+    dcc.Store(id={"config-tab":"app-configs", "item":"initial-config-loaded"}, data=False),
 
     dcc.Loading(
         id="loading-main-configs",

@@ -64,7 +64,7 @@ class PlotFileTypeConfigs:
         self._data = None
 
     @classmethod
-    def from_config_dict(cls):
+    def from_mem(cls):
         """
         Crea una lista di istanze PlotFileTypeConfigs, contenenti i dati contenuti
         nel file di configurazione del plotter
@@ -164,7 +164,7 @@ class PlotFileTypeConfigs:
 
 class PlotterConfigs(ConfigFileManager):
     files_configs = {f_conf.file_type:f_conf for f_conf
-                     in PlotFileTypeConfigs.from_config_dict()}
+                     in PlotFileTypeConfigs.from_mem()}
 
     def save_all(self):
         """Salva i parametri attualmente caricati"""
