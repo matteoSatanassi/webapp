@@ -35,14 +35,13 @@ REM 4️. Installa pacchetti locali (editable mode)
 REM ==============================
 
 echo Installing pk_common...
-pip install -e ".\code\pkg_common"
+pip install -e ".\code\_custom_pkgs\pkg_common"
 
 echo Installing pk_app_elements...
-pip install -e ".\code\pkg_app_elements"
-
+pip install -e ".\code\_custom_pkgs\pkg_app_elements"
 
 echo Installing pk_params...
-pip install -e ".\code\pkg_params"
+pip install -e ".\code\_custom_pkgs\pkg_app_resources"
 
 REM ==============================
 REM 5️. Fine script

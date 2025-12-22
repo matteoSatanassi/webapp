@@ -8,7 +8,7 @@
       <sourceFolder url="file://$MODULE_DIR$/code/_custom_pkgs/pkg_common" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.12 (webapp)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 virtualenv at F:\Cartella di Matteo Satanassi\Uni\webapp\.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
