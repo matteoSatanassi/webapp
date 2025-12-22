@@ -18,7 +18,7 @@ class ConfigFileManager:
         if file_type not in ConfigCache.file_types:
             raise ValueError(f"Il file_type {file_type} non è supportato dall'applicazione")
 
-        allowed_curves =ConfigCache.files_configs[file_type].allowed_curves
+        allowed_curves =ConfigCache.get_f_configs(file_type).allowed_curves
         curves_palette = ConfigFileManager.generate_palette(len(allowed_curves))
 
         file_cfgs = ConfigFileManager.template_file_configs()

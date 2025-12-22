@@ -273,7 +273,7 @@ class FilesFeatures:
     def get_type_configs(file_type:str):
         """Ritorna i parametri di configurazione dei file con file_type specificato"""
         try:
-            return ConfigCache.files_configs[file_type]
+            return ConfigCache.get_f_configs(file_type)
         except KeyError as e:
             raise KeyError(f"""
             Tipologia di file non supportata {file_type}
@@ -285,7 +285,7 @@ class FilesFeatures:
     @staticmethod
     def get_tab_label_info(file_type:str):
         """Ritorna la descrizione dei dati contenuti nei label dei tab"""
-        features = list(ConfigCache.files_configs[file_type].allowed_features.keys())
+        features = list(ConfigCache.get_f_configs(file_type).allowed_features.keys())
         features.remove("file_path")
         return "/".join(features)
 

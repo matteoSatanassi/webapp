@@ -98,8 +98,9 @@ class TablesCache:
         df_out["file_path"] = groups["file_path"].agg(lambda x: "#".join(map(str, x))).values
 
         # Calcolo medie delle colonne affinità se presenti
-        if ConfigCache.files_configs[file_type].targets_presents:
-            for curve in ConfigCache.files_configs[file_type].allowed_curves:
+        f_configs = ConfigCache.get_f_configs(file_type)
+        if f_configs.targets_presents:
+            for curve in f_configs.allowed_curves:
                 aff_col = f"aff_{curve}"
                 if aff_col in df.columns:
                     df_out[aff_col] = groups[aff_col].mean().values
@@ -240,7 +241,7 @@ class SingleTabCache:
     @property
     def _figure_targets(self):
         """Ritorna la figura caricata nell'istanza con le relative curve target"""
-        if not ConfigCache.files_configs[self.file_type].targets_presents:
+        if not ConfigCache.get_f_configs(self.file_type).targets_presents:
             print("I dati all'interno del tab non hanno dei valori target da visualizzare")
             return self._figure
 
@@ -272,7 +273,7 @@ class SingleTabCache:
             print("Ritorno la figura standard")
             return self._figure
 
-        if not ConfigCache.files_configs[self.file_type].targets_presents:
+        if not ConfigCache.get_f_configs(self.file_type).targets_presents:
             print("I dati all'interno del tab non hanno dei valori target da visualizzare")
             return self._samples
 

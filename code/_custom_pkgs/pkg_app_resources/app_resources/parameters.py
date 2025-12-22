@@ -297,11 +297,12 @@ class ConfigCache:
     def file_types(self) -> set[str]:
         return self._files_configs.supported_file_types
 
-    def get_f_configs(self, file_type:str) -> FileConfigs:
-        if file_type not in self.file_types:
+    @staticmethod
+    def get_f_configs(file_type:str) -> FileConfigs:
+        if file_type not in ConfigCache.file_types:
             raise ValueError(f"Il file_type {file_type} non compare tra i presenti nell'applicazione")
 
-        return self._files_configs.data[file_type]
+        return ConfigCache._files_configs.data[file_type]
 
 if __name__ == '__main__':
     print(AppConfigs.targets_dirs.exists())

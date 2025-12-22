@@ -12,7 +12,7 @@ from app_resources.parameters import ConfigCache
 
 ## HELPER FUNC ##
 def load_or_create_df_data_type(file_type:str, idx_file:Path):
-    type_configs = ConfigCache.files_configs[file_type]
+    type_configs = ConfigCache.get_f_configs(file_type)
     expected_df = pd.DataFrame(
         None,
         columns=type_configs.get_table_cols
@@ -27,7 +27,7 @@ def load_or_create_df_data_type(file_type:str, idx_file:Path):
         return expected_df
 
 def add_aff_cols(data_type:str, df:pd.DataFrame):
-    type_configs = ConfigCache.files_configs[data_type]
+    type_configs = ConfigCache.get_f_configs(data_type)
     if type_configs.targets_presents:
         df["aff_tot"]=None
         for curve in type_configs.allowed_curves:
@@ -106,7 +106,7 @@ def indexer(data_directory:str|Path):
         rows = []   # vi aggiungerò le features dei file non indicizzati
 
         # gli indirizzi da controllare sono tutti quelli con lo stesso data_type di df_data_type
-        df_paths_to_check = df_files.loc[df_files["file_type"] == file_type, "file_path"]
+        df_paths_to_check:pd.DataFrame = df_files.loc[df_files["file_type"] == file_type, "file_path"]
         # creo una maschera con i file presenti in indice, che poi negherò per trovare i non presenti
         mask_indexed =df_paths_to_check.isin(indexed_files)
         for f in df_paths_to_check[~mask_indexed]:
@@ -121,6 +121,9 @@ def indexer(data_directory:str|Path):
     with pd.ExcelWriter(excel_indexes_file) as writer:
         for key, df in df_to_save.items():
             df.to_excel(writer, sheet_name=key, index=False)
+
+    return None
+
 
 if __name__ == "__main__":
     data_dir = Path(
