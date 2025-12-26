@@ -297,6 +297,8 @@ class Curve:
     :param name: Nome della curva
     :type name: str
     """
+
+    # noinspection PyTypeChecker
     def __init__(self, name:str):
         self.name:str = name
         self.X: np.ndarray = None
@@ -469,7 +471,7 @@ class FileCurves(FilesFeatures):
     def _from_super(cls, data:FilesFeatures)-> "FileCurves":
         # pylint disable:protected-access
         if not isinstance(data,FilesFeatures):
-            return ValueError("L'argomento passato non è del tipo FileFeatures")
+            raise ValueError("L'argomento passato non è del tipo FileFeatures")
         inst = cls()
         inst.file_type = data.file_type
         inst.grouped_by = data.grouped_by
@@ -490,7 +492,7 @@ class FileCurves(FilesFeatures):
             super().from_df(df, grouped_by)
         )
     @classmethod
-    def subdivide(cls, data:"FileCurves")-> list["FileCurves"]:
+    def subdivide(cls, data:"FileCurves"):
         """
         Dato un oggetto FileCurves, ritorna una lista di istanze FileCurves, ognuna contenente
         i dati di un solo esperimento di quelli contenuti nell'oggetto iniziale
@@ -530,6 +532,7 @@ class FileCurves(FilesFeatures):
     def import_all(self):
         """importa i dati dei file contenuti nell'istanza, salvandoli nell'attributo curves"""
         for path in self.paths:
+            # noinspection PyTypeChecker
             self._curves[path] = self.import_file_data(path)
         return self
     def import_file_data(self, file_path:Path|str):
@@ -614,6 +617,8 @@ class FileCurves(FilesFeatures):
                 file_features[f"aff_{name}"] = curve.integral_affinity(target._curves[target_path][name])
 
         return self._data
+
+    # noinspection PyTypeChecker
     def divide_in_groups(self, grouping_feat:str) -> Generator["FileCurves"]:
         """
         Il metodo, dato un oggetto FileCurves contenente i dati di una certa quantità di file,
@@ -650,6 +655,7 @@ class FileCurves(FilesFeatures):
         ]
         for t_file in target_files:
             if all(token in t_file.stem for token in target_features):
+                print(f"Target file request. Using -> {t_file.name}\n")
                 return FileCurves.from_paths(t_file)
         raise FileNotFoundError(
             f"Non è stato possibile trovare il file target per le curve del file {file_features["file_path"].stem}"

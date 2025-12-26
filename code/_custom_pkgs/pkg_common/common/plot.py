@@ -165,6 +165,7 @@ class CustomFigure(go.Figure):
         """Aggiunge all'istanza la curva specificata, con colore, stile di linea, marker e nome come impostati"""
         if not scales: scales = {"X":0, "Y":0}
         try:
+            # noinspection PyUnresolvedReferences
             self.add_trace(
                 go.Scatter(
                     x=curve.X / (10**scales["X"] if scales["X"]>1 else 1),
@@ -202,6 +203,7 @@ class CustomFigure(go.Figure):
         """
         if not scales: scales = {"X":0, "Y":0}
         try:
+            # noinspection PyUnresolvedReferences
             self.add_scatter(
                 x=curve.X / (10**scales["X"] if scales["X"]>1 else 1),
                 y=curve.Y / (10**scales["Y"] if scales["Y"]>1 else 1),

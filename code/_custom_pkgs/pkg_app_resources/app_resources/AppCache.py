@@ -60,7 +60,7 @@ class TablesCache:
     def group_df(self,
                  file_type:str,
                  grouping_feature: str,
-                 only_df=False) -> tuple[pd.DataFrame, list[str]]:
+                 only_df=False):
         """
         Il metodo ritorna una copia del df degli indici del file_type specificato,
         raggruppato secondo la feature specificata, e la lista delle colonne da nascondere.
@@ -323,10 +323,10 @@ class SingleTabCache:
         passa a "samples" e viceversa, lasciando inalterata la
         parte della presenza dei target
         """
-        if self._used=="figure":
-            self._used = "samples"
-        elif self._used=="samples":
-            self._used = "figure"
+        if "figure" in self._used:
+            self._used = self._used.replace("figure", "samples")
+        elif "samples" in self._used:
+            self._used = self._used.replace("samples", "figure")
         else:
             raise ValueError("I dati sulla figura usata all'interno del tab non sono corretti")
         return self

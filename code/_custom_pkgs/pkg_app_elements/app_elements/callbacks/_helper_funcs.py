@@ -5,7 +5,7 @@ import copy
 ## COMMON CALLBACKS ##
 def update_table(mode:str,
                  grouping_feature:str,
-                 table_id:dict) -> list[dict]:
+                 table_id:dict):
     """
     Updater della tabella di visualizzazione dei file.
 
@@ -22,9 +22,5 @@ def update_table(mode:str,
         return no_update, no_update, no_update, no_update
     else:
         raise ValueError(f"Il valore passato dal radio selector [{mode}], non è tra quelli supportati")
-
-    for col in cols_defs:
-        if col['field']==grouping_feature:
-            print(col)
 
     return df_out.to_dict('records'), cols_defs, [], None
